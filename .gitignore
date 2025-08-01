@@ -23,3 +23,4 @@ Saved/
 # Visual Studio cache
 .vs/
 *.ipch
+.vsconfig
