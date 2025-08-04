@@ -18,6 +18,7 @@ USTPlayerAnimInstance::USTPlayerAnimInstance()
 	bIsFalling = false;
 	bIsCrouching = false;
 	bIsDead = false;
+	bIsZooming = false;
 }
 
 void USTPlayerAnimInstance::NativeInitializeAnimation()
@@ -71,6 +72,7 @@ void USTPlayerAnimInstance::UpdateMovementProperties()
 	float GroundAcceleration = UKismetMathLibrary::VSizeXY(OwnerCharacterMovement->GetCurrentAcceleration());
 	bool bIsAccelerated = !FMath::IsNearlyZero(GroundAcceleration);
 	bShouldMove = (GroundSpeed > KINDA_SMALL_NUMBER) && bIsAccelerated;
+	bIsZooming = OwnerCharacter->GetStatusComponent()->IsZooming();
 }
 #pragma endregion
 

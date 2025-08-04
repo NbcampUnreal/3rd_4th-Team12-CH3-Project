@@ -39,5 +39,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	TObjectPtr<UInputAction> ChangeViewAction;
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+    TObjectPtr<UInputAction> ZoomAction;
 
 };

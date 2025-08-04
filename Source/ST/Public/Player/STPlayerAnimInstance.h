@@ -71,6 +71,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Aim")
 	float AimPitch;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Aim")
+	uint8 bIsZooming : 1;
 #pragma endregion
 
 #pragma region Status Properties
