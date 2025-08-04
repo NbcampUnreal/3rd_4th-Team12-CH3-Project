@@ -18,6 +18,10 @@ public:
 	class UStaticMeshComponent* ProjectileMesh;
 	UPROPERTY(VisibleAnywhere, Category = "Movement")
 	class UProjectileMovementComponent* ProjectileMovement;
+	UPROPERTY(VisibleDefaultsOnly, Category="VFX")
+	UParticleSystemComponent* ProjectileParticleComp;
+	UPROPERTY(EditDefaultsOnly, Category="VFX")
+	UParticleSystem* ProjectileParticle;
 
 	void FireInDirection(const FVector& ShootDirection);
 

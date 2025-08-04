@@ -7,7 +7,6 @@
 #include "BrainComponent.h"
 #include "Components/CapsuleComponent.h"
 
-
 ASTEnemyMelee::ASTEnemyMelee()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -57,6 +56,17 @@ void ASTEnemyMelee::SetCurrentTarget(AActor* Target)
 
 void ASTEnemyMelee::AttackNotify()
 {
+	if (AttackSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, AttackSound, GetActorLocation());
+	}
+	if (SlashParticle)
+	{
+		UGameplayStatics::SpawnEmitterAttached(
+			SlashParticle,
+			GetMesh(),
+			TEXT("ik_hand_r"));
+	}
 	if (CurrentTarget && !bIsDead)
 	{
 		// 공격 거리 계산
@@ -110,7 +120,11 @@ void ASTEnemyMelee::Die()
 		}
 	}
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
+
+	if (DeathSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
+	}
 	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
 	{
 		USTMeleeAnimInstance* EnemyAnim = Cast<USTMeleeAnimInstance>(Anim);

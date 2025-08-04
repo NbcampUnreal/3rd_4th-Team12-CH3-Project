@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "Enemy/STEnemyBase.h"
+#include "Particles/ParticleSystem.h"
+#include "Particles/ParticleSystemComponent.h"
 #include "STEnemyMelee.generated.h"
 
 UCLASS()
@@ -34,6 +36,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat")
 	float MeleeDamage = 20.f;
 	bool bIsAttackCooldown = false;
+	UPROPERTY(EditDefaultsOnly, Category = "SFX")
+	USoundBase* AttackSound;
+	UPROPERTY(EditDefaultsOnly, Category = "SFX")
+	USoundBase* DeathSound;
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	UParticleSystem* SlashParticle;
 	
 	virtual void BeginPlay() override;
 	virtual void Die() override;

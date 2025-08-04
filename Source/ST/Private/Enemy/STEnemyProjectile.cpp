@@ -2,7 +2,8 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Kismet/GameplayStatics.h"
+#include "Particles/ParticleSystemComponent.h"
+
 
 ASTEnemyProjectile::ASTEnemyProjectile()
 {
@@ -32,12 +33,22 @@ ASTEnemyProjectile::ASTEnemyProjectile()
     ProjectileMovement->bShouldBounce = false;
     ProjectileMovement->ProjectileGravityScale = 0.5f;
 
+	ProjectileParticleComp = CreateDefaultSubobject<UParticleSystemComponent>(TEXT("ProjectileParticleComp"));
+	ProjectileParticleComp->SetupAttachment(RootComponent);
+	ProjectileParticleComp->bAutoActivate = false;
+
     InitialLifeSpan = 3.0f;
 }
 
 void ASTEnemyProjectile::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (ProjectileParticle && ProjectileParticleComp)
+	{
+		ProjectileParticleComp->SetTemplate(ProjectileParticle);
+		ProjectileParticleComp->ActivateSystem();
+	}
 	
 	if (CollisionComponent)
 	{

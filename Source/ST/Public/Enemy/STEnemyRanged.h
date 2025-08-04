@@ -46,6 +46,12 @@ protected:
 	TSubclassOf<ASTEnemyProjectile> ProjectileClass;
 	UPROPERTY()
 	AActor* CurrentTarget = nullptr;
+	UPROPERTY(EditDefaultsOnly, Category = "SFX")
+	USoundBase* FireSound;
+	UPROPERTY(EditDefaultsOnly, Category = "SFX")
+	USoundBase* DeathSound;
+	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	UParticleSystem* AttackParticle;
 
 	virtual void BeginPlay() override;
 	UFUNCTION(BlueprintCallable, Category = "Combat")

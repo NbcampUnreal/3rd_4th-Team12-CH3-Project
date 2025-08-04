@@ -32,7 +32,7 @@ void ASTEnemyRanged::Attack()
 	
 	bIsAttacking = true;
 	bIsAttackCooldown = true;
-	
+
 	FVector MyLocation = GetActorLocation();
 	FVector TargetLocation = CurrentTarget->GetActorLocation();
 	FRotator LookAtRotation = (TargetLocation - MyLocation).Rotation();
@@ -40,7 +40,7 @@ void ASTEnemyRanged::Attack()
 	// 수평고정
 	LookAtRotation.Pitch = 0.f;
 	SetActorRotation(LookAtRotation);
-
+	
 	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
 	{
 		USTRangedAnimInstance* EnemyAnim = Cast<USTRangedAnimInstance>(Anim);
@@ -63,12 +63,12 @@ void ASTEnemyRanged::FireProjectile()
 		return;
 	}
 	
-	FVector SpawnLocation = GetMesh()->GetSocketLocation(TEXT("hand_r"));
+	FVector SpawnLocation = GetMesh()->GetSocketLocation(TEXT("gun_barrel"));
 	FVector TargetLocation = CurrentTarget->GetActorLocation();
 	FVector FireDirection = (TargetLocation - SpawnLocation).GetSafeNormal();
 	FRotator FireRotation = FireDirection.Rotation();
 
-	float MuzzleOffset = 80.0f;
+	float MuzzleOffset = 20.0f;
 	SpawnLocation += FireDirection * MuzzleOffset;
 
 	ASTEnemyProjectile* Projectile = GetWorld()->SpawnActor<ASTEnemyProjectile>(ProjectileClass, SpawnLocation, FireRotation);
@@ -76,8 +76,6 @@ void ASTEnemyRanged::FireProjectile()
 	{
 		Projectile->SetInstigator(this);
 	}
-	
-	// 나중에 이펙트, 사운드 추가 해야함
 	
 }
 
@@ -88,9 +86,32 @@ void ASTEnemyRanged::SetCurrentTarget(AActor* Target)
 
 void ASTEnemyRanged::AttackNotify()
 {
+	FVector MyLocation = GetActorLocation();
+	FVector TargetLocation = CurrentTarget->GetActorLocation();
+	FRotator LookAtRotation = (TargetLocation - MyLocation).Rotation();
+
+	// 수평고정
+	LookAtRotation.Pitch = 0.f;
+	SetActorRotation(LookAtRotation);
+	
 	if (AmmoCount > 0 && CurrentTarget && !bIsDead)
 	{
 		FireProjectile();
+		if (FireSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
+		}
+		if (AttackParticle)
+		{
+			UGameplayStatics::SpawnEmitterAttached(
+			AttackParticle,
+			GetMesh(),
+			TEXT("gun_barrel"),
+			FVector::ZeroVector,
+			FRotator(0.f, 90.f, 0.f),
+			EAttachLocation::KeepRelativeOffset,
+			true);
+		}
 		AmmoCount--;
 	}
 	else if (AmmoCount <= 0 && !bIsDead)
@@ -131,7 +152,6 @@ void ASTEnemyRanged::Reload()
 	
 	GetWorldTimerManager().SetTimer(ReloadHandle, this, &ASTEnemyRanged::FinishReload, ReloadTime, false);
 
-	// 나중에 재장전 사운드 구현 해야함
 }
 
 void ASTEnemyRanged::FinishReload()
@@ -164,7 +184,11 @@ void ASTEnemyRanged::Die()
 		}
 	}
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	
+
+	if (DeathSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
+	}
 	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
 	{
 		USTRangedAnimInstance* EnemyAnim = Cast<USTRangedAnimInstance>(Anim);
