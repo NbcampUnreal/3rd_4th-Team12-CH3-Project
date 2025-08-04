@@ -15,6 +15,7 @@ USTStatusComponent::USTStatusComponent()
     CrouchSpeed = 300.0f;
     bIsDead = false;
     bIsSprinting = false;
+    bIsZooming = false;
 }
 
 void USTStatusComponent::BeginPlay()
@@ -105,14 +106,21 @@ void USTStatusComponent::HandleDeath()
 
 float USTStatusComponent::GetMoveSpeed() const
 {
-    // TODO: Add buff/debuff calculation here
-    if (bIsDead) return 0.0f;
+    float SpeedMultiplier = 1.0f;
+    if (bIsZooming)
+    {
+        SpeedMultiplier = 0.5f;
+    }
+    if (bIsDead)
+    {
+        SpeedMultiplier = 0.f;
+    }
     
     if (bIsSprinting)
     {
-        return SprintSpeed;
+        return SprintSpeed *  SpeedMultiplier;
     }
-    return WalkSpeed;
+    return WalkSpeed *  SpeedMultiplier;
 }
 
 float USTStatusComponent::GetSprintSpeed() const

@@ -113,5 +113,13 @@ protected:
 
 #pragma endregion
 
-		
+#pragma region Zoom
+
+public:
+    void SetZoom(bool bShouldZoom) { bIsZooming = bShouldZoom; }
+    bool IsZooming() const { return bIsZooming; }
+protected:
+    uint8 bIsZooming : 1 = false;
+
+#pragma endregion 
 };

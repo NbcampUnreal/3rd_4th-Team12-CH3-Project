@@ -50,6 +50,12 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
     TObjectPtr<UCameraComponent> FPSCameraComponent;
 
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    float FirstPersonFieldOfView = 103.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
+    float FirstPersonScale = 1.0f;
+
     // Camera Variables
     EViewMode CurrentViewMode = EViewMode::TPS;
 #pragma endregion
@@ -74,6 +80,7 @@ protected:
     // Input Config
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
     TObjectPtr<USTPlayerInputConfig> InputConfig;
+ 
     // Input Action Functions
     void Move(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);
@@ -81,6 +88,8 @@ protected:
     void Sprint(const FInputActionValue& Value);
     void EndSprint(const FInputActionValue& Value);
     void ChangeView(const FInputActionValue& Value);
+    void Zoom(const FInputActionValue& Value);
+
 #pragma endregion
 
 #pragma region Status System

@@ -17,13 +17,15 @@ ASTPlayerCharacter::ASTPlayerCharacter()
 	
 	// FPS Mesh Component
 	FPSSkeletalMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FPSSkeletalMeshComponent"));
-	FPSSkeletalMeshComponent->SetupAttachment(GetRootComponent());
+	FPSSkeletalMeshComponent->SetupAttachment(RootComponent);
+	FPSSkeletalMeshComponent->FirstPersonPrimitiveType =EFirstPersonPrimitiveType::FirstPerson;
+	FPSSkeletalMeshComponent->SetOnlyOwnerSee(true);
 	FPSSkeletalMeshComponent->bAutoActivate = false;
 
 	// TPS Camera Setup
 	TPSSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("TPSSpringArmComponent"));
 	TPSSpringArmComponent->SetupAttachment(GetRootComponent());
-	TPSSpringArmComponent->bUsePawnControlRotation = true;
+	TPSSpringArmComponent->bUsePawnControlRotation = false;
 
 	TPSCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("TPSCameraComponent"));
 	TPSCameraComponent->SetupAttachment(TPSSpringArmComponent, USpringArmComponent::SocketName);
@@ -31,9 +33,13 @@ ASTPlayerCharacter::ASTPlayerCharacter()
 
 	// FPS Camera Setup
 	FPSCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FPSCameraComponent"));
-	FPSCameraComponent->SetupAttachment(GetRootComponent());
+	FPSCameraComponent->SetupAttachment(FPSSkeletalMeshComponent, FName("head"));
 	FPSCameraComponent->bUsePawnControlRotation = true;
-	FPSCameraComponent->SetAutoActivate(false);
+	FPSCameraComponent->bEnableFirstPersonFieldOfView = true;
+	FPSCameraComponent->bEnableFirstPersonScale = true;
+	FPSCameraComponent->FirstPersonFieldOfView = FirstPersonFieldOfView;
+	FPSCameraComponent->FirstPersonScale = FirstPersonScale;
+	FPSCameraComponent->bAutoActivate = false;  
 
 	// Status Component
 	StatusComponent = CreateDefaultSubobject<USTStatusComponent>(TEXT("StatusComponent"));
@@ -41,6 +47,8 @@ ASTPlayerCharacter::ASTPlayerCharacter()
 	// Character Movement Settings
 	if (GetCharacterMovement())
 	{
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+		GetCharacterMovement()->bUseControllerDesiredRotation = true;
 		GetCharacterMovement()->bWantsToCrouch = true;
 		GetCharacterMovement()->CrouchedHalfHeight = 60.f;
 	}
@@ -119,6 +127,10 @@ void ASTPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	{
 		EnhancedInputComponent->BindAction(InputConfig->ChangeViewAction, ETriggerEvent::Started, this, &ASTPlayerCharacter::ChangeView);
 	}
+	if (InputConfig->ZoomAction)
+	{
+		EnhancedInputComponent->BindAction(InputConfig->ZoomAction, ETriggerEvent::Started, this, &ASTPlayerCharacter::Zoom);
+	}
 
 }
 #pragma endregion 
@@ -132,7 +144,7 @@ void ASTPlayerCharacter::SetViewMode(bool bIsTPS)
 		TPSCameraComponent->SetActive(true);
 		FPSCameraComponent->SetActive(false);
 		bUseControllerRotationYaw = false;
-		GetCharacterMovement()->bOrientRotationToMovement = true;
+		bUseControllerRotationPitch = true;  // 추가!
 		GetMesh()->SetOwnerNoSee(false);
 	}
 	else
@@ -142,7 +154,7 @@ void ASTPlayerCharacter::SetViewMode(bool bIsTPS)
 		TPSCameraComponent->SetActive(false);
 		FPSSkeletalMeshComponent->SetOwnerNoSee(false);
 		bUseControllerRotationYaw = true;
-		GetCharacterMovement()->bOrientRotationToMovement = false;
+		bUseControllerRotationPitch = true;  // 추가!
 	}
 
 	CurrentViewMode = bIsTPS ? EViewMode::TPS : EViewMode::FPS;
@@ -207,7 +219,10 @@ void ASTPlayerCharacter::Crouch(const FInputActionValue& Value)
 	{
 		ACharacter::Crouch();
 	}
+	
 }
+
+
 
 void ASTPlayerCharacter::Sprint(const FInputActionValue& Value)
 {
@@ -236,6 +251,16 @@ void ASTPlayerCharacter::ChangeView(const FInputActionValue& Value)
 	const bool bNextIsTPS = (CurrentViewMode == EViewMode::FPS);
 	SetViewMode(bNextIsTPS);
 }
+
+void ASTPlayerCharacter::Zoom(const FInputActionValue& Value)
+{
+	if (IsValid(StatusComponent))
+	{
+		StatusComponent->SetZoom(!StatusComponent->IsZooming());
+		GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetMoveSpeed();
+	}
+}
+
 
 #pragma endregion
 
