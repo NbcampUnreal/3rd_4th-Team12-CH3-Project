@@ -1,5 +1,3 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
 #pragma once
 
 #include "CoreMinimal.h"
@@ -12,18 +10,28 @@ class ST_API ASTEnemyBase : public ACharacter
 	GENERATED_BODY()
 
 public:
-	// Sets default values for this character's properties
 	ASTEnemyBase();
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float MaxHealth = 100.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float Health = 100.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Stats")
+	float Defense = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat")
+	float AttackRange = 200.f;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "State")
+	bool bIsDead = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeakPoint")
+	TMap<FName, float> WeakPointMultipliers;
 
-protected:
-	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+	
+	virtual auto TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	                        AController* Instigator, AActor* DamageCauser) -> float override;
+	virtual void ApplyDamage(float RawDamage, FName HitBone, FVector HitLocation);
 
-public:	
-	// Called every frame
-	virtual void Tick(float DeltaTime) override;
-
-	// Called to bind functionality to input
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-
+	UFUNCTION(BlueprintCallable, Category = "Enemy|State")
+	virtual void Die();
+	virtual void Attack() PURE_VIRTUAL(AEnemyBase::Attack, );
+	virtual void SetCurrentTarget(AActor* Target) PURE_VIRTUAL(AEnemyBase::SetCurrentTarget, );
+	virtual bool IsAttacking() const { return false; }
 };
