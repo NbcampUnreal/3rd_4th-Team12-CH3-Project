@@ -30,6 +30,7 @@ public:
 	
 	void OnTimeOver();
 	float GetRemainingTime() const;
+	void CheckStageClear();
 
 protected:
 	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "GameRule" )
@@ -55,7 +56,6 @@ protected:
 
 	virtual void BeginPlay() override;
 	void EndStage(EStageResult Result);
-	void CheckStageClear();
 	void ResetStage();
 	float GetStageTimeLimit(FString StageName) const;
 

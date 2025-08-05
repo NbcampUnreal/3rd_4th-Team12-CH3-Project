@@ -9,6 +9,31 @@ ASTGameState::ASTGameState()
 	StageResult = EStageResult::None;
 }
 
+EStagePhase ASTGameState::GetStagePhase() const
+{
+	return StagePhase;
+}
+
+int32 ASTGameState::GetRemainingEnemies() const
+{
+	return RemainingEnemies;
+}
+
+float ASTGameState::GetRemainingTime() const
+{
+	return RemainingTime;
+}
+
+int32 ASTGameState::GetBossPhase() const
+{
+	return BossPhase;
+}
+
+EStageResult ASTGameState::GetStageResult() const
+{
+	return StageResult;
+}
+
 void ASTGameState::SetStagePhase(EStagePhase NewPhase)
 {
 	StagePhase = NewPhase;

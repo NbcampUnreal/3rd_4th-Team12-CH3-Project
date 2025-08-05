@@ -43,7 +43,7 @@ void ASTGameMode::OnEnemyKilled()
 	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
 		STGameState->SetRemainingEnemies(TotalEnemies - DeadEnemies);
 
-	CheckStageClear();	// TODO: 매번 체크하지말고, 특정 Spot에 이동하면 체크하는 방식으로
+	// CheckStageClear();	// TODO: 매번 체크하지말고, 특정 Spot에 이동하면 체크하는 방식으로
 	// TODO: 모든 적을 죽인 경우에 UI로 특정 위치로 이동하세요 라는 메시지 주기 (특정위치에 파티클 등으로 강조하고)
 }
 
