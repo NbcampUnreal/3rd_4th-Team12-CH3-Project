@@ -10,17 +10,26 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Player/STWeaponManagerComponent.h"
+#include "Player/ST_PlayerAnimMontageConfig.h"
 
 #pragma region DefaultSetting
 ASTPlayerCharacter::ASTPlayerCharacter()
 {
+	// Character Movement Settings
+	if (GetCharacterMovement())
+	{
+		GetCharacterMovement()->bOrientRotationToMovement = false;
+		GetCharacterMovement()->bUseControllerDesiredRotation = true;
+		GetCharacterMovement()->bWantsToCrouch = true;
+		GetCharacterMovement()->CrouchedHalfHeight = 60.f;
+	}
 	
 	// TPS Camera Setup
 	TPSSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("TPSSpringArmComponent"));
 	TPSSpringArmComponent->SetupAttachment(GetRootComponent());
 	TPSSpringArmComponent->bUsePawnControlRotation = true;
 	TPSSpringArmComponent->bAutoActivate = false;
-
 	TPSCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("TPSCameraComponent"));
 	TPSCameraComponent->SetupAttachment(TPSSpringArmComponent, USpringArmComponent::SocketName);
 	TPSCameraComponent->bUsePawnControlRotation = false;
@@ -46,14 +55,8 @@ ASTPlayerCharacter::ASTPlayerCharacter()
 	// Status Component
 	StatusComponent = CreateDefaultSubobject<USTStatusComponent>(TEXT("StatusComponent"));
 
-	// Character Movement Settings
-	if (GetCharacterMovement())
-	{
-		GetCharacterMovement()->bOrientRotationToMovement = false;
-		GetCharacterMovement()->bUseControllerDesiredRotation = true;
-		GetCharacterMovement()->bWantsToCrouch = true;
-		GetCharacterMovement()->CrouchedHalfHeight = 60.f;
-	}
+	//Weapon Component
+	WeaponManager = CreateDefaultSubobject<USTWeaponManagerComponent>(TEXT("WeaponManager"));
 
 }
 
@@ -131,6 +134,19 @@ void ASTPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	{
 		EnhancedInputComponent->BindAction(InputConfig->ZoomAction, ETriggerEvent::Started, this, &ASTPlayerCharacter::Zoom);
 	}
+	if (InputConfig->FireAction)
+	{
+		EnhancedInputComponent->BindAction(InputConfig->FireAction, ETriggerEvent::Started, this, &ASTPlayerCharacter::StartFire);
+	}
+	if (InputConfig->FireAction)
+	{
+		EnhancedInputComponent->BindAction(InputConfig->FireAction, ETriggerEvent::Completed, this, &ASTPlayerCharacter::StopFire);
+	}
+	if (InputConfig->ReloadAction)
+	{
+		EnhancedInputComponent->BindAction(InputConfig->ReloadAction, ETriggerEvent::Completed, this, &ASTPlayerCharacter::ReloadAmmo);
+	}
+
 
 }
 #pragma endregion 
@@ -241,6 +257,32 @@ void ASTPlayerCharacter::Zoom(const FInputActionValue& Value)
 	}
 }
 
+void ASTPlayerCharacter::StartFire(const FInputActionValue& Value)
+{
+	if (IsValid(WeaponManager))
+	{
+		WeaponManager->StartFire();
+	}
+}
+
+void ASTPlayerCharacter::StopFire(const FInputActionValue& Value)
+{
+	if (IsValid(WeaponManager))
+	{
+		WeaponManager->StopFire();
+	}
+}
+void ASTPlayerCharacter::ReloadAmmo(const FInputActionValue& Value)
+{
+	if (IsValid(WeaponManager))
+	{
+		if (IsValid(MontageConfig->ReloadMontage))
+		{
+			PlayAnimMontage(MontageConfig->ReloadMontage);
+		}
+		WeaponManager->ReloadAmmo();
+	}
+}
 
 #pragma endregion
 

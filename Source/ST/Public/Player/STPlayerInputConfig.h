@@ -42,4 +42,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
     TObjectPtr<UInputAction> ZoomAction;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<UInputAction> FireAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	TObjectPtr<UInputAction> ReloadAction;
+
 };
