@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "STPlayerCharacter.generated.h"
 
+class UST_PlayerAnimMontageConfig;
+class USTWeaponManagerComponent;
 class USTStatusComponent;
 class USTPlayerInputConfig;
 
@@ -33,7 +35,17 @@ public:
 
 protected:
     virtual void BeginPlay() override;
-   
+
+#pragma region SkeletalMesh 
+
+public:
+    USkeletalMeshComponent* GetTPSSkeletalMesh(){return GetMesh();}
+    USkeletalMeshComponent* GetFPSSkeletalMesh(){return FPSSkeletalMeshComponent;}
+protected:
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FPS Mesh")
+    TObjectPtr<USkeletalMeshComponent> FPSSkeletalMeshComponent;
+
+#pragma endregion 
 
 #pragma region Camera System
 protected:
@@ -60,26 +72,9 @@ protected:
     EViewMode CurrentViewMode = EViewMode::TPS;
 #pragma endregion
 
-#pragma region FPS Mesh System
-protected:
-    // FPS Mesh Functions
-    void CacheFPSMeshRelativeLocations();
-    void UpdateFPSMeshRelativeLocationForCrouch(bool bIsCrouching);
-
-    // FPS Mesh Components
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FPS Mesh")
-    TObjectPtr<USkeletalMeshComponent> FPSSkeletalMeshComponent;
-
-    // FPS Mesh Variables
-    FVector DefaultFPSMeshRelativeLocation;
-    FVector CrouchFPSMeshRelativeLocation;
-#pragma endregion
-
 #pragma region Input System
 protected:
-    // Input Config
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
-    TObjectPtr<USTPlayerInputConfig> InputConfig;
+   
  
     // Input Action Functions
     void Move(const FInputActionValue& Value);
@@ -89,6 +84,9 @@ protected:
     void EndSprint(const FInputActionValue& Value);
     void ChangeView(const FInputActionValue& Value);
     void Zoom(const FInputActionValue& Value);
+    void StartFire(const FInputActionValue& Value);
+    void StopFire(const FInputActionValue& Value);
+    void ReloadAmmo(const FInputActionValue& Value);
 
 #pragma endregion
 
@@ -108,4 +106,21 @@ protected:
     
 #pragma endregion
 
+
+#pragma region Weapon System
+protected:
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon")
+    TObjectPtr<USTWeaponManagerComponent> WeaponManager;
+    
+#pragma endregion
+
+#pragma region Config
+
+    // Input Config
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config", meta = (AllowPrivateAccess = "true"))
+    TObjectPtr<USTPlayerInputConfig> InputConfig;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config", meta = (AllowPrivateAccess = "true"))
+    TObjectPtr<UST_PlayerAnimMontageConfig> MontageConfig;
+#pragma endregion 
 };
