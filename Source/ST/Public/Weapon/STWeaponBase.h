@@ -16,6 +16,9 @@ public:
 	//무기 스테틱 메쉬
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Weapon")
 	UStaticMeshComponent* WeaponMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Weapon")
+	UStaticMeshComponent* WeaponMesh3p;
 	//데이터 에셋에서 값 가져오기
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Weapon")
 	USTWeaponDataAsset* WeaponDataAsset;
@@ -45,7 +48,15 @@ public:
 	
 	//총알 발사 함수
 	void Fire();
+	void StartFire();
+	void StopFire();
+	// ASTWeaponBase.h
+	
+	// 현재 탄약 수를 반환하는 함수
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	int32 GetCurrentAmmo() const { return CurrentAmmo; }
 
+	
 	//총알 장전 함수
 	void StartReload();     // 장전 시작 함수
 	void FinishReload();    // 장전 완료 함수
@@ -83,6 +94,8 @@ protected:
 	FTimerHandle FireRateTimerHandle;
 	//장전 타이머
 	FTimerHandle ReloadTimerHandle;
+	//총기 사격 모드 타이머
+	FTimerHandle AutoFireTimerHandle;
 
 	//발사 딜레이 설정 함서
 	bool bCanFire = true;

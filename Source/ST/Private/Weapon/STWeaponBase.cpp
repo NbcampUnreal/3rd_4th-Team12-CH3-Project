@@ -19,6 +19,16 @@ ASTWeaponBase::ASTWeaponBase()
 	// 스태틱 메시 초기화
 	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
 	RootComponent = WeaponMesh;
+	WeaponMesh3p=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh3p"));
+
+	WeaponMesh3p->SetupAttachment(RootComponent);
+
+
+	//만약 무기끼리 충돌시 적용할 코드
+	//충돌 없게 하는 코드
+	//WeaponMesh3P->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	
 }
 
 // Called when the game starts or when spawned
@@ -260,4 +270,27 @@ EFireMode ASTWeaponBase::GetFireMode() const
 		return WeaponDataAsset->WeaponData.FireMode;
 	}
 	return EFireMode::Automatic; // 데이터 애셋이 없으면 기본값 반환
+}
+
+void ASTWeaponBase::StartFire()
+{
+	// 데이터 애셋에서 발사 모드를 가져옵니다.
+	EFireMode Mode = GetFireMode();
+
+	if (Mode == EFireMode::Automatic)
+	{
+		// 자동 연사 모드라면, 타이머를 켜서 자신의 Fire() 함수를 계속 호출합니다.
+		GetWorld()->GetTimerManager().SetTimer(AutoFireTimerHandle, this, &ASTWeaponBase::Fire, 0.01f, true);
+	}
+	else if (Mode == EFireMode::SemiAutomatic)
+	{
+		// 반자동 모드라면, 자신의 Fire() 함수를 딱 한 번만 호출합니다.
+		Fire();
+	}
+}
+
+void ASTWeaponBase::StopFire()
+{
+	// 캐릭터의 마우스 버튼 떼기 신호를 받으면, 자동 연사 타이머를 멈춥니다.
+	GetWorld()->GetTimerManager().ClearTimer(AutoFireTimerHandle);
 }
