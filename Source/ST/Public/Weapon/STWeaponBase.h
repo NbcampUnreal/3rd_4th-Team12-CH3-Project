@@ -43,6 +43,15 @@ public:
 	//생성자
 	ASTWeaponBase();
 
+
+	//1인칭 스테틱 메쉬 가져오기
+	UFUNCTION(BlueprintPure, Category = "Weapon|Components")
+	UStaticMeshComponent* GetWeaponMesh1P() const { return WeaponMesh; }
+
+	//3인칭 스테틱 메쉬 가져오기
+	UFUNCTION(BlueprintPure, Category = "Weapon|Components")
+	UStaticMeshComponent* GetWeaponMesh3P() const { return WeaponMesh3p; }
+	
 	//총기 발사 모드 함수
 	EFireMode GetFireMode() const;
 	
