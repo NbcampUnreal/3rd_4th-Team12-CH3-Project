@@ -16,6 +16,9 @@ public:
 	//무기 스테틱 메쉬
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Weapon")
 	UStaticMeshComponent* WeaponMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Weapon")
+	UStaticMeshComponent* WeaponMesh3p;
 	//데이터 에셋에서 값 가져오기
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Weapon")
 	USTWeaponDataAsset* WeaponDataAsset;
@@ -40,12 +43,33 @@ public:
 	//생성자
 	ASTWeaponBase();
 
+
+	//1인칭 스테틱 메쉬 가져오기
+	UFUNCTION(BlueprintPure, Category = "Weapon|Components")
+	UStaticMeshComponent* GetWeaponMesh1P() const { return WeaponMesh; }
+
+	//3인칭 스테틱 메쉬 가져오기
+	UFUNCTION(BlueprintPure, Category = "Weapon|Components")
+	UStaticMeshComponent* GetWeaponMesh3P() const { return WeaponMesh3p; }
+	
 	//총기 발사 모드 함수
 	EFireMode GetFireMode() const;
 	
 	//총알 발사 함수
 	void Fire();
+	void StartFire();
+	void StopFire();
+	// ASTWeaponBase.h
+	
+	// 현재 탄약 수를 반환하는 함수
+	UFUNCTION(BlueprintPure, Category = "Weapon")
+	int32 GetCurrentAmmo() const { return CurrentAmmo; }
 
+
+	//발사 모드 전환
+	void ToggleFireMode();
+
+	
 	//총알 장전 함수
 	void StartReload();     // 장전 시작 함수
 	void FinishReload();    // 장전 완료 함수
@@ -83,6 +107,8 @@ protected:
 	FTimerHandle FireRateTimerHandle;
 	//장전 타이머
 	FTimerHandle ReloadTimerHandle;
+	//총기 사격 모드 타이머
+	FTimerHandle AutoFireTimerHandle;
 
 	//발사 딜레이 설정 함서
 	bool bCanFire = true;
@@ -103,6 +129,6 @@ protected:
 	//라인 트레스 충돌 정보 함수
 	void ProcessHit(const FHitResult& HitResult);
 
-
+	
 
 };
