@@ -7,7 +7,7 @@
 
 /**
  *  게임 진행 상태를 저장, 전파
- *  GameMode에서만 Setter 호출, 다른 곳에서는 읽기만 하기
+ *  GameMode에서만 Setter 호출, 다른 곳에서는 읽기만 하기 (friend 키워드)
  */
 UCLASS()
 class ST_API ASTGameState : public AGameState
@@ -15,7 +15,21 @@ class ST_API ASTGameState : public AGameState
 	GENERATED_BODY()
 public:
 	ASTGameState();
+	UFUNCTION( BlueprintCallable )
+	EStagePhase GetStagePhase() const;
+	UFUNCTION( BlueprintCallable )
+	int32 GetRemainingEnemies() const;
+	UFUNCTION( BlueprintCallable )
+	float GetRemainingTime() const;
+	UFUNCTION( BlueprintCallable )
+	int32 GetBossPhase() const;
+	UFUNCTION( BlueprintCallable )
+	EStageResult GetStageResult() const;
+			
 
+protected:
+	friend class ASTGameMode;	// ASTGameMode 클래스에게 protected 멤버 접근을 허용
+	
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
 	EStagePhase StagePhase;
 
@@ -31,7 +45,7 @@ public:
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
 	EStageResult StageResult;
 
-	
+
 	UFUNCTION( BlueprintCallable )
 	void SetStagePhase(EStagePhase NewPhase);
 
