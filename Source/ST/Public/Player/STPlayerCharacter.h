@@ -33,6 +33,10 @@ public:
 
 protected:
     virtual void BeginPlay() override;
+
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FPS Mesh")
+    TObjectPtr<USkeletalMeshComponent> FPSSkeletalMeshComponent;
    
 
 #pragma region Camera System
@@ -58,21 +62,6 @@ protected:
 
     // Camera Variables
     EViewMode CurrentViewMode = EViewMode::TPS;
-#pragma endregion
-
-#pragma region FPS Mesh System
-protected:
-    // FPS Mesh Functions
-    void CacheFPSMeshRelativeLocations();
-    void UpdateFPSMeshRelativeLocationForCrouch(bool bIsCrouching);
-
-    // FPS Mesh Components
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FPS Mesh")
-    TObjectPtr<USkeletalMeshComponent> FPSSkeletalMeshComponent;
-
-    // FPS Mesh Variables
-    FVector DefaultFPSMeshRelativeLocation;
-    FVector CrouchFPSMeshRelativeLocation;
 #pragma endregion
 
 #pragma region Input System

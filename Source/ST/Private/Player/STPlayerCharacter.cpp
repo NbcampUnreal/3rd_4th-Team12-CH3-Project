@@ -15,17 +15,11 @@
 ASTPlayerCharacter::ASTPlayerCharacter()
 {
 	
-	// FPS Mesh Component
-	FPSSkeletalMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FPSSkeletalMeshComponent"));
-	FPSSkeletalMeshComponent->SetupAttachment(RootComponent);
-	FPSSkeletalMeshComponent->FirstPersonPrimitiveType =EFirstPersonPrimitiveType::FirstPerson;
-	FPSSkeletalMeshComponent->SetOnlyOwnerSee(true);
-	FPSSkeletalMeshComponent->bAutoActivate = false;
-
 	// TPS Camera Setup
 	TPSSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("TPSSpringArmComponent"));
 	TPSSpringArmComponent->SetupAttachment(GetRootComponent());
-	TPSSpringArmComponent->bUsePawnControlRotation = false;
+	TPSSpringArmComponent->bUsePawnControlRotation = true;
+	TPSSpringArmComponent->bAutoActivate = false;
 
 	TPSCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("TPSCameraComponent"));
 	TPSCameraComponent->SetupAttachment(TPSSpringArmComponent, USpringArmComponent::SocketName);
@@ -33,13 +27,21 @@ ASTPlayerCharacter::ASTPlayerCharacter()
 
 	// FPS Camera Setup
 	FPSCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FPSCameraComponent"));
-	FPSCameraComponent->SetupAttachment(FPSSkeletalMeshComponent, FName("head"));
+	FPSCameraComponent->SetupAttachment(GetRootComponent());
 	FPSCameraComponent->bUsePawnControlRotation = true;
 	FPSCameraComponent->bEnableFirstPersonFieldOfView = true;
 	FPSCameraComponent->bEnableFirstPersonScale = true;
 	FPSCameraComponent->FirstPersonFieldOfView = FirstPersonFieldOfView;
 	FPSCameraComponent->FirstPersonScale = FirstPersonScale;
-	FPSCameraComponent->bAutoActivate = false;  
+	FPSCameraComponent->bAutoActivate = false;
+
+	// FPS Mesh Component
+	FPSSkeletalMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FPSSkeletalMeshComponent"));
+	FPSSkeletalMeshComponent->SetupAttachment(FPSCameraComponent);
+	FPSSkeletalMeshComponent->FirstPersonPrimitiveType = EFirstPersonPrimitiveType::FirstPerson;
+	FPSSkeletalMeshComponent->SetOnlyOwnerSee(true);
+	FPSSkeletalMeshComponent->SetRelativeLocation(FVector(0, 0, -20));
+	FPSSkeletalMeshComponent->bAutoActivate = false;
 
 	// Status Component
 	StatusComponent = CreateDefaultSubobject<USTStatusComponent>(TEXT("StatusComponent"));
@@ -78,10 +80,8 @@ void ASTPlayerCharacter::BeginPlay()
 		GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetMoveSpeed();
 		GetCharacterMovement()->MaxWalkSpeedCrouched = StatusComponent->GetCrouchSpeed();
 	}
-
-	CacheFPSMeshRelativeLocations();
 	SetViewMode(true); //  TPS view
-
+	
 	// Bind Status Component Events
 	if (IsValid(StatusComponent))
 	{
@@ -138,52 +138,33 @@ void ASTPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 #pragma region Camera System
 void ASTPlayerCharacter::SetViewMode(bool bIsTPS)
 {
+	CurrentViewMode = bIsTPS ? EViewMode::TPS : EViewMode::FPS;
+
+
+	TPSCameraComponent->SetActive(bIsTPS);
+	FPSCameraComponent->SetActive(!bIsTPS);
+
+
+	bUseControllerRotationYaw = !bIsTPS;
+	bUseControllerRotationPitch = true;
+
+	// 메시 가시성 제어
 	if (bIsTPS)
 	{
-		// Switch to TPS
-		TPSCameraComponent->SetActive(true);
-		FPSCameraComponent->SetActive(false);
-		bUseControllerRotationYaw = false;
-		bUseControllerRotationPitch = true;  // 추가!
-		GetMesh()->SetOwnerNoSee(false);
-	}
-	else
-	{
-		// Switch to FPS
-		FPSCameraComponent->SetActive(true);
-		TPSCameraComponent->SetActive(false);
-		FPSSkeletalMeshComponent->SetOwnerNoSee(false);
-		bUseControllerRotationYaw = true;
-		bUseControllerRotationPitch = true;  // 추가!
-	}
-
-	CurrentViewMode = bIsTPS ? EViewMode::TPS : EViewMode::FPS;
-}
-
-#pragma endregion
-
-#pragma region FPS Mesh System
-void ASTPlayerCharacter::CacheFPSMeshRelativeLocations()
-{
-	DefaultFPSMeshRelativeLocation = FPSSkeletalMeshComponent->GetRelativeLocation();
-
-	float HeightDelta = GetCapsuleComponent()->GetScaledCapsuleHalfHeight() - GetCharacterMovement()->CrouchedHalfHeight;
-	CrouchFPSMeshRelativeLocation = DefaultFPSMeshRelativeLocation + FVector(0, 0, HeightDelta);
 	
-}
-
-void ASTPlayerCharacter::UpdateFPSMeshRelativeLocationForCrouch(bool bIsCrouching)
-{
-	if (bIsCrouching)
-	{
-		FPSSkeletalMeshComponent->SetRelativeLocation(CrouchFPSMeshRelativeLocation);
+		GetMesh()->SetOwnerNoSee(false);             
+		FPSSkeletalMeshComponent->SetOwnerNoSee(true);  
 	}
 	else
 	{
-		FPSSkeletalMeshComponent->SetRelativeLocation(DefaultFPSMeshRelativeLocation);
+		
+		GetMesh()->SetOwnerNoSee(true);               
+		FPSSkeletalMeshComponent->SetOwnerNoSee(false); 
 	}
 }
+
 #pragma endregion
+
 
 #pragma region Input System
 
@@ -209,7 +190,6 @@ void ASTPlayerCharacter::Look(const FInputActionValue& Value)
 
 void ASTPlayerCharacter::Crouch(const FInputActionValue& Value)
 {
-	UpdateFPSMeshRelativeLocationForCrouch(!GetCharacterMovement()->IsCrouching());
 	
 	if (GetCharacterMovement()->IsCrouching())
 	{
