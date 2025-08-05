@@ -56,6 +56,10 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	int32 GetCurrentAmmo() const { return CurrentAmmo; }
 
+
+	//발사 모드 전환
+	void ToggleFireMode();
+
 	
 	//총알 장전 함수
 	void StartReload();     // 장전 시작 함수
@@ -116,6 +120,6 @@ protected:
 	//라인 트레스 충돌 정보 함수
 	void ProcessHit(const FHitResult& HitResult);
 
-
+	
 
 };

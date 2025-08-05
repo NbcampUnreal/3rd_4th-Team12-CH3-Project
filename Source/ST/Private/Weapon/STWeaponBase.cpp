@@ -19,6 +19,7 @@ ASTWeaponBase::ASTWeaponBase()
 	// 스태틱 메시 초기화
 	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
 	RootComponent = WeaponMesh;
+	
 	WeaponMesh3p=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh3p"));
 
 	WeaponMesh3p->SetupAttachment(RootComponent);
@@ -167,6 +168,7 @@ void ASTWeaponBase::PerformTrace(const FVector& Start, const FVector& Direction)
 
 	case EWeaponType::Rifle:
 	case EWeaponType::Sniper:
+	case EWeaponType::Pistol:
 	default:
 		UE_LOG(LogTemp, Warning, TEXT("noamlgun firing - PelletsPerShot: %d"), PelletsPerShot);
 
@@ -293,4 +295,33 @@ void ASTWeaponBase::StopFire()
 {
 	// 캐릭터의 마우스 버튼 떼기 신호를 받으면, 자동 연사 타이머를 멈춥니다.
 	GetWorld()->GetTimerManager().ClearTimer(AutoFireTimerHandle);
+}
+
+//라이플의 경우 발사 모드 조정
+void ASTWeaponBase::ToggleFireMode()
+{
+	// 무기 데이터가 없으면 무시
+	if (!WeaponDataAsset) return;
+
+	// 라이플 타입에서만 전환 가능하도록 제한 (원한다면 다른 무기에도 확장 가능)
+	if (WeaponType != EWeaponType::Rifle)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("이 무기는 발사 모드 전환이 불가능합니다."));
+		return;
+	}
+
+	// 현재 모드를 가져옴
+	EFireMode& CurrentMode = WeaponDataAsset->WeaponData.FireMode;
+
+	// 모드를 전환
+	if (CurrentMode == EFireMode::Automatic)
+	{
+		CurrentMode = EFireMode::SemiAutomatic;
+		UE_LOG(LogTemp, Log, TEXT("발사 모드: 반자동"));
+	}
+	else
+	{
+		CurrentMode = EFireMode::Automatic;
+		UE_LOG(LogTemp, Log, TEXT("발사 모드: 자동"));
+	}
 }
