@@ -4,7 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "StageClearZone.generated.h"
 
-class UBoxComponent;
+class USphereComponent;
 
 UCLASS()
 class ST_API AStageClearZone : public AActor
@@ -18,8 +18,11 @@ protected:
 	UPROPERTY( VisibleAnywhere )
 	USceneComponent* Scene;
 	
+	UPROPERTY( EditAnywhere, BlueprintReadWrite )
+	USphereComponent* Trigger;
+
 	UPROPERTY( VisibleAnywhere )
-	UBoxComponent* TriggerBox;
+	UStaticMeshComponent* StaticMesh;
 	
 	virtual void BeginPlay() override;
 

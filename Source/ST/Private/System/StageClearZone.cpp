@@ -1,6 +1,5 @@
 ﻿#include "System/StageClearZone.h"
-
-#include "Components/BoxComponent.h"
+#include "Components/SphereComponent.h"
 #include "GameFramework/Character.h"
 #include "System/STGameMode.h"
 
@@ -12,16 +11,20 @@ AStageClearZone::AStageClearZone()
 	Scene = CreateDefaultSubobject<USceneComponent>("Scene");
 	RootComponent = Scene;		// 생성자에서 루트 지정시
 	// SetRootComponent(Scene); // 런타임에 루트 변경시
+
+	Trigger = CreateDefaultSubobject<USphereComponent>("Trigger");
+	Trigger->SetCollisionProfileName("Trigger");
+	Trigger->SetupAttachment(Scene);
 	
-	TriggerBox = CreateDefaultSubobject<UBoxComponent>(TEXT("TriggerBox"));
-	TriggerBox->SetCollisionProfileName("Trigger");
-	TriggerBox->SetupAttachment(Scene);
+	StaticMesh = CreateDefaultSubobject<UStaticMeshComponent>("StaticMesh");
+	StaticMesh->SetupAttachment(Scene);
+	StaticMesh->SetSimulatePhysics(false);
 }
 
 void AStageClearZone::BeginPlay()
 {
 	Super::BeginPlay();
-	TriggerBox->OnComponentBeginOverlap.AddDynamic(this, &AStageClearZone::OnOverlapBegin);	
+	Trigger->OnComponentBeginOverlap.AddDynamic(this, &AStageClearZone::OnOverlapBegin);	
 }
 
 void AStageClearZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
