@@ -48,6 +48,9 @@ void ASTWeaponBase::BeginPlay()
 		ReloadTime = Data.ReloadTime;
 		SpreadAngle=Data.SpreadAngle;
 		PelletsPerShot= Data.PelletsPerShot;
+		CameraShakeScale=Data.CameraShakeScale;
+		DefaultSpreadAngle = Data.SpreadAngle;
+
 		
 		CurrentAmmo = MagazineSize;
 
@@ -89,13 +92,14 @@ void ASTWeaponBase::HandleFire()
 	bCanFire = false;
 	CurrentAmmo--;
 	UE_LOG(LogTemp, Warning, TEXT("Bang! Ammo: %d"), CurrentAmmo);
-
 	// 60/FireRate
 	//설정 시간후 발사 활성화 함수 실행을 통해 발사 딜레이 설정
 	GetWorld()->GetTimerManager().SetTimer(FireRateTimerHandle, this, &ASTWeaponBase::EnableFire, 60.0f / FireRate, false);
 
 	// 2. 탄환 발사 (라인 트레이스)
 
+	//화면 진동 실행
+	PlayFireCameraShake();
 
 	//이 무기를 가지고 있는 캐릭터 호출 및 컨트롤러 유무 확인후 컨트롤러 가져오기
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
@@ -172,7 +176,7 @@ void ASTWeaponBase::PerformTrace(const FVector& Start, const FVector& Direction)
 				//충돌 결과를 담을 구조체를 함수로 전달
 				ProcessHit(HitResult);
 			}
-                DrawDebugLine(GetWorld(), Start, TraceEnd, FColor::Green, false, 2.0f, 0, 1.0f);
+                
 		}
 		break;
 
@@ -197,7 +201,7 @@ void ASTWeaponBase::PerformTrace(const FVector& Start, const FVector& Direction)
 			//충돌 결과를 담을 구조체를 함수로 전달
 			ProcessHit(HitResult);
 		}
-		DrawDebugLine(GetWorld(), Start, TraceEnd, FColor::Green, false, 2.0f, 0, 1.0f);
+		//DrawDebugLine(GetWorld(), Start, TraceEnd, FColor::Green, false, 2.0f, 0, 1.0f);
 		break;
 	}
 }
@@ -207,7 +211,7 @@ void ASTWeaponBase::ProcessHit(const FHitResult& HitResult)
 {
 	//에디터에서 실행시 충돌 검사용 디버그 스피어 생성
 #if WITH_EDITOR
-	DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 15.f, 12, FColor::Red, false, 2.0f);
+	//DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 15.f, 12, FColor::Red, false, 2.0f);
 #endif
 
 	//충돌한 액터를 가져오기
@@ -334,4 +338,61 @@ void ASTWeaponBase::ToggleFireMode()
 		CurrentMode = EFireMode::Automatic;
 		UE_LOG(LogTemp, Log, TEXT("발사 모드: 자동"));
 	}
+}
+
+// 화면 진동 효과 재생 - 데이터 에셋의 값을 사용하도록 수정
+void ASTWeaponBase::PlayFireCameraShake()
+{
+	// 무기를 소유한 캐릭터가 플레이어인지 확인
+	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	if (!OwnerCharacter)
+	{
+		return;
+	}
+
+	// 플레이어 컨트롤러 가져오기
+	APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController());
+	if (!PC)
+	{
+		return;
+	}
+
+	// 카메라 쉐이크 클래스가 설정되어 있는지 확인
+	if (!FireCameraShake)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("FireCameraShake not set! Please assign a camera shake class in Blueprint."));
+		return;
+	}
+
+	// 데이터 에셋에서 설정된 CameraShakeScale 값을 직접 사용
+	float ShakeScale = CameraShakeScale;
+
+	// 카메라 쉐이크 재생
+	PC->ClientStartCameraShake(FireCameraShake, ShakeScale);
+
+}
+
+//조준 시스템 구현
+void ASTWeaponBase::StartAiming()
+{
+	bIsAiming = true;
+
+	if (WeaponType == EWeaponType::Shotgun)
+	{
+		SpreadAngle = SpreadAngle/2; // 샷건은 조준해도 약간 퍼짐
+	}
+	else
+	{
+		SpreadAngle = 0; // 거의 퍼짐 없음
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Aiming... SpreadAngle: %.2f"), SpreadAngle);
+}
+
+void ASTWeaponBase::StopAiming()
+{
+	bIsAiming = false;
+	SpreadAngle = DefaultSpreadAngle;
+
+	UE_LOG(LogTemp, Log, TEXT("Stop Aiming. SpreadAngle restored: %.2f"), SpreadAngle);
 }

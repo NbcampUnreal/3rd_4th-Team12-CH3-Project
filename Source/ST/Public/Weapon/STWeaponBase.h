@@ -17,6 +17,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Weapon")
 	UStaticMeshComponent* WeaponMesh;
 
+	// 카메라 쉐이크 시스템
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Screen Shake")
+	TSubclassOf<UCameraShakeBase> FireCameraShake;
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Weapon")
 	UStaticMeshComponent* WeaponMesh3p;
 	//데이터 에셋에서 값 가져오기
@@ -102,7 +106,15 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 PelletsPerShot;
+	
+	bool bIsAiming = false;
+	
+	float DefaultSpreadAngle = 0.0f;
 
+	//무기 진동 설정
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Screen Shake", meta = (ClampMin = "0.0", ClampMax = "2.0"))
+	float CameraShakeScale = 1.0f;
+	
 	//총알 발사 딜레이
 	FTimerHandle FireRateTimerHandle;
 	//장전 타이머
@@ -129,6 +141,11 @@ protected:
 	//라인 트레스 충돌 정보 함수
 	void ProcessHit(const FHitResult& HitResult);
 
-	
+	//화면 진동 합수
+	void PlayFireCameraShake();
+
+	//조준
+	void StartAiming();
+	void StopAiming();
 
 };

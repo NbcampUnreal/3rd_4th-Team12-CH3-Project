@@ -61,4 +61,8 @@ struct FSTWeaponData
 	//무기의 사거리
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float TraceDistance = 10000.f;
+
+	//무기의 반동
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float CameraShakeScale;
 };
