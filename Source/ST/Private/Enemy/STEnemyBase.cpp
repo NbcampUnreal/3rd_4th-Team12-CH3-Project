@@ -1,7 +1,6 @@
 #include "Enemy/STEnemyBase.h"
-
+#include "Enemy/STEnemyAlertReceiver.h"
 #include "Engine/DamageEvents.h"
-#include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "System/STGameMode.h"
@@ -36,6 +35,14 @@ float ASTEnemyBase::TakeDamage(float DamageAmount, struct FDamageEvent const& Da
 	{
 		return 0.0f;
 	}
+	
+	// 적이 피격 당했을 때 인터페이스에서 가져온 NotifyPlayerAttack를 호출하고
+	// 해당 AIController에서 인지 게이지 증가
+	if (ISTEnemyAlertReceiver* AlertReceiver = Cast<ISTEnemyAlertReceiver>(GetController()))
+	{
+		AlertReceiver->NotifyPlayerAttack(this);
+	}
+	
 	FName HitBone=NAME_None;
 	FVector HitLocation=GetActorLocation();
 
