@@ -2,8 +2,6 @@
 #include "Kismet/GameplayStatics.h"
 #include "System/STLog.h"
 
-DEFINE_LOG_CATEGORY(LogSystem);
-
 USTGameInstance::USTGameInstance()
 {
 	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::Constructor() Start"));
