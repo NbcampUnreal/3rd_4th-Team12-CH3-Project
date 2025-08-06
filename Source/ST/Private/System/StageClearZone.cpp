@@ -4,8 +4,6 @@
 #include "System/STGameMode.h"
 #include "System/STLog.h"
 
-DEFINE_LOG_CATEGORY(LogSystem);
-
 AStageClearZone::AStageClearZone()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -38,9 +36,8 @@ void AStageClearZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, A
 		if (ASTGameMode* STGameMode = Cast<ASTGameMode>(GetWorld()->GetAuthGameMode()))
 		{
 			UE_LOG(LogSystem, Warning, TEXT("AStageClearZone::OnOverlapBegin() Call Delegate(GameMode::OnPlayerEnteredClearZone"));
-			// TODO: 직접 호출 말고 Delegate로 호출하는게 더 좋나?
-			// STGameMode->OnPlayerEnteredClearZone.Broadcast();	// DYNAMIC_MULTICAST_DELEGATE
-			STGameMode->CheckStageClear();
+			STGameMode->OnPlayerEnteredClearZone.Broadcast();	// DYNAMIC_MULTICAST_DELEGATE
+			// STGameMode->CheckStageClear();	// 직접 호출 말고 Delegate 호출로 변경
 		}
 	}
 	UE_LOG(LogSystem, Warning, TEXT("AStageClearZone::OnOverlapBegin() End"));
