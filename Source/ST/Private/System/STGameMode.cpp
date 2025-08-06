@@ -6,6 +6,8 @@
 #include "Enemy/STEnemyBase.h"
 #include "System/StageTimeLimitData.h"
 
+DEFINE_LOG_CATEGORY(LogSystem);
+
 ASTGameMode::ASTGameMode()
 {
 	TotalEnemies = 0;
@@ -17,6 +19,7 @@ ASTGameMode::ASTGameMode()
 
 void ASTGameMode::BeginPlay()
 {
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::BeginPlay() Start"));
 	Super::BeginPlay();
 
 	FString CurrentStageName = UGameplayStatics::GetCurrentLevelName(GetWorld());	// TimeLimit을 csv 파일로 관리
@@ -27,68 +30,86 @@ void ASTGameMode::BeginPlay()
 	
 	ResetStage();
 	StartStage();
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::BeginPlay() End"));
 }
 
 void ASTGameMode::StartStage()
 {
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::StartStage() Start"));
 	// 1회성 타이머(루프X)로 제한시간 후 자동 GameOver
 	GetWorldTimerManager().SetTimer(StageTimerHandle, this, &ASTGameMode::OnTimeOver, StageTimeLimit, false);
 
 	SetStagePhase(EStagePhase::InProgress);
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::StartStage() End"));
 }
 
 void ASTGameMode::OnEnemyKilled()
 {
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::OnEnemyKilled() Start"));
 	DeadEnemies++;
 	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
 		STGameState->SetRemainingEnemies(TotalEnemies - DeadEnemies);
 
 	// CheckStageClear();	// TODO: 매번 체크하지말고, 특정 Spot에 이동하면 체크하는 방식으로
 	// TODO: 모든 적을 죽인 경우에 UI로 특정 위치로 이동하세요 라는 메시지 주기 (특정위치에 파티클 등으로 강조하고)
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::OnEnemyKilled() End"));
 }
 
 void ASTGameMode::OnPlayerDied()
 {
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::OnPlayerDied() Start"));
 	SetStagePhase(EStagePhase::Fail);
 	EndStage(EStageResult::Fail);
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::OnPlayerDied() End"));
 }
 
 void ASTGameMode::SetBossPhase(int32 NewPhase)
 {
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::SetBossPhase() Start"));
 	BossPhase = NewPhase;
 	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
 		STGameState->SetBossPhase(BossPhase);
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::SetBossPhase() End"));
 }
 
 void ASTGameMode::OnTimeOver()
 {
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::OnTimeOver() Start"));
 	SetStagePhase(EStagePhase::Fail);
 	EndStage(EStageResult::Fail);
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::OnTimeOver() End"));
 }
 
 float ASTGameMode::GetRemainingTime() const
 {
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::GetRemainingTime() Start"));
 	return GetWorldTimerManager().GetTimerRemaining(StageTimerHandle);
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::GetRemainingTime() End"));
 }
 
 
 void ASTGameMode::EndStage(EStageResult Result)
 {
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::EndStage() Start"));
 	GetWorldTimerManager().ClearTimer(StageTimerHandle);
 	// 여기서 레벨 전환 등 처리는 UI/블루프린트에서
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::EndStage() End"));
 }
 
 void ASTGameMode::CheckStageClear()
 {
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::CheckStageClear() Start"));
 	if (DeadEnemies >= TotalEnemies)
 	{
 		SetStagePhase(EStagePhase::Completed);
 		EndStage(EStageResult::Clear);
 	}
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::CheckStageClear() End"));
 }
 
 void ASTGameMode::ResetStage()
 {
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::ResetStage() Start"));
 	DeadEnemies = 0;
 	BossPhase = 1;
 
@@ -106,22 +127,28 @@ void ASTGameMode::ResetStage()
 		STGameState->SetRemainingTime(RemainingTime);
 		STGameState->SetStageResult(EStageResult::None);
 	}
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::ResetStage() End"));
 }
 
 float ASTGameMode::GetStageTimeLimit(const FString StageName) const
 {
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::GetStageTimeLimit() Start"));
 	if (!StageTimeLimit) return 10.0f; // 기본값 (300.0f), 테스트 (30.0f)
 
 	FStageTimeLimitRow* Row = StageTimeTable->FindRow<FStageTimeLimitRow>(*StageName, TEXT("LookupStageTimeLimit"));
 	if (Row)
 	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::GetStageTimeLimit() End"));
 		return Row->TimeLimit;
 	}
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::GetStageTimeLimit() End"));
 	return 10.0f;
 }
 
 void ASTGameMode::SetStagePhase(EStagePhase NewPhase)
 {
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::SetStagePhase() Start"));
 	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
 		STGameState->SetStagePhase(NewPhase);
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::SetStagePhase() End"));
 }

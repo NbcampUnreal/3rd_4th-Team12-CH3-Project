@@ -2,7 +2,9 @@
 #include "Components/SphereComponent.h"
 #include "GameFramework/Character.h"
 #include "System/STGameMode.h"
+#include "System/STLog.h"
 
+DEFINE_LOG_CATEGORY(LogSystem);
 
 AStageClearZone::AStageClearZone()
 {
@@ -30,13 +32,18 @@ void AStageClearZone::BeginPlay()
 void AStageClearZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	UE_LOG(LogSystem, Warning, TEXT("AStageClearZone::OnOverlapBegin() Start"));
 	if (OtherActor && OtherActor->IsA(ACharacter::StaticClass()))	// TODO: STPlayerCharacter 클래스로 변경?
 	{
 		if (ASTGameMode* STGameMode = Cast<ASTGameMode>(GetWorld()->GetAuthGameMode()))
 		{
+			UE_LOG(LogSystem, Warning, TEXT("AStageClearZone::OnOverlapBegin() Call Delegate(GameMode::OnPlayerEnteredClearZone"));
+			// TODO: 직접 호출 말고 Delegate로 호출하는게 더 좋나?
+			// STGameMode->OnPlayerEnteredClearZone.Broadcast();	// DYNAMIC_MULTICAST_DELEGATE
 			STGameMode->CheckStageClear();
 		}
 	}
+	UE_LOG(LogSystem, Warning, TEXT("AStageClearZone::OnOverlapBegin() End"));
 }
 
 
