@@ -17,7 +17,11 @@ protected:
 	FBlackboardKeySelector TargetActorKey;
 	UPROPERTY(EditAnywhere, Category="Blackboard")
 	FBlackboardKeySelector InAttackRangeKey;
-	float AttackRange = 200.f;
+	UPROPERTY(EditAnywhere, Category="Blackboard")
+	FBlackboardKeySelector InApproachDistanceKey;
+	
+	float EnemyAttackRange = 200.f;
+	float EnemyApproachDistance = 200.f;
 	
 	virtual void TickNode(UBehaviorTreeComponent& OwnerComp, uint8* NodeMemory, float DeltaSeconds) override;
 };

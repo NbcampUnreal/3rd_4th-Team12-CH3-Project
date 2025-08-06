@@ -11,7 +11,8 @@
 ASTEnemyRanged::ASTEnemyRanged()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	AttackRange = 700.f;
+	AttackRange = 1600.f;
+	ApproachDistance = 800.f;
 	AmmoCount=MaxAmmo;
 	bIsAttackCooldown = false;
 	StateComponent->SetState(EEnemyState::Idle);
@@ -75,7 +76,6 @@ void ASTEnemyRanged::FireProjectile()
 	{
 		Projectile->SetInstigator(this);
 	}
-	
 }
 
 void ASTEnemyRanged::SetCurrentTarget(AActor* Target)
