@@ -16,11 +16,17 @@ class ST_API UST_PlayerAnimMontageConfig : public UDataAsset
 
 public:
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category="TPS")
 	TObjectPtr<UAnimMontage> ReloadMontage;
 	
-	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category="TPS")
 	TObjectPtr<UAnimMontage> DeadMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category="FPS")
+	TObjectPtr<UAnimMontage> FPSReloadMontage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category="FPS")
+	TObjectPtr<UAnimMontage> FPSShootMontage;
 	
 	
 };

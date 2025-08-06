@@ -6,6 +6,7 @@
 #include "Animation/AnimInstance.h"
 #include "STPlayerAnimInstance.generated.h"
 
+enum class EWeaponType : uint8;
 class ASTPlayerCharacter;
 class UCharacterMovementComponent;
 /**
@@ -18,6 +19,8 @@ class ST_API USTPlayerAnimInstance : public UAnimInstance
 
 public:
 	USTPlayerAnimInstance();
+
+	void SetWeaponType(EWeaponType NewType);
 
 protected:
 
@@ -82,4 +85,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
 	uint8 bIsDead : 1;
 #pragma endregion
+
+#pragma region Weapons Properties
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	EWeaponType WeaponType;
+#pragma endregion 
 };

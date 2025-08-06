@@ -10,8 +10,10 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Player/STPlayerAnimInstance.h"
 #include "Player/STWeaponManagerComponent.h"
 #include "Player/ST_PlayerAnimMontageConfig.h"
+#include "Weapon/STWeaponType.h"
 
 #pragma region DefaultSetting
 ASTPlayerCharacter::ASTPlayerCharacter()
@@ -177,6 +179,7 @@ void ASTPlayerCharacter::SetViewMode(bool bIsTPS)
 		GetMesh()->SetOwnerNoSee(true);               
 		FPSSkeletalMeshComponent->SetOwnerNoSee(false); 
 	}
+	OnViewModeChanged.Broadcast(CurrentViewMode);
 }
 
 #pragma endregion
@@ -191,7 +194,7 @@ void ASTPlayerCharacter::Move(const FInputActionValue& Value)
 	FRotator YawRotation = FRotator(0, Rotation.Yaw, 0);
 
 	FVector ForwardVector = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	FVector RightVector = FRotationMatrix(Rotation).GetUnitAxis(EAxis::Y);
+	FVector RightVector = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
 
 	AddMovementInput(ForwardVector, Direction.X);
 	AddMovementInput(RightVector, Direction.Y);
@@ -276,9 +279,26 @@ void ASTPlayerCharacter::ReloadAmmo(const FInputActionValue& Value)
 {
 	if (IsValid(WeaponManager))
 	{
-		if (IsValid(MontageConfig->ReloadMontage))
+		if (CurrentViewMode == EViewMode::FPS)
 		{
-			PlayAnimMontage(MontageConfig->ReloadMontage);
+			if (USTPlayerAnimInstance* AnimInstance = Cast<USTPlayerAnimInstance>(FPSSkeletalMeshComponent->GetAnimInstance()))
+			{
+				if (IsValid(MontageConfig->FPSReloadMontage))
+				{
+					AnimInstance->Montage_Play(MontageConfig->FPSReloadMontage);
+				}
+			}
+		}
+		else
+		{
+			if (USTPlayerAnimInstance* AnimInstance = Cast<USTPlayerAnimInstance>(GetMesh()->GetAnimInstance()))
+			{
+				if (IsValid(MontageConfig->ReloadMontage))
+				{
+					AnimInstance->Montage_Play(MontageConfig->ReloadMontage);
+				}
+			}
+			
 		}
 		WeaponManager->ReloadAmmo();
 	}
@@ -321,7 +341,37 @@ void ASTPlayerCharacter::HandleDeath()
 
 #pragma endregion 
 
+void ASTPlayerCharacter::OnWeaponEquipped(EWeaponType NewWeapon)
+{
+	if (USTPlayerAnimInstance* AnimInstance = Cast<USTPlayerAnimInstance>(GetMesh()->GetAnimInstance()))
+	{
+		AnimInstance->SetWeaponType(NewWeapon);
+	}
+	if (USTPlayerAnimInstance* AnimInstance = Cast<USTPlayerAnimInstance>(FPSSkeletalMeshComponent->GetAnimInstance()))
+	{
+		AnimInstance->SetWeaponType(NewWeapon);
+	}
+	
+}
 
+void ASTPlayerCharacter::OnWeaponFired() 
+{
+	if (!MontageConfig) return; 
+    
+	if (CurrentViewMode == EViewMode::FPS)
+	{
+		
+		if (USTPlayerAnimInstance* AnimInstance = Cast<USTPlayerAnimInstance>(FPSSkeletalMeshComponent->GetAnimInstance()))
+		{
+			if (MontageConfig->FPSShootMontage) // null 체크
+			{
+				AnimInstance->Montage_Play(MontageConfig->FPSShootMontage);
+				GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Shooting"));
+			}
+		}
+	}
+	
+}
 
 
 
