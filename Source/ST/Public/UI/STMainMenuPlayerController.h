@@ -25,6 +25,9 @@ protected:
 	UFUNCTION()
 	void HandleNewGameRequested();
 
+	UFUNCTION()
+	void HandleQuitRequested();
+
 private:
 	UPROPERTY()
 	USTMainMenuWidget* MenuInstance;

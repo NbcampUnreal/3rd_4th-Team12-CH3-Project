@@ -20,6 +20,7 @@ void ASTMainMenuPlayerController::BeginPlay()
 		{
 			// JM 델리게이트 바인딩 추가
 			MenuInstance->OnNewGameRequested.AddDynamic(this, &ASTMainMenuPlayerController::HandleNewGameRequested);
+			MenuInstance->OnQuitRequested.AddDynamic(this, &ASTMainMenuPlayerController::HandleQuitRequested);
 			
 			MenuInstance->AddToViewport();
 
@@ -40,4 +41,14 @@ void ASTMainMenuPlayerController::HandleNewGameRequested()
 		STGameInstance->StartNewGame();
 	}
 	UE_LOG(LogSystem, Warning, TEXT("ASTMainMenuPlayerController::HandleNewGameRequested() End"));
+}
+
+void ASTMainMenuPlayerController::HandleQuitRequested()
+{
+	UE_LOG(LogSystem, Warning, TEXT("ASTMainMenuPlayerController::HandleQuitRequested() Start"));
+	if (USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>())
+	{
+		STGameInstance->QuitGame();
+	}
+	UE_LOG(LogSystem, Warning, TEXT("ASTMainMenuPlayerController::HandleQuitRequested() End"));
 }
