@@ -77,16 +77,24 @@ void ASTEnemyMelee::AttackNotify()
 
 			// 공격 좌우 판정 30도
 			const float MinDot = FMath::Cos(FMath::DegreesToRadians(30.f));
-
+			
 			if (Dot >= MinDot)
 			{
-				UGameplayStatics::ApplyDamage(
+				// if (GEngine && CurrentTarget)
+				// {
+				// 	FString Msg = FString::Printf(TEXT("Enemy Melee Hit: %s (%.0f damage)"), *CurrentTarget->GetName(), MeleeDamage);
+				// 	GEngine->AddOnScreenDebugMessage(-1, 2.f, FColor::Red, Msg);
+				// }
+				if (CurrentTarget->ActorHasTag("Player"))
+				{
+					UGameplayStatics::ApplyDamage(
 					CurrentTarget,
 					MeleeDamage,
 					GetController(),
 					this,
 					nullptr
 				);
+				}
 			}
 
 		}
