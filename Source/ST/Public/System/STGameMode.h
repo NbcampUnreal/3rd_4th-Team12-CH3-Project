@@ -5,6 +5,8 @@
 #include "STGameTypes.h"
 #include "STGameMode.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerEnteredClearZone);
+
 /**
  *  게임 규칙, 결과 판단, 진행
  */
@@ -15,6 +17,9 @@ class ST_API ASTGameMode : public AGameMode
 
 public:
 	ASTGameMode();
+
+	UPROPERTY( BlueprintAssignable, Category = "Event" )
+	FOnPlayerEnteredClearZone OnPlayerEnteredClearZone;
 
 	UFUNCTION( BlueprintCallable )
 	void StartStage();
@@ -58,6 +63,7 @@ protected:
 	void EndStage(EStageResult Result);
 	void ResetStage();
 	float GetStageTimeLimit(FString StageName) const;
+	void HandlePlayerEnteredClearZone();
 
 private:
 	void SetStagePhase(EStagePhase NewPhase);
