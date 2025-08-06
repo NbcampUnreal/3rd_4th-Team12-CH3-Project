@@ -21,6 +21,10 @@ public:
 protected:
 	virtual void BeginPlay() override;
 
+	// JM 델리게이트 함수 추가
+	UFUNCTION()
+	void HandleNewGameRequested();
+
 private:
 	UPROPERTY()
 	USTMainMenuWidget* MenuInstance;
