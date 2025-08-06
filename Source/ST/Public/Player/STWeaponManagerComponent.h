@@ -7,6 +7,7 @@
 #include "STWeaponManagerComponent.generated.h"
 
 
+enum class EViewMode : uint8;
 class ASTPlayerCharacter;
 class ASTWeaponBase;
 
@@ -19,10 +20,12 @@ public:
 	USTWeaponManagerComponent();
 	void EquipWeapon(TSubclassOf<ASTWeaponBase> WeaponClass);
 	void UnequipWeapon();
-	void UpdateWeaponVisibility();
+	
 protected:
 	virtual void InitializeComponent() override;
 	virtual void BeginPlay() override;
+	UFUNCTION()
+	void UpdateWeaponVisibility(EViewMode NewMode);
 private:
 	UPROPERTY()
 	TObjectPtr<ASTPlayerCharacter> OwnerChar;
@@ -43,7 +46,6 @@ private:
 public:
 	void StartFire();
 	void StopFire();
-	void Reload();
 	void ReloadAmmo();
 #pragma endregion 
 

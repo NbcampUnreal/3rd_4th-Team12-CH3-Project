@@ -6,6 +6,7 @@
 #include "Player/STStatusComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Weapon/STWeaponType.h"
 
 USTPlayerAnimInstance::USTPlayerAnimInstance()
 {
@@ -19,6 +20,7 @@ USTPlayerAnimInstance::USTPlayerAnimInstance()
 	bIsCrouching = false;
 	bIsDead = false;
 	bIsZooming = false;
+	WeaponType = EWeaponType::Rifle;
 }
 
 void USTPlayerAnimInstance::NativeInitializeAnimation()
@@ -122,4 +124,13 @@ void USTPlayerAnimInstance::UpdateStatusProperties()
 }
 #pragma endregion
 
-
+#pragma region WeaponProperties
+void USTPlayerAnimInstance::SetWeaponType(EWeaponType NewType)
+{
+	if (WeaponType == NewType)
+	{
+		return;
+	}
+	WeaponType = NewType;
+}
+#pragma endregion
