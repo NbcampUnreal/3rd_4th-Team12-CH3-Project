@@ -36,7 +36,11 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon|VFX")
 	UParticleSystem* ImpactEffect_Flesh; // 캐릭터(살) 피격 효과
-    
+
+	//발사 궤적 효과 적용
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Effects")
+	UParticleSystem* TracerEffect;
+	
 	//총기 발사 소리
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	USoundBase* FireSound;

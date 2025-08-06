@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
 #include "Player/STPlayerCharacter.h"
+#include "Particles/ParticleSystemComponent.h"
 
 
 // Sets default values
@@ -184,24 +185,43 @@ void ASTWeaponBase::PerformTrace(const FVector& Start, const FVector& Direction)
 	case EWeaponType::Sniper:
 	case EWeaponType::Pistol:
 	default:
-		UE_LOG(LogTemp, Warning, TEXT("noamlgun firing - PelletsPerShot: %d"), PelletsPerShot);
+		{ // switch case 안에서 지역 변수 선언을 위해 중괄호 추가
+			UE_LOG(LogTemp, Warning, TEXT("Normal gun firing..."));
 
-		//원뿔 안에서 무작위 방향 뽑기
-		FVector RandomDirection = FMath::VRandCone(Direction, FMath::DegreesToRadians(SpreadAngle));
+			// 1. 탄 퍼짐이 적용된 최종 발사 방향 계산
+			FVector FinalDirection = FMath::VRandCone(Direction, FMath::DegreesToRadians(SpreadAngle));
 		
-		//라인트레이스가 끝나는 지점 구하기
-		FVector TraceEnd = Start + (RandomDirection * WeaponDataAsset->WeaponData.TraceDistance);
+			// 2. 최종 방향으로 라인트레이스의 끝점 계산
+			FVector TraceEnd = Start + (FinalDirection * WeaponDataAsset->WeaponData.TraceDistance); // TraceDistance 변수 사용
 
-		//충돌 결과를 담을 구조체
-		FHitResult HitResult;
-		
-		//만약 맞았다면?
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, TraceEnd, ECC_Visibility, QueryParams))
-		{
-			//충돌 결과를 담을 구조체를 함수로 전달
-			ProcessHit(HitResult);
+			// 3. 라인트레이스를 발사하여 실제 충돌 지점 확인
+			FHitResult HitResult;
+			if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, TraceEnd, ECC_Visibility, QueryParams))
+			{
+				TraceEnd = HitResult.ImpactPoint; // 실제 맞은 지점으로 끝점 업데이트
+				ProcessHit(HitResult);
+			}
+
+			// --- [이 아래 부분이 새로 추가/수정된 트레이서 로직입니다] ---
+			if (TracerEffect)
+			{
+				const FVector MuzzleLocation = GetWeaponMesh1P()->GetSocketLocation(TEXT("MuzzleSocket"));
+				const FRotator MuzzleRotation = FinalDirection.Rotation();
+
+				UParticleSystemComponent* TracerComponent = UGameplayStatics::SpawnEmitterAtLocation(
+					GetWorld(),
+					TracerEffect,
+					MuzzleLocation,
+					MuzzleRotation
+				);
+
+				if (TracerComponent)
+				{
+					// 빔 타입 파티클을 위한 끝점 설정 (만약 사용한다면)
+					TracerComponent->SetVectorParameter(FName("Target"), TraceEnd);
+				}
+			}
 		}
-		//DrawDebugLine(GetWorld(), Start, TraceEnd, FColor::Green, false, 2.0f, 0, 1.0f);
 		break;
 	}
 }
