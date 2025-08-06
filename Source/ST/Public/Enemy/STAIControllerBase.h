@@ -12,7 +12,7 @@ class UAISenseConfig_Hearing;
 class UBlackboardComponent;
 class UBehaviorTree;
 
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnRecognitionGaugeChanged, float);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRecognitionGaugeChanged, float, CurrentGauge); 
 
 UCLASS(Abstract)
 class ST_API ASTAIControllerBase : public AAIController, public ISTEnemyAlertReceiver
@@ -32,7 +32,8 @@ public:
     void SetRecognitionGauge(float NewValue);
 
     // Delegate, UI에서 바인딩
-    FOnRecognitionGaugeChanged OnRecognitionGaugeChanged;
+	UPROPERTY(BlueprintAssignable)
+	FOnRecognitionGaugeChanged OnRecognitionGaugeChanged;
 
 protected:
     UPROPERTY(EditDefaultsOnly, Category = "AI")
