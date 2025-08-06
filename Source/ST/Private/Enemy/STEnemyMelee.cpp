@@ -11,14 +11,20 @@ ASTEnemyMelee::ASTEnemyMelee()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	AttackRange = 200.f;
+	bIsAttackCooldown = false;
+	StateComponent->SetState(EEnemyState::Idle);
 }
 
 void ASTEnemyMelee::Attack()
 {
-	if (bIsDead || bIsAttacking || bIsAttackCooldown || !CurrentTarget)
+	if (StateComponent->IsInState(EEnemyState::Dead) || 
+		StateComponent->IsInState(EEnemyState::Attack) || 
+		bIsAttackCooldown || !
+		CurrentTarget)
 	{
 		return;
 	}
+
 	FVector MyLocation = GetActorLocation();
 	FVector TargetLocation = CurrentTarget->GetActorLocation();
 
@@ -32,16 +38,8 @@ void ASTEnemyMelee::Attack()
 		return;
 	}
 	
-	bIsAttacking = true;
+	StateComponent->SetState(EEnemyState::Attack);
 	bIsAttackCooldown = true;
-	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
-	{
-		USTMeleeAnimInstance* EnemyAnim = Cast<USTMeleeAnimInstance>(Anim);
-		if (EnemyAnim)
-		{
-			EnemyAnim->bIsAttackingIn = true;
-		}
-	}
 	
 	GetWorldTimerManager().SetTimer(AttackCooldownHandle, [this]()
 	{
@@ -67,7 +65,7 @@ void ASTEnemyMelee::AttackNotify()
 			GetMesh(),
 			TEXT("ik_hand_r"));
 	}
-	if (CurrentTarget && !bIsDead)
+	if (CurrentTarget && !StateComponent->IsInState(EEnemyState::Dead))
 	{
 		// 공격 거리 계산
 		float Distance = FVector::Dist(GetActorLocation(), CurrentTarget->GetActorLocation());
@@ -82,34 +80,27 @@ void ASTEnemyMelee::AttackNotify()
 
 			if (Dot >= MinDot)
 			{
-				UGameplayStatics::ApplyPointDamage(
-				CurrentTarget,
-				MeleeDamage,
-				Forward,
-				FHitResult(),
-				GetController(),
-				this,
-				nullptr
+				UGameplayStatics::ApplyDamage(
+					CurrentTarget,
+					MeleeDamage,
+					GetController(),
+					this,
+					nullptr
 				);
 			}
+
 		}
 	}
 }
 
 void ASTEnemyMelee::AttackEndNotify()
 {
-	bIsAttacking = false;
-}
-
-void ASTEnemyMelee::BeginPlay()
-{
-	Super::BeginPlay();
+	StateComponent->SetState(EEnemyState::Idle);
 }
 
 void ASTEnemyMelee::Die()
 {
 	GetWorldTimerManager().ClearAllTimersForObject(this);
-	bIsAttacking = false;
 
 	if (AAIController* AIController = Cast<AAIController>(GetController()))
 	{
@@ -124,14 +115,6 @@ void ASTEnemyMelee::Die()
 	if (DeathSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
-	}
-	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
-	{
-		USTMeleeAnimInstance* EnemyAnim = Cast<USTMeleeAnimInstance>(Anim);
-		if (EnemyAnim)
-		{
-			EnemyAnim->bIsDead = true;
-		}
 	}
 	
 	Super::Die();

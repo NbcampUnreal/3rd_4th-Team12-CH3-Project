@@ -2,6 +2,7 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystemComponent.h"
 
 
@@ -80,15 +81,13 @@ void ASTEnemyProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent
 {
 	if (OtherActor && OtherActor->ActorHasTag("Player"))
 	{
-		// if (GEngine)
-		// {
-		// 	GEngine->AddOnScreenDebugMessage(
-		// 		-1,
-		// 		6.0f,
-		// 		FColor::Green,
-		// 		TEXT("Player hit")
-		// 		);
-		// }
+		UGameplayStatics::ApplyDamage(
+			OtherActor,
+			ProjectileDamage, 
+			GetInstigator() ? GetInstigator()->GetController() : nullptr,
+			this,
+			nullptr
+		);
 	}
 	
 	Destroy();
