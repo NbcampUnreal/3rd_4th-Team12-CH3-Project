@@ -4,6 +4,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "BehaviorTree/BehaviorTree.h"
+#include "Enemy/STEnemyStateComponent.h"
+#include "Enemy/STEnemyBase.h"
 
 ASTEnemyMeleeAIController::ASTEnemyMeleeAIController()
 {
@@ -72,16 +74,24 @@ void ASTEnemyMeleeAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus S
 		return;
 	}
 
+	ASTEnemyBase* Enemy = Cast<ASTEnemyBase>(GetPawn());
+	if (!Enemy || !Enemy->StateComponent)
+	{
+		return;
+	}
+
 	if (Stimulus.WasSuccessfullySensed())
 	{
 		BlackboardComp->SetValueAsObject(TEXT("TargetActor"), Actor);
 		BlackboardComp->SetValueAsBool(TEXT("CanSeeTarget"), true);
 		BlackboardComp->SetValueAsBool(TEXT("IsInvestigating"), false);
+		Enemy->StateComponent->SetState(EEnemyState::Chase);
 	}
 	else
 	{
 		BlackboardComp->SetValueAsBool(TEXT("CanSeeTarget"), false);
 		BlackboardComp->SetValueAsVector(TEXT("TargetLastLocation"), Actor->GetActorLocation());
 		BlackboardComp->SetValueAsBool(TEXT("IsInvestigating"), true);
+		Enemy->StateComponent->SetState(EEnemyState::Investigation);
 	}
 }

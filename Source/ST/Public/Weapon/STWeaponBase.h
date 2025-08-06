@@ -74,7 +74,7 @@ public:
 	void StartReload();     // 장전 시작 함수
 	void FinishReload();    // 장전 완료 함수
 
-	
+	bool IsReloading() const { return bIsReloading; } // 수정 리로드하기위해서
 protected:
 
 

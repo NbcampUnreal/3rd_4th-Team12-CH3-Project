@@ -7,6 +7,7 @@
 #include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
+#include "Player/STPlayerCharacter.h"
 
 
 // Sets default values
@@ -98,6 +99,7 @@ void ASTWeaponBase::HandleFire()
 
 	//이 무기를 가지고 있는 캐릭터 호출 및 컨트롤러 유무 확인후 컨트롤러 가져오기
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	
 	AController* OwnerController = OwnerCharacter ? OwnerCharacter->GetController() : nullptr;
 	APlayerController* PC = Cast<APlayerController>(OwnerController);
 
@@ -111,6 +113,7 @@ void ASTWeaponBase::HandleFire()
 	FVector WorldLocation, WorldDirection;
 
 
+	 
 	//2d 화면 좌표를 현재 카메라 위치및 보는 방향으로 변환
 	if (PC->DeprojectScreenPositionToWorld(ScreenCenter.X, ScreenCenter.Y, WorldLocation, WorldDirection))
 	{
@@ -122,12 +125,19 @@ void ASTWeaponBase::HandleFire()
 
 		if (MuzzleFlashEffect)
 		{
-			// 방금 만든 MuzzleSocket의 위치에 총구 화염 효과를 재생합니다.
-			UGameplayStatics::SpawnEmitterAttached(
-				MuzzleFlashEffect,        // 재생할 파티클
-				WeaponMesh,               // 부착할 컴포넌트 (총기 메시)
-				TEXT("MuzzleSocket")      // 부착할 소켓 이름
-			);
+			if (ASTPlayerCharacter* PlayerCharacter = Cast<ASTPlayerCharacter>(OwnerCharacter))   // 수정 Weapon의 muzzle이 시점에 따라 변경되어야 해서 수정함 
+			{
+				UStaticMeshComponent* ActiveWeaponMesh =  PlayerCharacter->GetCurrentViewMode() == EViewMode::FPS ? WeaponMesh : WeaponMesh3p;
+
+				// 방금 만든 MuzzleSocket의 위치에 총구 화염 효과를 재생합니다.
+				UGameplayStatics::SpawnEmitterAttached(
+					MuzzleFlashEffect,        // 재생할 파티클
+					ActiveWeaponMesh,          // 부착할 컴포넌트 (총기 메시)
+					TEXT("MuzzleSocket")      // 부착할 소켓 이름
+				);
+				PlayerCharacter->OnWeaponFired(); // 수정 캐릭터 공격시 ShootMontage(1인 위해 )
+			}
+			
 		}
 	}
 }

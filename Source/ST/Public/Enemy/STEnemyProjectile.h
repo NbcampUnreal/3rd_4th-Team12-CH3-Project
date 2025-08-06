@@ -16,13 +16,18 @@ public:
 	class USphereComponent* CollisionComponent;
 	UPROPERTY(VisibleAnywhere, Category = "Projectile")
 	class UStaticMeshComponent* ProjectileMesh;
+	
 	UPROPERTY(VisibleAnywhere, Category = "Movement")
 	class UProjectileMovementComponent* ProjectileMovement;
+	
 	UPROPERTY(VisibleDefaultsOnly, Category="VFX")
 	UParticleSystemComponent* ProjectileParticleComp;
 	UPROPERTY(EditDefaultsOnly, Category="VFX")
 	UParticleSystem* ProjectileParticle;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
+	float ProjectileDamage = 10.f;
+	
 	void FireInDirection(const FVector& ShootDirection);
 
 protected:
