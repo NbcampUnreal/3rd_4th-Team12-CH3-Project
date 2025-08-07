@@ -40,6 +40,7 @@ void ASTLobbyPlayerController::HandleCharacterSelected(const ECharacterType& Cha
 	UE_LOG(LogSystem, Warning, TEXT("ASTLobbyPlayerController::HandleCharacterSelected(%s) Start"), *StaticEnum<ECharacterType>()->GetValueAsString(CharacterType));
 	if (USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>())
 	{
+		STGameInstance->SelectedCharacter = CharacterType;
 		STGameInstance->StartStage1();
 	}
 	UE_LOG(LogSystem, Warning, TEXT("ASTLobbyPlayerController::HandleCharacterSelected(%s) End"), *StaticEnum<ECharacterType>()->GetNameStringByValue((int64)CharacterType));

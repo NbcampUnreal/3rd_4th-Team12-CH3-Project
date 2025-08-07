@@ -35,7 +35,7 @@ void AStageClearZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, A
 	{
 		if (ASTGameMode* STGameMode = Cast<ASTGameMode>(GetWorld()->GetAuthGameMode()))
 		{
-			UE_LOG(LogSystem, Warning, TEXT("AStageClearZone::OnOverlapBegin() Call Delegate(GameMode::OnPlayerEnteredClearZone"));
+			UE_LOG(LogSystem, Warning, TEXT("AStageClearZone::OnOverlapBegin() Call Delegate(GameMode::OnPlayerEnteredClearZone)"));
 			STGameMode->OnPlayerEnteredClearZone.Broadcast();	// DYNAMIC_MULTICAST_DELEGATE
 			// STGameMode->CheckStageClear();	// 직접 호출 말고 Delegate 호출로 변경
 		}

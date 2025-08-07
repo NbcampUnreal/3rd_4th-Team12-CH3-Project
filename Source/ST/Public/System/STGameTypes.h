@@ -41,8 +41,8 @@ enum class EStageType : uint8
 	None		UMETA( DisplayName = "None" ),
 	MainMenu	UMETA( DisplayName = "MainMenuLevel" ),
 	Lobby		UMETA( DisplayName = "LobbyLevel" ),
-	Stage1		UMETA( DisplayName = "L_Showcase" ),
-	Stage2		UMETA( DisplayName = "StylizedCyberpunk" ),
-	Stage3		UMETA( DisplayName = "Demonstration" ),
+	Stage1		UMETA( DisplayName = "Stage1" ),
+	Stage2		UMETA( DisplayName = "Stage2" ),
+	Stage3		UMETA( DisplayName = "Stage3" ),
 	Ending		UMETA( DisplayName = "Ending" ),
 };

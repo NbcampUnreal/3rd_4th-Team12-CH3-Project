@@ -5,6 +5,7 @@
 #include "System/STGameState.h"
 #include "Enemy/STEnemyBase.h"
 #include "System/StageTimeLimitData.h"
+#include "System/STGameInstance.h"
 #include "System/STLog.h"
 
 ASTGameMode::ASTGameMode()
@@ -155,6 +156,39 @@ void ASTGameMode::HandlePlayerEnteredClearZone()
 		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() Stage Clear"));
 		SetStagePhase(EStagePhase::Completed);
 		EndStage(EStageResult::Clear);
+
+		// 현재 스테이지 정보 가져오기
+		USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>();
+		if (!STGameInstance) return;
+
+		EStageType NextStage = EStageType::None;
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() LastStage : %s"), *StaticEnum<EStageType>()->GetValueAsString(STGameInstance->LastStage));
+		switch (STGameInstance->LastStage)
+		{
+			case EStageType::Stage1:
+				NextStage = EStageType::Stage2;
+				break;
+			case EStageType::Stage2:
+				NextStage = EStageType::Stage3;
+				break;
+			case EStageType::Stage3:
+				// TODO: 엔딩으로 이동하거나 따로 처리하기
+				// NextStage = EStageType::Ending;
+				break;
+			default:
+				break;
+		}
+
+		if (NextStage != EStageType::None)
+		{
+			STGameInstance->LastStage = NextStage;
+			STGameInstance->GoToLevel(NextStage);
+		}
+		else
+		{
+			// TODO: 엔딩처리 또는 결과화면이 뜨게 하기
+			// STGameInstance->GoToLevel(EStage::Ending); 
+		}
 	}
 	
 	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() End"));
