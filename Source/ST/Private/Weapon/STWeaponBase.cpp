@@ -221,7 +221,7 @@ void ASTWeaponBase::PerformTrace(const FVector& Start, const FVector& Direction)
 				}
 			}
 
-			// ✅ 탄퍼짐이 적용된 방향으로 회전값 설정
+			// 탄퍼짐이 적용된 방향으로 회전값 설정
 			FRotator MuzzleRotation = FinalDirection.Rotation();  // 🎯 핵심 수정
 
 			// 총구에서 살짝 앞쪽으로
@@ -275,7 +275,18 @@ void ASTWeaponBase::ProcessHit(const FHitResult& HitResult)
 		//맞은 대상에게 데미지 전달
 		UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
 		AController* OwnerController = GetOwner() ? GetOwner()->GetInstigatorController() : nullptr;
-		UGameplayStatics::ApplyDamage(HitActor, Damage, OwnerController, this, UDamageType::StaticClass());
+
+
+		UGameplayStatics::ApplyPointDamage(
+				   HitActor,                       // 데미지를 받을 액터
+				   Damage,                         // 기본 데미지
+				   HitResult.ImpactPoint,          // 맞은 위치 (월드 좌표)
+				   HitResult,                      // 충돌 결과 전체 정보 (가장 중요!)
+				   OwnerController,                // 데미지를 가한 컨트롤러
+				   this,                           // 데미지를 가한 액터 (무기 자신)
+				   UDamageType::StaticClass()      // 데미지 타입
+			   );
+		
 	}
 }
 
