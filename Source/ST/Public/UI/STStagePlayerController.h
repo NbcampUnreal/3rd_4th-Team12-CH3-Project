@@ -6,6 +6,7 @@
 
 class USTStageWidget;
 class USTPauseMenuWidget;
+class USTScoreboardWidget;  // [추가]
 class UUserWidget;
 
 UCLASS()
@@ -34,7 +35,6 @@ public:
 	// ESC 메뉴 토글
 	void TogglePauseMenu();
 
-	
 	UFUNCTION()
 	void HandleQuitGame();
 
@@ -50,4 +50,16 @@ protected:
 
 	UPROPERTY()
 	USTPauseMenuWidget* PauseMenuWidget;
+
+	// [추가] 점수판 UI 위젯 클래스
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<USTScoreboardWidget> ScoreboardWidgetClass;
+
+	// [추가] 점수판 위젯 인스턴스
+	UPROPERTY()
+	USTScoreboardWidget* ScoreboardWidget;
+
+	// [추가] Tab 키 입력 핸들러
+	void ShowScoreboard();
+	void HideScoreboard();
 };
