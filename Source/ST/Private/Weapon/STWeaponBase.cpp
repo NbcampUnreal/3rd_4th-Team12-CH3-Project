@@ -203,11 +203,33 @@ void ASTWeaponBase::PerformTrace(const FVector& Start, const FVector& Direction)
 			}
 
 			// --- [이 아래 부분이 새로 추가/수정된 트레이서 로직입니다] ---
+
+
+			FVector MuzzleLocation;
+
+			// ViewMode에 따라 분기
+			ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+			if (ASTPlayerCharacter* PlayerCharacter = Cast<ASTPlayerCharacter>(OwnerCharacter))
+			{
+				if (PlayerCharacter->GetCurrentViewMode() == EViewMode::FPS)
+				{
+					MuzzleLocation = GetWeaponMesh1P()->GetSocketLocation(TEXT("MuzzleSocket"));
+				}
+				else // TPS
+				{
+					MuzzleLocation = GetWeaponMesh3P()->GetSocketLocation(TEXT("MuzzleSocket"));
+				}
+			}
+
+			// ✅ 탄퍼짐이 적용된 방향으로 회전값 설정
+			FRotator MuzzleRotation = FinalDirection.Rotation();  // 🎯 핵심 수정
+
+			// 총구에서 살짝 앞쪽으로
+			MuzzleLocation += FinalDirection * 20.0f;
+
+			// --- 파티클 생성 ---
 			if (TracerEffect)
 			{
-				const FVector MuzzleLocation = GetWeaponMesh1P()->GetSocketLocation(TEXT("MuzzleSocket"));
-				const FRotator MuzzleRotation = FinalDirection.Rotation();
-
 				UParticleSystemComponent* TracerComponent = UGameplayStatics::SpawnEmitterAtLocation(
 					GetWorld(),
 					TracerEffect,
@@ -217,10 +239,10 @@ void ASTWeaponBase::PerformTrace(const FVector& Start, const FVector& Direction)
 
 				if (TracerComponent)
 				{
-					// 빔 타입 파티클을 위한 끝점 설정 (만약 사용한다면)
 					TracerComponent->SetVectorParameter(FName("Target"), TraceEnd);
 				}
 			}
+			
 		}
 		break;
 	}
