@@ -35,7 +35,7 @@ void USTGameInstance::ResetGame()
 
 void USTGameInstance::GoToLevel(EStageType StageType)
 {
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::GoToLevel() Start"));
+	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::GoToLevel(%s) Start"), *StaticEnum<EStageType>()->GetValueAsString(StageType));
 	// TODO: 레벨 이동 전 세이브, 상태저장, 로딩화면, 사운드 등 제어 가능
 	FName TargetLevel = FName("MainMenu");	// Default 값
 
@@ -51,7 +51,7 @@ void USTGameInstance::GoToLevel(EStageType StageType)
 	}
 	
 	UGameplayStatics::OpenLevel(GetWorld(), TargetLevel);
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::GoToLevel() End"));
+	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::GoToLevel(%s) End"), *StaticEnum<EStageType>()->GetValueAsString(StageType));
 }
 
 void USTGameInstance::LoadMainMenuLevel()
@@ -75,6 +75,8 @@ void USTGameInstance::StartNewGame()
 void USTGameInstance::StartStage1()
 {
 	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::StartStage1() Start"));
+	// GameInstance 설정
+	LastStage = EStageType::Stage1;
 	GoToLevel(EStageType::Stage1);
 	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::StartStage1() End"));
 }
