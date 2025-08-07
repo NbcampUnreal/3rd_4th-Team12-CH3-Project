@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Blueprint/UserWidget.h"
+#include "System/STGameTypes.h"
 #include "STLobbyWidget.generated.h"
 
 class UButton;
@@ -15,7 +16,7 @@ public:
     USTLobbyWidget(const FObjectInitializer& ObjectInitializer);
 
     /** GameMode에 넘겨줄 캐릭터 선택 델리게이트 */
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterSelected, FString, Gender);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterSelected, const ECharacterType&, CharacterType);
     DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBackToTitleRequested);
 
     /** GameMode에서 바인딩할 델리게이트 */

@@ -79,8 +79,17 @@ void ASTEnemyProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor,
 void ASTEnemyProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
+	// if (OtherActor)
+	// {
+	// 	if (GEngine)
+	// 	{
+	// 		FString DebugMsg = FString::Printf(TEXT("Projectile Overlap: %s"), *OtherActor->GetName());
+	// 		GEngine->AddOnScreenDebugMessage(-1, 2.0f, FColor::Yellow, DebugMsg);
+	// 	}
+	// }
 	if (OtherActor && OtherActor->ActorHasTag("Player"))
 	{
+		
 		UGameplayStatics::ApplyDamage(
 			OtherActor,
 			ProjectileDamage, 

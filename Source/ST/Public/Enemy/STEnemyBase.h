@@ -22,7 +22,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Movement")
 	float ChaseSpeed = 600.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Movement")
-	float InvestigationSpeed = 600.f;
+	float InvestigationSpeed = 400.f;
 	
 	UPROPERTY(EditInstanceOnly, BlueprintReadWrite, Category="AI|Patrol")
 	TArray<ASTPatrolPoint*> PatrolPoints;
@@ -37,6 +37,8 @@ public:
 	float Defense = 0.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stats")
 	float AttackRange = 200.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stats")
+	float ApproachDistance = 200.f;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "WeakPoint")
 	TMap<FName, float> WeakPointMultipliers;

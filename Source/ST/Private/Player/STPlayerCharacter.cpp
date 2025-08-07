@@ -229,7 +229,6 @@ void ASTPlayerCharacter::Sprint(const FInputActionValue& Value)
 	{
 		return;
 	}
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Sprinting"));
 	StatusComponent->SetSprinting(true);
 	GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetMoveSpeed();
 }
@@ -238,7 +237,6 @@ void ASTPlayerCharacter::EndSprint(const FInputActionValue& Value)
 {
 	if (IsValid(StatusComponent) && StatusComponent->IsSprinting())
 	{
-		GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("EndSprinting"));
 		StatusComponent->SetSprinting(false);
 		GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetMoveSpeed();
 	}
@@ -246,7 +244,6 @@ void ASTPlayerCharacter::EndSprint(const FInputActionValue& Value)
 
 void ASTPlayerCharacter::ChangeView(const FInputActionValue& Value)
 {
-	GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("ChangeView"));
 	const bool bNextIsTPS = (CurrentViewMode == EViewMode::FPS);
 	SetViewMode(bNextIsTPS);
 }
@@ -279,27 +276,6 @@ void ASTPlayerCharacter::ReloadAmmo(const FInputActionValue& Value)
 {
 	if (IsValid(WeaponManager))
 	{
-		if (CurrentViewMode == EViewMode::FPS)
-		{
-			if (USTPlayerAnimInstance* AnimInstance = Cast<USTPlayerAnimInstance>(FPSSkeletalMeshComponent->GetAnimInstance()))
-			{
-				if (IsValid(MontageConfig->FPSReloadMontage))
-				{
-					AnimInstance->Montage_Play(MontageConfig->FPSReloadMontage);
-				}
-			}
-		}
-		else
-		{
-			if (USTPlayerAnimInstance* AnimInstance = Cast<USTPlayerAnimInstance>(GetMesh()->GetAnimInstance()))
-			{
-				if (IsValid(MontageConfig->ReloadMontage))
-				{
-					AnimInstance->Montage_Play(MontageConfig->ReloadMontage);
-				}
-			}
-			
-		}
 		WeaponManager->ReloadAmmo();
 	}
 }
@@ -361,17 +337,42 @@ void ASTPlayerCharacter::OnWeaponFired()
 	if (CurrentViewMode == EViewMode::FPS)
 	{
 		
-		if (USTPlayerAnimInstance* AnimInstance = Cast<USTPlayerAnimInstance>(FPSSkeletalMeshComponent->GetAnimInstance()))
+		if (UAnimInstance* AnimInstance = Cast<UAnimInstance>(FPSSkeletalMeshComponent->GetAnimInstance()))
 		{
 			if (MontageConfig->FPSShootMontage) // null 체크
 			{
 				AnimInstance->Montage_Play(MontageConfig->FPSShootMontage);
-				GEngine->AddOnScreenDebugMessage(-1, 1.f, FColor::Red, TEXT("Shooting"));
+		
 			}
 		}
 	}
-	
 }
+void ASTPlayerCharacter::PlayReloadAnimation()
+{
+	if (CurrentViewMode == EViewMode::FPS)
+	{
+		if (UAnimInstance* AnimInstance = Cast<UAnimInstance>(FPSSkeletalMeshComponent->GetAnimInstance()))
+		{
+			if (IsValid(MontageConfig->FPSReloadMontage))
+			{
+				AnimInstance->Montage_Play(MontageConfig->FPSReloadMontage);
+			}
+		}
+	}
+	else
+	{
+		if (UAnimInstance* AnimInstance = Cast<UAnimInstance>(GetMesh()->GetAnimInstance()))
+		{
+			if (IsValid(MontageConfig->ReloadMontage))
+			{
+				AnimInstance->Montage_Play(MontageConfig->ReloadMontage);
+			}
+		}
+			
+	}
+}
+
+
 
 
 

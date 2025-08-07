@@ -23,16 +23,21 @@ void UBTService_CheckAttackRange::TickNode(UBehaviorTreeComponent& OwnerComp, ui
 	APawn* SelfPawn = OwnerComp.GetAIOwner()->GetPawn();
 
 	bool bInRange = false;
+	bool bInApproachDistance = false;
 	if (TargetActor && SelfPawn)
 	{
 		ASTEnemyBase* EnemyBase = Cast<ASTEnemyBase>(SelfPawn);
 		if (EnemyBase)
 		{
-			AttackRange = EnemyBase->AttackRange;
+			EnemyAttackRange  = EnemyBase->AttackRange;
+			EnemyApproachDistance  = EnemyBase->ApproachDistance;
 		}
 		
 		float Dist = FVector::Dist(TargetActor->GetActorLocation(), SelfPawn->GetActorLocation());
-		bInRange = (Dist <= AttackRange);
+		bInRange = (Dist <= EnemyAttackRange);
+		bInApproachDistance = (Dist <= EnemyApproachDistance );
 	}
-	BB->SetValueAsBool(InAttackRangeKey.SelectedKeyName, bInRange);
+	
+	BB->SetValueAsBool(TEXT("InAttackRange"), bInRange);
+	BB->SetValueAsBool(TEXT("InApproachDistance"), bInApproachDistance);
 }

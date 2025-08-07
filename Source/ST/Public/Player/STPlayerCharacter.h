@@ -121,6 +121,7 @@ protected:
 public:
     void OnWeaponEquipped(EWeaponType NewWeapon);
     void OnWeaponFired();
+    void PlayReloadAnimation();
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon")
     TObjectPtr<USTWeaponManagerComponent> WeaponManager;
