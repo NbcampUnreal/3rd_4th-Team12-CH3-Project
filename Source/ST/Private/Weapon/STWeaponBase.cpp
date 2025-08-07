@@ -8,6 +8,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Particles/ParticleSystem.h"
 #include "Player/STPlayerCharacter.h"
+#include "Particles/ParticleSystemComponent.h"
 
 
 // Sets default values
@@ -48,6 +49,9 @@ void ASTWeaponBase::BeginPlay()
 		ReloadTime = Data.ReloadTime;
 		SpreadAngle=Data.SpreadAngle;
 		PelletsPerShot= Data.PelletsPerShot;
+		CameraShakeScale=Data.CameraShakeScale;
+		DefaultSpreadAngle = Data.SpreadAngle;
+
 		
 		CurrentAmmo = MagazineSize;
 
@@ -89,13 +93,14 @@ void ASTWeaponBase::HandleFire()
 	bCanFire = false;
 	CurrentAmmo--;
 	UE_LOG(LogTemp, Warning, TEXT("Bang! Ammo: %d"), CurrentAmmo);
-
 	// 60/FireRate
 	//설정 시간후 발사 활성화 함수 실행을 통해 발사 딜레이 설정
 	GetWorld()->GetTimerManager().SetTimer(FireRateTimerHandle, this, &ASTWeaponBase::EnableFire, 60.0f / FireRate, false);
 
 	// 2. 탄환 발사 (라인 트레이스)
 
+	//화면 진동 실행
+	PlayFireCameraShake();
 
 	//이 무기를 가지고 있는 캐릭터 호출 및 컨트롤러 유무 확인후 컨트롤러 가져오기
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
@@ -172,7 +177,7 @@ void ASTWeaponBase::PerformTrace(const FVector& Start, const FVector& Direction)
 				//충돌 결과를 담을 구조체를 함수로 전달
 				ProcessHit(HitResult);
 			}
-                DrawDebugLine(GetWorld(), Start, TraceEnd, FColor::Green, false, 2.0f, 0, 1.0f);
+                
 		}
 		break;
 
@@ -180,24 +185,65 @@ void ASTWeaponBase::PerformTrace(const FVector& Start, const FVector& Direction)
 	case EWeaponType::Sniper:
 	case EWeaponType::Pistol:
 	default:
-		UE_LOG(LogTemp, Warning, TEXT("noamlgun firing - PelletsPerShot: %d"), PelletsPerShot);
+		{ // switch case 안에서 지역 변수 선언을 위해 중괄호 추가
+			UE_LOG(LogTemp, Warning, TEXT("Normal gun firing..."));
 
-		//원뿔 안에서 무작위 방향 뽑기
-		FVector RandomDirection = FMath::VRandCone(Direction, FMath::DegreesToRadians(SpreadAngle));
+			// 1. 탄 퍼짐이 적용된 최종 발사 방향 계산
+			FVector FinalDirection = FMath::VRandCone(Direction, FMath::DegreesToRadians(SpreadAngle));
 		
-		//라인트레이스가 끝나는 지점 구하기
-		FVector TraceEnd = Start + (RandomDirection * WeaponDataAsset->WeaponData.TraceDistance);
+			// 2. 최종 방향으로 라인트레이스의 끝점 계산
+			FVector TraceEnd = Start + (FinalDirection * WeaponDataAsset->WeaponData.TraceDistance); // TraceDistance 변수 사용
 
-		//충돌 결과를 담을 구조체
-		FHitResult HitResult;
-		
-		//만약 맞았다면?
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, TraceEnd, ECC_Visibility, QueryParams))
-		{
-			//충돌 결과를 담을 구조체를 함수로 전달
-			ProcessHit(HitResult);
+			// 3. 라인트레이스를 발사하여 실제 충돌 지점 확인
+			FHitResult HitResult;
+			if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, TraceEnd, ECC_Visibility, QueryParams))
+			{
+				TraceEnd = HitResult.ImpactPoint; // 실제 맞은 지점으로 끝점 업데이트
+				ProcessHit(HitResult);
+			}
+
+			// --- [이 아래 부분이 새로 추가/수정된 트레이서 로직입니다] ---
+
+
+			FVector MuzzleLocation;
+
+			// ViewMode에 따라 분기
+			ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+			if (ASTPlayerCharacter* PlayerCharacter = Cast<ASTPlayerCharacter>(OwnerCharacter))
+			{
+				if (PlayerCharacter->GetCurrentViewMode() == EViewMode::FPS)
+				{
+					MuzzleLocation = GetWeaponMesh1P()->GetSocketLocation(TEXT("MuzzleSocket"));
+				}
+				else // TPS
+				{
+					MuzzleLocation = GetWeaponMesh3P()->GetSocketLocation(TEXT("MuzzleSocket"));
+				}
+			}
+
+			// 탄퍼짐이 적용된 방향으로 회전값 설정
+			FRotator MuzzleRotation = FinalDirection.Rotation();  // 🎯 핵심 수정
+
+			// 총구에서 살짝 앞쪽으로
+			MuzzleLocation += FinalDirection * 20.0f;
+
+			// --- 파티클 생성 ---
+			if (TracerEffect)
+			{
+				UParticleSystemComponent* TracerComponent = UGameplayStatics::SpawnEmitterAtLocation(
+					GetWorld(),
+					TracerEffect,
+					MuzzleLocation,
+					MuzzleRotation
+				);
+
+				if (TracerComponent)
+				{
+					TracerComponent->SetVectorParameter(FName("Target"), TraceEnd);
+				}
+			}
+			
 		}
-		DrawDebugLine(GetWorld(), Start, TraceEnd, FColor::Green, false, 2.0f, 0, 1.0f);
 		break;
 	}
 }
@@ -207,7 +253,7 @@ void ASTWeaponBase::ProcessHit(const FHitResult& HitResult)
 {
 	//에디터에서 실행시 충돌 검사용 디버그 스피어 생성
 #if WITH_EDITOR
-	DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 15.f, 12, FColor::Red, false, 2.0f);
+	//DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 15.f, 12, FColor::Red, false, 2.0f);
 #endif
 
 	//충돌한 액터를 가져오기
@@ -229,7 +275,18 @@ void ASTWeaponBase::ProcessHit(const FHitResult& HitResult)
 		//맞은 대상에게 데미지 전달
 		UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
 		AController* OwnerController = GetOwner() ? GetOwner()->GetInstigatorController() : nullptr;
-		UGameplayStatics::ApplyDamage(HitActor, Damage, OwnerController, this, UDamageType::StaticClass());
+
+
+		UGameplayStatics::ApplyPointDamage(
+				   HitActor,                       // 데미지를 받을 액터
+				   Damage,                         // 기본 데미지
+				   HitResult.ImpactPoint,          // 맞은 위치 (월드 좌표)
+				   HitResult,                      // 충돌 결과 전체 정보 (가장 중요!)
+				   OwnerController,                // 데미지를 가한 컨트롤러
+				   this,                           // 데미지를 가한 액터 (무기 자신)
+				   UDamageType::StaticClass()      // 데미지 타입
+			   );
+		
 	}
 }
 
@@ -334,4 +391,61 @@ void ASTWeaponBase::ToggleFireMode()
 		CurrentMode = EFireMode::Automatic;
 		UE_LOG(LogTemp, Log, TEXT("발사 모드: 자동"));
 	}
+}
+
+// 화면 진동 효과 재생 - 데이터 에셋의 값을 사용하도록 수정
+void ASTWeaponBase::PlayFireCameraShake()
+{
+	// 무기를 소유한 캐릭터가 플레이어인지 확인
+	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
+	if (!OwnerCharacter)
+	{
+		return;
+	}
+
+	// 플레이어 컨트롤러 가져오기
+	APlayerController* PC = Cast<APlayerController>(OwnerCharacter->GetController());
+	if (!PC)
+	{
+		return;
+	}
+
+	// 카메라 쉐이크 클래스가 설정되어 있는지 확인
+	if (!FireCameraShake)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("FireCameraShake not set! Please assign a camera shake class in Blueprint."));
+		return;
+	}
+
+	// 데이터 에셋에서 설정된 CameraShakeScale 값을 직접 사용
+	float ShakeScale = CameraShakeScale;
+
+	// 카메라 쉐이크 재생
+	PC->ClientStartCameraShake(FireCameraShake, ShakeScale);
+
+}
+
+//조준 시스템 구현
+void ASTWeaponBase::StartAiming()
+{
+	bIsAiming = true;
+
+	if (WeaponType == EWeaponType::Shotgun)
+	{
+		SpreadAngle = SpreadAngle/2; // 샷건은 조준해도 약간 퍼짐
+	}
+	else
+	{
+		SpreadAngle = 0; // 거의 퍼짐 없음
+	}
+
+	UE_LOG(LogTemp, Log, TEXT("Aiming... SpreadAngle: %.2f"), SpreadAngle);
+}
+
+void ASTWeaponBase::StopAiming()
+{
+	bIsAiming = false;
+	SpreadAngle = DefaultSpreadAngle;
+
+	UE_LOG(LogTemp, Log, TEXT("Stop Aiming. SpreadAngle restored: %.2f"), SpreadAngle);
 }
