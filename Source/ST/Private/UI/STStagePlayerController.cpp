@@ -2,6 +2,8 @@
 #include "UI/STStageWidget.h"
 #include "UI/STPauseMenuWidget.h"
 #include "UI/STScoreboardWidget.h"
+#include "UI/STGameOverWidget.h"
+#include "UI/STGameClearWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "System/STGameInstance.h"
 #include "Kismet/GameplayStatics.h"
@@ -16,6 +18,20 @@ ASTStagePlayerController::ASTStagePlayerController()
 	if (WidgetClass.Succeeded())
 	{
 		ScoreboardWidgetClass = WidgetClass.Class;
+	}
+
+	// 게임 오버 UI 위젯 연결
+	static ConstructorHelpers::FClassFinder<USTGameOverWidget> GameOverClass(TEXT("/Game/UI/UI_BP/BP_GameOverUI"));
+	if (GameOverClass.Succeeded())
+	{
+		GameOverWidgetClass = GameOverClass.Class;
+	}
+
+	// 게임 클리어 UI 위젯 연결
+	static ConstructorHelpers::FClassFinder<USTGameClearWidget> GameClearClass(TEXT("/Game/UI/UI_BP/BP_GameClearUI"));
+	if (GameClearClass.Succeeded())
+	{
+		GameClearWidgetClass = GameClearClass.Class;
 	}
 }
 
@@ -53,6 +69,12 @@ void ASTStagePlayerController::BeginPlay()
 	UpdateTimer(180); // 제한시간: 180초 남음
 	UpdateEnemyStatus(0, 10); // 적 처치: 0 / 총 10명
 	AddDamageKillLog(TEXT("10의 피해를 받았습니다.")); // 로그 메시지
+
+	//게임 오버 화면 테스트
+	//ShowGameOverResult(12450, 22, 30000, 10500);
+
+	//게임 클리어 화면 테스트
+	//ShowGameClearResult(15000, 20000); // 점수: 15000, 최고기록: 20000
 	
 }
 
@@ -188,6 +210,44 @@ void ASTStagePlayerController::ShowDamageTextAt(FVector WorldLocation, int32 Dam
 {
 	if (StageWidget)
 		StageWidget->ShowDamageTextAt(WorldLocation, Damage);
+}
+
+void ASTStagePlayerController::ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken)
+{
+	if (!GameOverWidget && GameOverWidgetClass)
+	{
+		GameOverWidget = CreateWidget<USTGameOverWidget>(this, GameOverWidgetClass);
+		if (GameOverWidget)
+		{
+			GameOverWidget->AddToViewport(500);
+		}
+	}
+
+	if (GameOverWidget)
+	{
+		GameOverWidget->SetResultInfo(Score, KillCount, DamageDealt, DamageTaken);
+		SetInputMode(FInputModeUIOnly());
+		bShowMouseCursor = true;
+	}
+}
+
+void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
+{
+	if (!GameClearWidget && GameClearWidgetClass)
+	{
+		GameClearWidget = CreateWidget<USTGameClearWidget>(this, GameClearWidgetClass);
+		if (GameClearWidget)
+		{
+			GameClearWidget->AddToViewport(600); // ZOrder 높게 설정
+		}
+	}
+
+	if (GameClearWidget)
+	{
+		GameClearWidget->SetResultInfo(Score, HighScore);
+		SetInputMode(FInputModeUIOnly());
+		bShowMouseCursor = true;
+	}
 }
 
 void ASTStagePlayerController::HandleQuitGame()
