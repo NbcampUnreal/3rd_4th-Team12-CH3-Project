@@ -22,13 +22,17 @@ void USTLobbyWidget::NativeConstruct()
 
 void USTLobbyWidget::HandleSelectMale()
 {
-    OnCharacterSelected.Broadcast(TEXT("Male"));
+    // JM 수정 (FString& -> ECharacterType& 으로 변경)
+    OnCharacterSelected.Broadcast((ECharacterType::JaxMercer));
+    // OnCharacterSelected.Broadcast(TEXT("Male"));
 
 }
 
 void USTLobbyWidget::HandleSelectFemale()
 {
-    OnCharacterSelected.Broadcast(TEXT("Female"));
+    // JM 수정 (FString& -> ECharacterType& 으로 변경)
+    OnCharacterSelected.Broadcast((ECharacterType::AvaRaines));
+    // OnCharacterSelected.Broadcast(TEXT("Female"));
 
 }
 

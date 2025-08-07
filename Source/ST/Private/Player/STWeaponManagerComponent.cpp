@@ -111,7 +111,7 @@ void USTWeaponManagerComponent::StartFire()
 {
 	if (IsValid(CurrentWeapon))
 	{
-		CurrentWeapon->Fire();
+		CurrentWeapon->StartFire();
 	}
 }
 
@@ -128,6 +128,7 @@ void USTWeaponManagerComponent::ReloadAmmo()
 	if (IsValid(CurrentWeapon) && !CurrentWeapon->IsReloading())
 	{
 		CurrentWeapon->StartReload();
+		OwnerChar->PlayReloadAnimation();
 	}
 }
 

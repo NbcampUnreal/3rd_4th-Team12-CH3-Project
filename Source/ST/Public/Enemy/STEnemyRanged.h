@@ -13,18 +13,16 @@ class ST_API ASTEnemyRanged : public ASTEnemyBase
 
 public:
 	ASTEnemyRanged();
-
-	UPROPERTY(BlueprintReadWrite, Category="Anim")
-	bool bIsAttacking = false;
-	UPROPERTY(BlueprintReadWrite, Category="Anim")
-	bool bIsReloading = false;
+	
 	UPROPERTY(BlueprintReadWrite, Category="Anim")
 	bool bIsAttackCooldown = false;
-
-	virtual void Attack() override;
+	
 	UFUNCTION(BlueprintCallable, Category = "Combat")
 	void FireProjectile();
+	
 	virtual void SetCurrentTarget(AActor* Target) override;
+	virtual void Attack() override;
+	
 	UFUNCTION(BlueprintCallable)
 	void AttackNotify();
 	UFUNCTION(BlueprintCallable)
@@ -44,20 +42,22 @@ protected:
 	float ReloadTime = 2.0f; // 리로드 소요 시간(초)
 	UPROPERTY(EditDefaultsOnly, Category = "Combat")
 	TSubclassOf<ASTEnemyProjectile> ProjectileClass;
+	
 	UPROPERTY()
 	AActor* CurrentTarget = nullptr;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "SFX")
 	USoundBase* FireSound;
 	UPROPERTY(EditDefaultsOnly, Category = "SFX")
 	USoundBase* DeathSound;
-	UPROPERTY(EditDefaultsOnly, Category = "Combat")
+	UPROPERTY(EditDefaultsOnly, Category = "VFX")
 	UParticleSystem* AttackParticle;
 
 	virtual void BeginPlay() override;
-	UFUNCTION(BlueprintCallable, Category = "Combat")
+	
+	UFUNCTION()
 	void Reload();
 	UFUNCTION()
 	void FinishReload();
 	virtual void Die() override;
-	virtual bool IsAttacking() const override { return bIsAttacking; }
 };
