@@ -1,7 +1,7 @@
 #include "UI/STStagePlayerController.h"
 #include "UI/STStageWidget.h"
 #include "UI/STPauseMenuWidget.h"
-#include "UI/STScoreboardWidget.h"  // [추가]
+#include "UI/STScoreboardWidget.h"
 #include "Blueprint/UserWidget.h"
 #include "System/STGameInstance.h"
 #include "Kismet/GameplayStatics.h"
@@ -73,9 +73,9 @@ void ASTStagePlayerController::ShowScoreboard()
 {
 	// 실제 데이터 대신 임시 값으로 전달
 	int32 TempScore = 1230;                  // 임시 점수
-	int32 TempKills = 7;                     // ← 임시 킬 수
-	FString TempGoal = TEXT("적 섬멸 후 목표지점 이동");   // ← 목표 텍스트
-	FString TempProgress = TEXT("적을 섬멸하세요");       // ← 진행 텍스트
+	int32 TempKills = 7;                     // 임시 킬 수
+	FString TempGoal = TEXT("적 섬멸 후 목표지점 이동");   // 목표 텍스트
+	FString TempProgress = TEXT("적을 섬멸하세요");       // 진행 텍스트
 
 	ScoreboardWidget->UpdateScoreAndKill(TempScore, TempKills);
 	ScoreboardWidget->UpdateMissionGoal(TempGoal);
