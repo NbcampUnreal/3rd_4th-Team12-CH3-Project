@@ -57,7 +57,7 @@ void ASTStagePlayerController::BeginPlay()
 }
 
 void ASTStagePlayerController::SetupInputComponent()
-{
+{	
 	Super::SetupInputComponent();
 
 	// 테스트용 키 (P)

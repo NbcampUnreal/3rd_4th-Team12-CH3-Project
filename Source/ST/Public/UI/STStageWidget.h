@@ -9,6 +9,7 @@ class UTextBlock;
 class UVerticalBox;
 class UImage;
 class USTDamageTextWidget;
+class USTDamageLogUIWidget;
 
 UCLASS()
 class ST_API USTStageWidget : public UUserWidget
@@ -48,6 +49,10 @@ protected:
     // 데미지 텍스트 위젯 클래스
     UPROPERTY(EditDefaultsOnly, Category = "UI|Damage")
     TSubclassOf<USTDamageTextWidget> STDamageTextWidgetClass;
+
+    // 데미지 로그 위젯 클래스
+    UPROPERTY(EditDefaultsOnly, Category = "UI")
+    TSubclassOf<USTDamageLogUIWidget> DamageLogItemClass;
 
 private:
     FTimerHandle HitMarkerTimerHandle;

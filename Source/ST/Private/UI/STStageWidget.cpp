@@ -6,6 +6,7 @@
 #include "Components/Image.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
+#include "UI/STDamageLogUIWidget.h"
 
 void USTStageWidget::NativeConstruct()
 {
@@ -68,15 +69,28 @@ void USTStageWidget::UpdateEnemyStatus(int32 Killed, int32 Total)
 
 void USTStageWidget::AddDamageKillLog(const FString& LogText)
 {
-    if (!DamageKillLogBox) return;
+    if (!DamageKillLogBox || !DamageLogItemClass) return;
 
-    UTextBlock* NewText = NewObject<UTextBlock>(this);
-    if (NewText)
+    APlayerController* PC = GetWorld()->GetFirstPlayerController();
+    if (!PC) return;
+
+    USTDamageLogUIWidget* LogItem = CreateWidget<USTDamageLogUIWidget>(PC, DamageLogItemClass);
+    if (!LogItem) return;
+
+    // 텍스트 설정
+    LogItem->SetText(LogText);
+
+    // 상단에 추가
+    DamageKillLogBox->AddChildToVerticalBox(LogItem);
+
+    // 최대 5개 유지
+    while (DamageKillLogBox->GetChildrenCount() > 5)
     {
-        NewText->SetText(FText::FromString(LogText));
-        NewText->Font.Size = 16;
-        DamageKillLogBox->AddChildToVerticalBox(NewText);
+        DamageKillLogBox->RemoveChildAt(0);
     }
+
+    // 페이드 아웃 후 제거
+    LogItem->PlayFadeAndDestroy();
 }
 
 void USTStageWidget::ShowHitMarker()
