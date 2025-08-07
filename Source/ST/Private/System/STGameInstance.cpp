@@ -42,7 +42,7 @@ void USTGameInstance::GoToLevel(EStageType StageType)
 	switch (StageType)
 	{
 		case EStageType::MainMenu:	TargetLevel = FName("MainMenu"); break;
-		case EStageType::Lobby:		TargetLevel = FName("Lobby"); break;
+		case EStageType::Lobby:		TargetLevel = FName("LobbyLevel"); break;
 		case EStageType::Stage1:	TargetLevel = FName("Stage1"); break;
 		case EStageType::Stage2:	TargetLevel = FName("Stage2"); break;
 		case EStageType::Stage3:	TargetLevel = FName("Stage3"); break;
@@ -54,6 +54,14 @@ void USTGameInstance::GoToLevel(EStageType StageType)
 	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::GoToLevel() End"));
 }
 
+void USTGameInstance::LoadMainMenuLevel()
+{
+	// TODO: 불필요한 Rapper 인가..? 메인메뉴로 돌아갈 때 추가로 작업해야 할 게 있지 않을까?
+	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::LoadMainMenuLevel() Start"));
+	GoToLevel(EStageType::MainMenu);
+	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::LoadMainMenuLevel() End"));
+}
+
 void USTGameInstance::StartNewGame()
 {
 	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::StartNewGame() Start"));
@@ -62,6 +70,13 @@ void USTGameInstance::StartNewGame()
 	GoToLevel(EStageType::Lobby);
 	
 	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::StartNewGame() End"));
+}
+
+void USTGameInstance::StartStage1()
+{
+	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::StartStage1() Start"));
+	GoToLevel(EStageType::Stage1);
+	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::StartStage1() End"));
 }
 
 void USTGameInstance::StartContinuousGame()

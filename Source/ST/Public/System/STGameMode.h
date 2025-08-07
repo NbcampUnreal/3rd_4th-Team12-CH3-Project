@@ -38,6 +38,7 @@ public:
 	void CheckStageClear();
 
 protected:
+	/* member variables */
 	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "GameRule" )
 	int32 TotalEnemies;
 	
@@ -58,12 +59,15 @@ protected:
 	
 	FTimerHandle StageTimerHandle;
 
-
+	/* member functions */
+	UFUNCTION()
+	void HandlePlayerEnteredClearZone();
+	
 	virtual void BeginPlay() override;
 	void EndStage(EStageResult Result);
 	void ResetStage();
 	float GetStageTimeLimit(FString StageName) const;
-	void HandlePlayerEnteredClearZone();
+
 
 private:
 	void SetStagePhase(EStagePhase NewPhase);
