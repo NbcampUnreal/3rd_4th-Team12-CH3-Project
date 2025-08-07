@@ -24,6 +24,10 @@ void USTWeaponManagerComponent::BeginPlay()
 	if (OwnerChar == nullptr)
 	{
 		OwnerChar = Cast<ASTPlayerCharacter>(GetOwner());
+		if (OwnerChar)
+		{
+			OwnerChar->OnViewModeChanged.AddUObject(this, &USTWeaponManagerComponent::UpdateWeaponVisibility);
+		}
 	}
 	if (CurrentWeapon == nullptr && IsValid(DefaultWeapon))
 	{
@@ -41,28 +45,38 @@ void USTWeaponManagerComponent::EquipWeapon(TSubclassOf<ASTWeaponBase> WeaponCla
 	ASTWeaponBase* NewWeapon = GetWorld()->SpawnActor<ASTWeaponBase>(WeaponClass);
 	CurrentWeapon = NewWeapon;
 	CurrentWeapon->SetOwner(GetOwner());
-	//테스트 코드 
+	if (CurrentWeapon)
+	{
+		if (CurrentWeapon->GetWeaponMesh1P())
+		{
+			CurrentWeapon->GetWeaponMesh1P()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			
+			
+		}
+		if (CurrentWeapon->GetWeaponMesh3P())
+		{
+			CurrentWeapon->GetWeaponMesh3P()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+	}
+	
 	if (OwnerChar && CurrentWeapon)
 	{
-		UStaticMeshComponent* WeaponMesh = CurrentWeapon->FindComponentByClass<UStaticMeshComponent>();
-		USkeletalMeshComponent* MeshComp = OwnerChar->GetMesh();
-
-		if (WeaponMesh && MeshComp)
-		{
-			// 소켓 존재 확인
-			if (MeshComp->DoesSocketExist(AttachSocket3P))
-			{
-				WeaponMesh->AttachToComponent(
-					MeshComp,
-					FAttachmentTransformRules::SnapToTargetIncludingScale,
-					AttachSocket3P
-				);
-			}
-			else
-			{
-				GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Red, FString::Printf(TEXT("Socket %s not found"), *AttachSocket3P.ToString()));
-			}
-		}
+		//fps
+		CurrentWeapon->GetWeaponMesh1P()->AttachToComponent(
+		OwnerChar->GetFPSSkeletalMesh(),
+		FAttachmentTransformRules::SnapToTargetIncludingScale,
+		AttachSocket1P
+	);
+		CurrentWeapon->GetWeaponMesh1P()->SetWorldScale3D(FVector(0.6f, 0.6f, 0.6f));
+     
+		//tps
+		CurrentWeapon->GetWeaponMesh3P()->AttachToComponent(
+			OwnerChar->GetMesh(), 
+			FAttachmentTransformRules::SnapToTargetIncludingScale,
+			AttachSocket3P
+		);
+     
+		UpdateWeaponVisibility(OwnerChar->GetCurrentViewMode());
 	}
 	else if (OwnerChar == nullptr)
 	{
@@ -72,32 +86,23 @@ void USTWeaponManagerComponent::EquipWeapon(TSubclassOf<ASTWeaponBase> WeaponCla
 	{
 		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("Weapon NUll"));
 	}
+	if (IsValid(OwnerChar))
+	{
+		OwnerChar->OnWeaponEquipped(CurrentWeapon->WeaponDataAsset->WeaponData.WeaponType);
+	}
 	
-	//fps
-	// CurrentWeapon->GetFirstPersonMesh()->AttachToComponent(
-	// 	OwnerChar->GetFirstPersonArms(),
-	// 	FAttachmentTransformRules::SnapToTargetIncludingScale,
-	// 	TEXT("hand_r_socket")
-	// );
- //    
-	// //tps
-	// CurrentWeapon->GetThirdPersonMesh()->AttachToComponent(
-	// 	OwnerChar->GetMesh(), 
-	// 	FAttachmentTransformRules::SnapToTargetIncludingScale,
-	// 	TEXT("RightHandWeapon")
-	// );
- //    
-	// UpdateWeaponVisibility();
+	
+
 }
 
-void USTWeaponManagerComponent::UpdateWeaponVisibility()
+void USTWeaponManagerComponent::UpdateWeaponVisibility(EViewMode NewMode) // Visible View Mode
 {
-// 	if (CurrentWeapon)
-// 	{
-// 		bool bFirstPerson = OwnerChar->IsFirstPerson();
-// 		CurrentWeapon->GetFirstPersonMesh()->SetVisibility(bFirstPerson);
-// 		CurrentWeapon->GetThirdPersonMesh()->SetVisibility(!bFirstPerson);
-// 	}
+	if (CurrentWeapon)
+	{
+		bool bThirdPerson = (NewMode== EViewMode::TPS);
+		CurrentWeapon->GetWeaponMesh1P()->SetVisibility(!bThirdPerson);
+		CurrentWeapon->GetWeaponMesh3P()->SetVisibility(bThirdPerson);
+	}
  }
 
 
@@ -106,29 +111,33 @@ void USTWeaponManagerComponent::StartFire()
 {
 	if (IsValid(CurrentWeapon))
 	{
-		CurrentWeapon->Fire();
+		CurrentWeapon->StartFire();
 	}
 }
 
 void USTWeaponManagerComponent::StopFire()
 {
-}
-
-void USTWeaponManagerComponent::Reload()
-{
+	if (IsValid(CurrentWeapon))
+	{
+		CurrentWeapon->StopFire();
+	}
 }
 
 void USTWeaponManagerComponent::ReloadAmmo()
 {
-	if (IsValid(CurrentWeapon))
+	if (IsValid(CurrentWeapon) && !CurrentWeapon->IsReloading())
 	{
 		CurrentWeapon->StartReload();
+		OwnerChar->PlayReloadAnimation();
 	}
 }
 
 void USTWeaponManagerComponent::UnequipWeapon()
 {
-	
+	if (IsValid(CurrentWeapon))
+	{
+		//todo current weapon delete
+	}
 }
 
 

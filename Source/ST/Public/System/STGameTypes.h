@@ -39,8 +39,8 @@ UENUM( BlueprintType )
 enum class EStageType : uint8
 {
 	None		UMETA( DisplayName = "None" ),
-	MainMenu	UMETA( DisplayName = "MainMenu" ),
-	Lobby		UMETA( DisplayName = "Lobby" ),
+	MainMenu	UMETA( DisplayName = "MainMenuLevel" ),
+	Lobby		UMETA( DisplayName = "LobbyLevel" ),
 	Stage1		UMETA( DisplayName = "Stage1" ),
 	Stage2		UMETA( DisplayName = "Stage2" ),
 	Stage3		UMETA( DisplayName = "Stage3" ),

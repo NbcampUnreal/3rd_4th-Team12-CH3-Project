@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "STPlayerCharacter.generated.h"
 
+class USTPlayerAnimInstance;
+enum class EWeaponType : uint8;
 class UST_PlayerAnimMontageConfig;
 class USTWeaponManagerComponent;
 class USTStatusComponent;
@@ -22,6 +24,8 @@ enum class EViewMode : uint8
 class UCameraComponent;
 class USpringArmComponent;
 struct FInputActionValue;
+
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnViewModeChanged, EViewMode); // when view Change
 
 UCLASS()
 class ST_API ASTPlayerCharacter : public ACharacter
@@ -44,10 +48,15 @@ public:
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "FPS Mesh")
     TObjectPtr<USkeletalMeshComponent> FPSSkeletalMeshComponent;
+    
 
 #pragma endregion 
 
 #pragma region Camera System
+
+public:
+    EViewMode GetCurrentViewMode() const { return CurrentViewMode; }
+    FOnViewModeChanged OnViewModeChanged;
 protected:
     // Camera Functions
     void SetViewMode(bool bIsTPS);
@@ -108,6 +117,11 @@ protected:
 
 
 #pragma region Weapon System
+
+public:
+    void OnWeaponEquipped(EWeaponType NewWeapon);
+    void OnWeaponFired();
+    void PlayReloadAnimation();
 protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Weapon")
     TObjectPtr<USTWeaponManagerComponent> WeaponManager;

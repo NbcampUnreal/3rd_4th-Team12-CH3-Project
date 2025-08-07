@@ -44,7 +44,13 @@ public:
 	void GoToLevel(EStageType StageType);
 
 	UFUNCTION( BlueprintCallable, Category="Level" )
+	void LoadMainMenuLevel();
+
+	UFUNCTION( BlueprintCallable, Category="Level" )
 	void StartNewGame();
+
+	UFUNCTION( BlueprintCallable, Category="Level" )
+	void StartStage1();
 
 	UFUNCTION( BlueprintCallable, Category="Level" )
 	void StartContinuousGame();

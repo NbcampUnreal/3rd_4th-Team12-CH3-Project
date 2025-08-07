@@ -11,11 +11,11 @@
 ASTEnemyRanged::ASTEnemyRanged()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	AttackRange = 700.f;
+	AttackRange = 1600.f;
+	ApproachDistance = 800.f;
 	AmmoCount=MaxAmmo;
-	bIsAttacking = false;
 	bIsAttackCooldown = false;
-	bIsReloading = false;
+	StateComponent->SetState(EEnemyState::Idle);
 }
 
 void ASTEnemyRanged::BeginPlay()
@@ -25,12 +25,21 @@ void ASTEnemyRanged::BeginPlay()
 
 void ASTEnemyRanged::Attack()
 {
-	if (bIsDead || bIsAttacking || bIsAttackCooldown || bIsReloading || !CurrentTarget)
+	if (StateComponent->IsInState(EEnemyState::Dead) ||
+		StateComponent->IsInState(EEnemyState::Attack) ||
+		StateComponent->IsInState(EEnemyState::Reload) ||
+		bIsAttackCooldown ||
+		!CurrentTarget)
 	{
 		return;
 	}
+	if (AmmoCount <= 0)
+	{
+		Reload();
+		return;
+	}
 	
-	bIsAttacking = true;
+	StateComponent->SetState(EEnemyState::Attack);
 	bIsAttackCooldown = true;
 
 	FVector MyLocation = GetActorLocation();
@@ -40,15 +49,6 @@ void ASTEnemyRanged::Attack()
 	// 수평고정
 	LookAtRotation.Pitch = 0.f;
 	SetActorRotation(LookAtRotation);
-	
-	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
-	{
-		USTRangedAnimInstance* EnemyAnim = Cast<USTRangedAnimInstance>(Anim);
-		if (EnemyAnim)
-		{
-			EnemyAnim->bIsAttackingIn = true;
-		}
-	}
 	
 	GetWorldTimerManager().SetTimer(AttackCooldownHandle, [this]()
 		{
@@ -76,7 +76,6 @@ void ASTEnemyRanged::FireProjectile()
 	{
 		Projectile->SetInstigator(this);
 	}
-	
 }
 
 void ASTEnemyRanged::SetCurrentTarget(AActor* Target)
@@ -94,7 +93,7 @@ void ASTEnemyRanged::AttackNotify()
 	LookAtRotation.Pitch = 0.f;
 	SetActorRotation(LookAtRotation);
 	
-	if (AmmoCount > 0 && CurrentTarget && !bIsDead)
+	if (AmmoCount > 0 && CurrentTarget && !StateComponent->IsInState(EEnemyState::Dead))
 	{
 		FireProjectile();
 		if (FireSound)
@@ -114,65 +113,35 @@ void ASTEnemyRanged::AttackNotify()
 		}
 		AmmoCount--;
 	}
-	else if (AmmoCount <= 0 && !bIsDead)
-	{
-		Reload();
-	}
 }
 
 void ASTEnemyRanged::AttackEndNotify()
 {
-	bIsAttacking = false;
-	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
-	{
-		USTRangedAnimInstance* EnemyAnim = Cast<USTRangedAnimInstance>(Anim);
-		if (EnemyAnim)
-		{
-			EnemyAnim->bIsAttackingIn = false;
-		}
-	}
+	StateComponent->SetState(EEnemyState::Idle);
 }
 
 void ASTEnemyRanged::Reload()
 {
-	if (bIsDead || bIsReloading || AmmoCount == MaxAmmo)
+	if (StateComponent->IsInState(EEnemyState::Dead) ||
+		StateComponent->IsInState(EEnemyState::Reload) ||
+		AmmoCount == MaxAmmo)
 	{
 		return;
 	}
-	bIsReloading = true;
-	
-	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
-	{
-		USTRangedAnimInstance* EnemyAnim = Cast<USTRangedAnimInstance>(Anim);
-		if (EnemyAnim)
-		{
-			EnemyAnim->bIsReloading = true;
-		}
-	}
+	StateComponent->SetState(EEnemyState::Reload);
 	
 	GetWorldTimerManager().SetTimer(ReloadHandle, this, &ASTEnemyRanged::FinishReload, ReloadTime, false);
-
 }
 
 void ASTEnemyRanged::FinishReload()
 {
 	AmmoCount=MaxAmmo;
-	bIsReloading = false;
-	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
-	{
-		USTRangedAnimInstance* EnemyAnim = Cast<USTRangedAnimInstance>(Anim);
-		if (EnemyAnim)
-		{
-			EnemyAnim->bIsReloading = false;
-		}
-	}
+	StateComponent->SetState(EEnemyState::Idle);
 }
 
 void ASTEnemyRanged::Die()
 {
 	GetWorldTimerManager().ClearAllTimersForObject(this);
-	bIsReloading = false;
-	bIsAttacking = false;
 	bIsAttackCooldown = false;
 
 	if (AAIController* AIController = Cast<AAIController>(GetController()))
@@ -188,14 +157,6 @@ void ASTEnemyRanged::Die()
 	if (DeathSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
-	}
-	if (UAnimInstance* Anim = GetMesh()->GetAnimInstance())
-	{
-		USTRangedAnimInstance* EnemyAnim = Cast<USTRangedAnimInstance>(Anim);
-		if (EnemyAnim)
-		{
-			EnemyAnim->bIsDead = true;
-		}
 	}
 
 	Super::Die();
