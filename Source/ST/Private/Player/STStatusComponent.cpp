@@ -96,7 +96,6 @@ void USTStatusComponent::HandleDeath()
     bIsDead = true;
     CurrentHealth = 0.0f;
     OnCharacterDeath.Broadcast();
-    OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 
 }
 

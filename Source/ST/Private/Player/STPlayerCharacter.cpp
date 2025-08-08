@@ -16,6 +16,7 @@
 #include "Weapon/STWeaponType.h"
 
 #pragma region DefaultSetting
+
 ASTPlayerCharacter::ASTPlayerCharacter()
 {
 	// Character Movement Settings
@@ -154,6 +155,7 @@ void ASTPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 #pragma endregion 
 
 #pragma region Camera System
+
 void ASTPlayerCharacter::SetViewMode(bool bIsTPS)
 {
 	CurrentViewMode = bIsTPS ? EViewMode::TPS : EViewMode::FPS;
@@ -183,7 +185,6 @@ void ASTPlayerCharacter::SetViewMode(bool bIsTPS)
 }
 
 #pragma endregion
-
 
 #pragma region Input System
 
@@ -254,7 +255,19 @@ void ASTPlayerCharacter::Zoom(const FInputActionValue& Value)
 	{
 		StatusComponent->SetZoom(!StatusComponent->IsZooming());
 		GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetMoveSpeed();
+		if (IsValid(WeaponManager))
+		{
+			if (StatusComponent->IsZooming())
+			{
+				WeaponManager->StartAiming();				
+			}
+			else
+			{
+				WeaponManager->StartAiming();
+			}
+		}
 	}
+	
 }
 
 void ASTPlayerCharacter::StartFire(const FInputActionValue& Value)
@@ -283,7 +296,6 @@ void ASTPlayerCharacter::ReloadAmmo(const FInputActionValue& Value)
 #pragma endregion
 
 #pragma region Status System
-
 
 float ASTPlayerCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
 	class AController* EventInstigator, AActor* DamageCauser)
@@ -315,8 +327,9 @@ void ASTPlayerCharacter::HandleDeath()
 }
 
 
-#pragma endregion 
+#pragma endregion
 
+#pragma region WeaponSystem
 void ASTPlayerCharacter::OnWeaponEquipped(EWeaponType NewWeapon)
 {
 	if (USTPlayerAnimInstance* AnimInstance = Cast<USTPlayerAnimInstance>(GetMesh()->GetAnimInstance()))
@@ -371,7 +384,7 @@ void ASTPlayerCharacter::PlayReloadAnimation()
 			
 	}
 }
-
+#pragma endregion
 
 
 
