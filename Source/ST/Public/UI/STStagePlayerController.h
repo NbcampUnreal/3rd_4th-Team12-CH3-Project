@@ -6,7 +6,9 @@
 
 class USTStageWidget;
 class USTPauseMenuWidget;
-class USTScoreboardWidget;  // [추가]
+class USTScoreboardWidget;
+class USTGameOverWidget;
+class USTGameClearWidget;
 class UUserWidget;
 
 UCLASS()
@@ -38,6 +40,10 @@ public:
 	UFUNCTION()
 	void HandleQuitGame();
 
+	
+	void ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken);
+	void ShowGameClearResult(int32 Score, int32 HighScore);
+	
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> StageWidgetClass;
@@ -51,7 +57,7 @@ protected:
 	UPROPERTY()
 	USTPauseMenuWidget* PauseMenuWidget;
 
-	// [추가] 점수판 UI 위젯 클래스
+	// 점수판 UI 위젯 클래스
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<USTScoreboardWidget> ScoreboardWidgetClass;
 
@@ -59,7 +65,23 @@ protected:
 	UPROPERTY()
 	USTScoreboardWidget* ScoreboardWidget;
 
-	// [Tab 키 입력 핸들러
+	// 게임 오버 UI 클래스
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<USTGameOverWidget> GameOverWidgetClass;
+
+	// 게임 오버 UI 인스턴스
+	UPROPERTY()
+	USTGameOverWidget* GameOverWidget;
+
+	// 게임 클리어 UI 클래스
+	UPROPERTY(EditDefaultsOnly, Category = "UI")
+	TSubclassOf<USTGameClearWidget> GameClearWidgetClass;
+
+	// 게임 클리어 UI 인스턴스
+	UPROPERTY()
+	USTGameClearWidget* GameClearWidget;
+
+	// [Tab] 키 입력 핸들러
 	void ShowScoreboard();
 	void HideScoreboard();
 };
