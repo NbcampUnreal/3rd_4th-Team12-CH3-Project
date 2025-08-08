@@ -8,6 +8,8 @@
 #include "System/STGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Player/STPlayerCharacter.h"
+#include "Player/STStatusComponent.h"
 
 ASTStagePlayerController::ASTStagePlayerController()
 {
@@ -62,8 +64,14 @@ void ASTStagePlayerController::BeginPlay()
 	SetInputMode(FInputModeGameOnly());
 	bShowMouseCursor = false;
 
+
+	ASTPlayerCharacter* PlayerCharacter = Cast<ASTPlayerCharacter>(GetPawn()); 
+	if (PlayerCharacter)
+	{
+		PlayerCharacter->GetStatusComponent()->OnHealthChanged.AddDynamic(this,&ASTStagePlayerController::UpdateHealth);
+	}
+	
 	// 실제 데이터 대신 임시 값으로 전달
-	UpdateHealth(75.f, 100.f); // 체력: 현재 75 / 최대 100
 	UpdateWeapon(TEXT("라이플")); // 임시 무기 이름
 	UpdateAmmo(25, 90); // 탄약: 현재 25발 / 최대 90발
 	UpdateTimer(180); // 제한시간: 180초 남음
