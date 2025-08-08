@@ -157,7 +157,7 @@ void ASTGameMode::HandlePlayerEnteredClearZone()
 		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() Stage Clear Broadcast"));
 		bStageCleared = true;
 
-		// TODO: 게임 정보 GI에 저장
+		// TODO: 게임 정보 GI에 저장.. 은 PlayerController에서 하는게 맞으려나?
 		OnStageClear.Broadcast();
 		
 		SetStagePhase(EStagePhase::Completed);

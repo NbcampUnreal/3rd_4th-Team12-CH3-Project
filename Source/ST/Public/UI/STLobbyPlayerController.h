@@ -27,6 +27,12 @@ protected:
 	UFUNCTION()
 	void OnBackToTitleRequested();
 
+	UFUNCTION( BlueprintImplementableEvent )
+	void StartStage1_BP();
+
+	UFUNCTION( BlueprintImplementableEvent )
+	void BackToMainMenu_BP();
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "UI")
 	TSubclassOf<USTLobbyWidget> LobbyWidgetClass;
 

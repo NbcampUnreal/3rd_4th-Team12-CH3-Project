@@ -36,10 +36,17 @@ void ASTMainMenuPlayerController::BeginPlay()
 void ASTMainMenuPlayerController::HandleNewGameRequested()
 {
 	UE_LOG(LogSystem, Warning, TEXT("ASTMainMenuPlayerController::HandleNewGameRequested() Start"));
+
+	
+	
+	LoadLobbyLevel_BP();
+	
+	/*
 	if (USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>())
 	{
-		STGameInstance->StartNewGame();
-	}
+		
+		// STGameInstance->StartNewGame();
+	}*/
 	UE_LOG(LogSystem, Warning, TEXT("ASTMainMenuPlayerController::HandleNewGameRequested() End"));
 }
 
