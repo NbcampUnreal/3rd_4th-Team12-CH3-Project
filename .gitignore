@@ -25,3 +25,4 @@ Plugins/Developer/RiderLink/
 .vs/
 *.ipch
 .vsconfig
+*.sln.DotSettings.user

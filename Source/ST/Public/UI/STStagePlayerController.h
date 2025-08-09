@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
+#include "System/STGameTypes.h"
 #include "STStagePlayerController.generated.h"
 
 class USTStageWidget;
@@ -22,7 +23,9 @@ public:
 	virtual void SetupInputComponent() override;
 
 	// UI 업데이트 함수
+	UFUNCTION()	// NOTE: FROM JM, 이거 에러 안났나요..? UFUNCTION 안붙이면 예외나던데
 	void UpdateHealth(float CurrentHP, float MaxHP);
+	
 	void UpdateWeapon(const FString& WeaponName);
 	void UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo);
 	void UpdateTimer(int32 RemainingSeconds);
@@ -39,6 +42,13 @@ public:
 
 	UFUNCTION()
 	void HandleQuitGame();
+	
+	UFUNCTION()
+	void HandleStageClear();	// JM 스테이지 클리어시 델리게이트
+
+	UFUNCTION( BlueprintImplementableEvent )
+	void LoadNextStage_BP(EStageType NextStage, int32 LoadingScreenIndex);
+	
 
 	
 	void ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken);
