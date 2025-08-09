@@ -5,12 +5,14 @@
 #include "Player/STPlayerInputConfig.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "Player/STStatusComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Player/STHealthComponent.h"
+#include "Player/STMovementComponent.h"
 #include "Player/STPlayerAnimInstance.h"
+#include "Player/STPlayerBaseData.h"
 #include "Player/STWeaponManagerComponent.h"
 #include "Player/ST_PlayerAnimMontageConfig.h"
 #include "Weapon/STWeaponType.h"
@@ -55,9 +57,12 @@ ASTPlayerCharacter::ASTPlayerCharacter()
 	FPSSkeletalMeshComponent->SetRelativeLocation(FVector(0, 0, -20));
 	FPSSkeletalMeshComponent->bAutoActivate = false;
 
-	// Status Component
-	StatusComponent = CreateDefaultSubobject<USTStatusComponent>(TEXT("StatusComponent"));
+	//HealthCompoennt
+	HealthComponent = CreateDefaultSubobject<USTHealthComponent>(TEXT("HealthComponent"));
 
+	//MovementComponent
+	MovementComponent = CreateDefaultSubobject<USTMovementComponent>(TEXT("MovementComponent"));
+	
 	//Weapon Component
 	WeaponManager = CreateDefaultSubobject<USTWeaponManagerComponent>(TEXT("WeaponManager"));
 
@@ -81,19 +86,35 @@ void ASTPlayerCharacter::BeginPlay()
 		}
 	}
 	
-	if (GetCharacterMovement() && IsValid(StatusComponent))
-	{
-		GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetMoveSpeed();
-		GetCharacterMovement()->MaxWalkSpeedCrouched = StatusComponent->GetCrouchSpeed();
-	}
 	SetViewMode(true); //  TPS view
 	
-	// Bind Status Component Events
-	if (IsValid(StatusComponent))
+	// Health Component Setting
+	if (IsValid(HealthComponent))
 	{
-		StatusComponent->OnHealthChanged.AddDynamic(this, &ASTPlayerCharacter::HandleTakeDamage);
-		StatusComponent->OnCharacterDeath.AddDynamic(this, &ASTPlayerCharacter::HandleDeath);
+		// todo playerState에 저장된 정보가 있다면 가져오기
+		{
+			if (IsValid(PlayerBaseStatData))
+			{
+				HealthComponent->SetMaxHealth(PlayerBaseStatData->BaseMaxHealth);
+			}
+		}
+		HealthComponent->OnHealthChanged.AddDynamic(this, &ASTPlayerCharacter::HandleTakeDamage);
+		HealthComponent->OnCharacterDeath.AddDynamic(this, &ASTPlayerCharacter::HandleDeath);
 	}
+	// Movement Component Setting
+	if (IsValid(MovementComponent))
+	{
+		//todo 이것도 playerstate에 
+		if (IsValid(PlayerBaseStatData))
+		{
+			MovementComponent->SetWalkSpeed(PlayerBaseStatData->BaseWalkSpeed);
+			MovementComponent->SetCrouchMultiplier(PlayerBaseStatData->CrouchMultiplier);
+			MovementComponent->SetSprintMultiplier(PlayerBaseStatData->SprintMultiplier);
+			MovementComponent->SetZoomMultiplier(PlayerBaseStatData->ZoomMultiplier);
+			MovementComponent->Initialize();
+		}
+	}
+	
 	
 }
 
@@ -160,18 +181,14 @@ void ASTPlayerCharacter::SetViewMode(bool bIsTPS)
 {
 	CurrentViewMode = bIsTPS ? EViewMode::TPS : EViewMode::FPS;
 
-
 	TPSCameraComponent->SetActive(bIsTPS);
 	FPSCameraComponent->SetActive(!bIsTPS);
-
-
+	
 	bUseControllerRotationYaw = !bIsTPS;
 	bUseControllerRotationPitch = true;
-
-	// 메시 가시성 제어
+	
 	if (bIsTPS)
 	{
-	
 		GetMesh()->SetOwnerNoSee(false);             
 		FPSSkeletalMeshComponent->SetOwnerNoSee(true);  
 	}
@@ -210,7 +227,6 @@ void ASTPlayerCharacter::Look(const FInputActionValue& Value)
 
 void ASTPlayerCharacter::Crouch(const FInputActionValue& Value)
 {
-	
 	if (GetCharacterMovement()->IsCrouching())
 	{
 		UnCrouch();
@@ -219,27 +235,25 @@ void ASTPlayerCharacter::Crouch(const FInputActionValue& Value)
 	{
 		ACharacter::Crouch();
 	}
-	
 }
 
 
 
 void ASTPlayerCharacter::Sprint(const FInputActionValue& Value)
 {
-	if (!IsValid(StatusComponent) || StatusComponent->IsSprinting())
+
+	if (IsValid(MovementComponent))
 	{
-		return;
+		MovementComponent->StartSprinting();
 	}
-	StatusComponent->SetSprinting(true);
-	GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetMoveSpeed();
+	
 }
 
 void ASTPlayerCharacter::EndSprint(const FInputActionValue& Value)
 {
-	if (IsValid(StatusComponent) && StatusComponent->IsSprinting())
+	if (IsValid(MovementComponent))
 	{
-		StatusComponent->SetSprinting(false);
-		GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetMoveSpeed();
+		MovementComponent->StopSprinting();
 	}
 }
 
@@ -251,13 +265,12 @@ void ASTPlayerCharacter::ChangeView(const FInputActionValue& Value)
 
 void ASTPlayerCharacter::Zoom(const FInputActionValue& Value)
 {
-	if (IsValid(StatusComponent))
+	if (IsValid(MovementComponent))
 	{
-		StatusComponent->SetZoom(!StatusComponent->IsZooming());
-		GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetMoveSpeed();
+		MovementComponent->ChangeZoomMode();
 		if (IsValid(WeaponManager))
 		{
-			if (StatusComponent->IsZooming())
+			if (MovementComponent->IsZooming())
 			{
 				WeaponManager->StartAiming();				
 			}
@@ -272,7 +285,7 @@ void ASTPlayerCharacter::Zoom(const FInputActionValue& Value)
 
 void ASTPlayerCharacter::StartFire(const FInputActionValue& Value)
 {
-	if (IsValid(WeaponManager))
+	if (IsValid(WeaponManager) && !GetMovementComponent()->IsFalling())
 	{
 		WeaponManager->StartFire();
 	}
@@ -303,14 +316,13 @@ float ASTPlayerCharacter::TakeDamage(float DamageAmount, struct FDamageEvent con
 
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	
-	if (IsValid(StatusComponent))
+	if (IsValid(HealthComponent))
 	{
-		StatusComponent->TakeDamage(ActualDamage);
+		HealthComponent->TakeDamage(ActualDamage);
 	}
 	
 	return ActualDamage;
 }
-
 void ASTPlayerCharacter::HandleTakeDamage(float InNewHp, float InMaxHp)
 {
 	// TODO:
@@ -320,12 +332,49 @@ void ASTPlayerCharacter::HandleTakeDamage(float InNewHp, float InMaxHp)
 
 void ASTPlayerCharacter::HandleDeath()
 {
-	// TODO:
-	// A. Death Montage
-	// B. Change Collision
-	// C. Show Death UI
-}
 
+	SetViewMode(true);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
+	{
+		if (AnimInstance->IsAnyMontagePlaying())
+		{
+			AnimInstance->Montage_Stop(0.2f);
+		}
+
+		if (MontageConfig && MontageConfig->DeadMontage)
+		{
+			AnimInstance->Montage_Play(MontageConfig->DeadMontage);
+			FOnMontageEnded EndDelegate;
+			EndDelegate.BindWeakLambda(this, [this](UAnimMontage* Montage, bool bInterrupted)
+			{
+				OnDeathMontageEnded(Montage, bInterrupted);
+			});
+			AnimInstance->Montage_SetEndDelegate(EndDelegate, MontageConfig->DeadMontage);
+		}
+		else
+		{
+			
+			OnDeathMontageEnded(nullptr, true);
+		}
+	}
+	else
+	{
+		OnDeathMontageEnded(nullptr, true);
+	}
+	
+	
+}
+void ASTPlayerCharacter::OnDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	GetMesh()->bPauseAnims = true;
+	
+	if (APlayerController* PC = GetController<APlayerController>())
+	{
+		DisableInput(PC);
+	} 
+}
 
 #pragma endregion
 
@@ -362,26 +411,19 @@ void ASTPlayerCharacter::OnWeaponFired()
 }
 void ASTPlayerCharacter::PlayReloadAnimation()
 {
-	if (CurrentViewMode == EViewMode::FPS)
+	if (UAnimInstance* AnimInstance = Cast<UAnimInstance>(FPSSkeletalMeshComponent->GetAnimInstance()))
 	{
-		if (UAnimInstance* AnimInstance = Cast<UAnimInstance>(FPSSkeletalMeshComponent->GetAnimInstance()))
+		if (IsValid(MontageConfig->FPSReloadMontage))
 		{
-			if (IsValid(MontageConfig->FPSReloadMontage))
-			{
-				AnimInstance->Montage_Play(MontageConfig->FPSReloadMontage);
-			}
+			AnimInstance->Montage_Play(MontageConfig->FPSReloadMontage);
 		}
 	}
-	else
+	if (UAnimInstance* AnimInstance = Cast<UAnimInstance>(GetMesh()->GetAnimInstance()))
 	{
-		if (UAnimInstance* AnimInstance = Cast<UAnimInstance>(GetMesh()->GetAnimInstance()))
+		if (IsValid(MontageConfig->ReloadMontage))
 		{
-			if (IsValid(MontageConfig->ReloadMontage))
-			{
-				AnimInstance->Montage_Play(MontageConfig->ReloadMontage);
-			}
+			AnimInstance->Montage_Play(MontageConfig->ReloadMontage);
 		}
-			
 	}
 }
 #pragma endregion
