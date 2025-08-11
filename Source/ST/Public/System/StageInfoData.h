@@ -1,12 +1,12 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "StageTimeLimitData.generated.h"
+#include "StageInfoData.generated.h"
 /**
  * 
  */
 USTRUCT( BlueprintType )
-struct FStageTimeLimitRow : public FTableRowBase
+struct FStageInfoRow : public FTableRowBase
 {
 	GENERATED_BODY()
 
