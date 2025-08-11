@@ -118,7 +118,6 @@ protected:
     UFUNCTION()
     void HandleDeath();
 
-    void OnDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 public:
     USTMovementComponent* GetPlayerMovementComponent() const {return MovementComponent;}
 protected:

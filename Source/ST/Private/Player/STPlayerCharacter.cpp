@@ -9,6 +9,7 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Player/STHealthComponent.h"
 #include "Player/STMovementComponent.h"
 #include "Player/STPlayerAnimInstance.h"
@@ -341,53 +342,9 @@ float ASTPlayerCharacter::TakeDamage(float DamageAmount, struct FDamageEvent con
 
 void ASTPlayerCharacter::HandleDeath()
 {
-
 	SetViewMode(true);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-	{
-		if (AnimInstance->IsAnyMontagePlaying())
-		{
-			AnimInstance->Montage_Stop(0.2f);
-		}
-
-		if (MontageConfig && MontageConfig->DeadMontage)
-		{
-			AnimInstance->Montage_Play(MontageConfig->DeadMontage);
-			FOnMontageEnded EndDelegate;
-			EndDelegate.BindWeakLambda(this, [this](UAnimMontage* Montage, bool bInterrupted)
-			{
-				OnDeathMontageEnded(Montage, bInterrupted);
-			});
-			AnimInstance->Montage_SetEndDelegate(EndDelegate, MontageConfig->DeadMontage);
-		}
-		else
-		{
-			
-			OnDeathMontageEnded(nullptr, true);
-		}
-	}
-	else
-	{
-		OnDeathMontageEnded(nullptr, true);
-	}
-	if (ASTGameMode* GM = GetWorld()->GetAuthGameMode<ASTGameMode>())
-	{
-		GM->OnPlayerDied();
-	}
-	
 }
-void ASTPlayerCharacter::OnDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-	GetMesh()->bPauseAnims = true;
-	
-	if (APlayerController* PC = GetController<APlayerController>())
-	{
-		DisableInput(PC);
-	} 
-}
-
 #pragma endregion
 
 #pragma region WeaponSystem
