@@ -6,6 +6,7 @@
 #include "STGameMode.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerEnteredClearZone);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageClear);
 
 /**
  *  게임 규칙, 결과 판단, 진행
@@ -20,6 +21,9 @@ public:
 
 	UPROPERTY( BlueprintAssignable, Category = "Event" )
 	FOnPlayerEnteredClearZone OnPlayerEnteredClearZone;
+
+	UPROPERTY (BlueprintAssignable, Category = "Event" )
+	FOnStageClear OnStageClear;
 
 	UFUNCTION( BlueprintCallable )
 	void StartStage();
@@ -56,6 +60,8 @@ protected:
 
 	UPROPERTY( EditDefaultsOnly, Category = "GameRule" )
 	UDataTable* StageTimeTable;
+
+	bool bStageCleared;
 	
 	FTimerHandle StageTimerHandle;
 

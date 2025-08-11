@@ -10,7 +10,9 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Player/STHealthComponent.h"
 #include "Player/STPlayerCharacter.h"
-
+#include "Player/STStatusComponent.h"
+#include "System/STGameMode.h"
+#include "System/STLog.h"
 
 ASTStagePlayerController::ASTStagePlayerController()
 {
@@ -84,6 +86,13 @@ void ASTStagePlayerController::BeginPlay()
 
 	//게임 클리어 화면 테스트
 	//ShowGameClearResult(15000, 20000); // 점수: 15000, 최고기록: 20000
+
+
+	// JM : GameMode OnStageClear 이벤트 바인딩
+	if (ASTGameMode* STGameMode = GetWorld()->GetAuthGameMode<ASTGameMode>())
+	{
+		STGameMode->OnStageClear.AddDynamic(this, &ASTStagePlayerController::HandleStageClear);
+	}
 	
 }
 
@@ -263,4 +272,46 @@ void ASTStagePlayerController::HandleQuitGame()
 {
 	//임시코드(여기에서 종료)
 	UKismetSystemLibrary::QuitGame(this, this, EQuitPreference::Quit, false);
+}
+
+// JM: 스테이지 클리어시 호출됨
+void ASTStagePlayerController::HandleStageClear()
+{
+	UE_LOG(LogSystem, Warning, TEXT(" ASTStagePlayerController::HandleStageClear() Start"));
+
+	// TODO: StagePlayerController에서 해줘야 할 작업들
+
+	// 현재 스테이지 정보 가져오기
+	USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>();
+	if (!STGameInstance) return;
+
+	EStageType NextStage = EStageType::None;
+	int32 LoadingScreenIndex = 0;
+	switch (STGameInstance->LastStage)
+	{
+		case EStageType::Stage1:
+			NextStage = EStageType::Stage2;
+			LoadingScreenIndex = 2;
+			break;
+		case EStageType::Stage2:
+			NextStage = EStageType::Stage3;
+			LoadingScreenIndex = 3;
+			break;
+		// TODO: 엔딩처리 or 결과화면 처리
+		default:	
+			break;
+	}
+
+	if (NextStage != EStageType::None)
+	{
+		STGameInstance->LastStage = NextStage;
+		LoadNextStage_BP(NextStage, LoadingScreenIndex);
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT(" ASTStagePlayerController::HandleStageClear() NextStage == NONE!"));	
+	}
+	
+	
+	UE_LOG(LogSystem, Warning, TEXT(" ASTStagePlayerController::HandleStageClear() End"));
 }

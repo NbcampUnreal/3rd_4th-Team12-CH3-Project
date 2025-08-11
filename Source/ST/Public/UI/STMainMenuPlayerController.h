@@ -28,6 +28,9 @@ protected:
 	UFUNCTION()
 	void HandleQuitRequested();
 
+	UFUNCTION( BlueprintImplementableEvent )
+	void LoadLobbyLevel_BP();
+
 private:
 	UPROPERTY()
 	USTMainMenuWidget* MenuInstance;

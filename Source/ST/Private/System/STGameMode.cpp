@@ -15,6 +15,7 @@ ASTGameMode::ASTGameMode()
 	StageTimeLimit = 300.0f;
 	RemainingTime = StageTimeLimit;
 	BossPhase = 1;
+	bStageCleared = false;
 }
 
 void ASTGameMode::BeginPlay()
@@ -116,7 +117,7 @@ void ASTGameMode::ResetStage()
 	DeadEnemies = 0;
 	BossPhase = 1;
 
-	TArray<AActor*> EnemyActors;	
+	TArray<AActor*> EnemyActors;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASTEnemyBase::StaticClass(),EnemyActors);
 	TotalEnemies = EnemyActors.Num();
 	RemainingTime = StageTimeLimit;
@@ -151,14 +152,19 @@ float ASTGameMode::GetStageTimeLimit(const FString StageName) const
 void ASTGameMode::HandlePlayerEnteredClearZone()
 {
 	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() Start"));
-	if (DeadEnemies >= TotalEnemies)
+	if (DeadEnemies >= TotalEnemies && !bStageCleared)
 	{
-		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() Stage Clear"));
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() Stage Clear Broadcast"));
+		bStageCleared = true;
+
+		// TODO: 게임 정보 GI에 저장.. 은 PlayerController에서 하는게 맞으려나?
+		OnStageClear.Broadcast();
+		
 		SetStagePhase(EStagePhase::Completed);
 		EndStage(EStageResult::Clear);
 
 		// 현재 스테이지 정보 가져오기
-		USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>();
+		/*USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>();
 		if (!STGameInstance) return;
 
 		EStageType NextStage = EStageType::None;
@@ -179,16 +185,18 @@ void ASTGameMode::HandlePlayerEnteredClearZone()
 				break;
 		}
 
+		
+
 		if (NextStage != EStageType::None)
 		{
-			STGameInstance->LastStage = NextStage;
-			STGameInstance->GoToLevel(NextStage);
+			STGameInstance->LastStage = NextStage;		
+			STGameInstance->GoToLevel(NextStage);	// 레벨 전환 함수
 		}
 		else
 		{
 			// TODO: 엔딩처리 또는 결과화면이 뜨게 하기
 			// STGameInstance->GoToLevel(EStage::Ending); 
-		}
+		}*/
 	}
 	
 	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() End"));
