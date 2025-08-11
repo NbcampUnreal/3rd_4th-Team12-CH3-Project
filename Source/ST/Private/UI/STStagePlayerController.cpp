@@ -91,6 +91,7 @@ void ASTStagePlayerController::BeginPlay()
 	if (ASTGameMode* STGameMode = GetWorld()->GetAuthGameMode<ASTGameMode>())
 	{
 		STGameMode->OnStageClear.AddDynamic(this, &ASTStagePlayerController::HandleStageClear);
+		STGameMode->OnStageFailed.AddDynamic(this, &ASTStagePlayerController::HandleStageFailed);
 	}
 	
 }
@@ -276,10 +277,8 @@ void ASTStagePlayerController::HandleQuitGame()
 // JM: 스테이지 클리어시 호출됨
 void ASTStagePlayerController::HandleStageClear()
 {
-	UE_LOG(LogSystem, Warning, TEXT(" ASTStagePlayerController::HandleStageClear() Start"));
-
-	// TODO: StagePlayerController에서 해줘야 할 작업들
-
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::HandleStageClear() Start"));
+	
 	// 현재 스테이지 정보 가져오기
 	USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>();
 	if (!STGameInstance) return;
@@ -296,7 +295,7 @@ void ASTStagePlayerController::HandleStageClear()
 			NextStage = EStageType::Stage3;
 			LoadingScreenIndex = 3;
 			break;
-		// TODO: 엔딩처리 or 결과화면 처리
+		// TODO: 보스스테이지 클리어시 처리
 		default:	
 			break;
 	}
@@ -304,13 +303,21 @@ void ASTStagePlayerController::HandleStageClear()
 	if (NextStage != EStageType::None)
 	{
 		STGameInstance->LastStage = NextStage;
-		LoadNextStage_BP(NextStage, LoadingScreenIndex);
+		LoadNextStage_BP(NextStage, LoadingScreenIndex);	// 다음 스테이지로 이동(BP Implement 이벤트)
 	}
 	else
 	{
-		UE_LOG(LogSystem, Warning, TEXT(" ASTStagePlayerController::HandleStageClear() NextStage == NONE!"));	
+		UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::HandleStageClear() NextStage == NONE!"));	
 	}
 	
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::HandleStageClear() End"));
+}
+
+void ASTStagePlayerController::HandleStageFailed()
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::HandleStageFailed() Start"));
+
+	// TODO: 스테이지 실패 화면 띄우기
 	
-	UE_LOG(LogSystem, Warning, TEXT(" ASTStagePlayerController::HandleStageClear() End"));
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::HandleStageFailed() End"));
 }

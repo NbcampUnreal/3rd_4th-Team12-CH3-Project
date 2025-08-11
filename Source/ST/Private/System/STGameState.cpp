@@ -2,13 +2,41 @@
 
 ASTGameState::ASTGameState()
 {
-	StagePhase = EStagePhase::Start;
-	RemainingEnemies = 0;
-	RemainingTime = 0.0f;
-	BossPhase = 1;
-	StageResult = EStageResult::None;
+	// FGameStateInfo struct 자체에서 초기화 리스트 할당함(초기화 불필요) 
 }
 
+const FGameStateInfo& ASTGameState::GetGameStateInfo() const
+{
+	return GameStateInfo;
+}
+
+void ASTGameState::SetStagePhase(EStagePhase NewStagePhase)
+{
+	GameStateInfo.StagePhase = NewStagePhase;
+}
+
+void ASTGameState::SetStageResult(EStageResult NewStageResult)
+{
+	GameStateInfo.StageResult = NewStageResult;
+}
+
+void ASTGameState::SetRemainingEnemies(int32 NewRemainingEnemies)
+{
+	GameStateInfo.RemainingEnemies = NewRemainingEnemies;
+}
+
+void ASTGameState::SetRemainingTime(float NewRemainingTime)
+{
+	GameStateInfo.RemainingTime = NewRemainingTime;
+}
+
+void ASTGameState::SetBossPhase(int32 NewBossPhase)
+{
+	GameStateInfo.BossPhase = NewBossPhase;
+}
+
+
+/*
 EStagePhase ASTGameState::GetStagePhase() const
 {
 	return StagePhase;
@@ -58,3 +86,4 @@ void ASTGameState::SetStageResult(EStageResult NewResult)
 {
 	StageResult = NewResult;
 }
+*/

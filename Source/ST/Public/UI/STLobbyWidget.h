@@ -16,8 +16,8 @@ public:
     USTLobbyWidget(const FObjectInitializer& ObjectInitializer);
 
     /** GameMode에 넘겨줄 캐릭터 선택 델리게이트 */
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterSelected, const ECharacterType&, CharacterType);
-    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBackToTitleRequested);
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnCharacterSelected, const ECharacterType&, CharacterType);    // JM: 직접 호출하는게 나을듯?
+    DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnBackToTitleRequested);                                                // JM: 직접 호출하는게 나을듯?
 
     /** GameMode에서 바인딩할 델리게이트 */
     UPROPERTY(BlueprintAssignable, Category = "Event")
