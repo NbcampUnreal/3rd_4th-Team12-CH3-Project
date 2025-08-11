@@ -6,6 +6,9 @@
 #include "GameFramework/Character.h"
 #include "STPlayerCharacter.generated.h"
 
+class USTPlayerBaseData;
+class USTMovementComponent;
+class USTHealthComponent;
 class USTPlayerAnimInstance;
 enum class EWeaponType : uint8;
 class UST_PlayerAnimMontageConfig;
@@ -34,7 +37,6 @@ class ST_API ASTPlayerCharacter : public ACharacter
 
 public:
     ASTPlayerCharacter();
-    USTStatusComponent* GetStatusComponent() const { return StatusComponent; }
     virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 protected:
@@ -83,8 +85,6 @@ protected:
 
 #pragma region Input System
 protected:
-   
- 
     // Input Action Functions
     void Move(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);
@@ -99,22 +99,29 @@ protected:
 
 #pragma endregion
 
-#pragma region Status System
+#pragma region Component
+//health
+public:
+    USTHealthComponent* GetHealthComponent() const { return HealthComponent; }
 protected:
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Status")
-    TObjectPtr<USTStatusComponent> StatusComponent;
-
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component|Health")
+    TObjectPtr<USTHealthComponent> HealthComponent;
+    
     virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
+
     UFUNCTION()
     void HandleTakeDamage(float InNewHp, float InMaxHp);
 
     UFUNCTION()
     void HandleDeath();
 
-    
-#pragma endregion
-
+    void OnDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+public:
+    USTMovementComponent* GetPlayerMovementComponent() const {return MovementComponent;}
+protected:
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component|Movement")
+    TObjectPtr<USTMovementComponent> MovementComponent;
+#pragma  endregion
 
 #pragma region Weapon System
 
@@ -136,5 +143,8 @@ protected:
     
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config", meta = (AllowPrivateAccess = "true"))
     TObjectPtr<UST_PlayerAnimMontageConfig> MontageConfig;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config", meta = (AllowPrivateAccess = "true"))
+    TObjectPtr<USTPlayerBaseData> PlayerBaseStatData;
 #pragma endregion 
 };

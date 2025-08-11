@@ -8,6 +8,7 @@
 #include "System/STGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Player/STHealthComponent.h"
 #include "Player/STPlayerCharacter.h"
 #include "Player/STStatusComponent.h"
 #include "System/STGameMode.h"
@@ -70,7 +71,7 @@ void ASTStagePlayerController::BeginPlay()
 	ASTPlayerCharacter* PlayerCharacter = Cast<ASTPlayerCharacter>(GetPawn()); 
 	if (PlayerCharacter)
 	{
-		PlayerCharacter->GetStatusComponent()->OnHealthChanged.AddDynamic(this,&ASTStagePlayerController::UpdateHealth);
+		PlayerCharacter->GetHealthComponent()->OnHealthChanged.AddDynamic(this,&ASTStagePlayerController::UpdateHealth);
 	}
 	
 	// 실제 데이터 대신 임시 값으로 전달

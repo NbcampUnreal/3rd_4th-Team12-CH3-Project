@@ -78,14 +78,6 @@ void USTWeaponManagerComponent::EquipWeapon(TSubclassOf<ASTWeaponBase> WeaponCla
      
 		UpdateWeaponVisibility(OwnerChar->GetCurrentViewMode());
 	}
-	else if (OwnerChar == nullptr)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("Owner NUll"));
-	}
-	else if(CurrentWeapon == nullptr)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("Weapon NUll"));
-	}
 	if (IsValid(OwnerChar))
 	{
 		OwnerChar->OnWeaponEquipped(CurrentWeapon->WeaponDataAsset->WeaponData.WeaponType);
@@ -123,12 +115,30 @@ void USTWeaponManagerComponent::StopFire()
 	}
 }
 
+void USTWeaponManagerComponent::StartAiming()
+{
+	if (IsValid(CurrentWeapon))
+	{
+		CurrentWeapon->StartAiming();
+	}
+		
+}
+
+void USTWeaponManagerComponent::StopAiming()
+{
+	if (IsValid(CurrentWeapon))
+	{
+		CurrentWeapon->StopAiming();
+	}
+}
+
 void USTWeaponManagerComponent::ReloadAmmo()
 {
 	if (IsValid(CurrentWeapon) && !CurrentWeapon->IsReloading())
 	{
-		CurrentWeapon->StartReload();
 		OwnerChar->PlayReloadAnimation();
+		CurrentWeapon->StartReload();
+		
 	}
 }
 

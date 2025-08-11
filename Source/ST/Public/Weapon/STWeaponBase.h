@@ -82,6 +82,10 @@ public:
 	void StartReload();     // 장전 시작 함수
 	void FinishReload();    // 장전 완료 함수
 
+	//조준
+	void StartAiming();
+	void StopAiming();
+
 	bool IsReloading() const { return bIsReloading; } // 수정 리로드하기위해서
 protected:
 
@@ -148,8 +152,6 @@ protected:
 	//화면 진동 합수
 	void PlayFireCameraShake();
 
-	//조준
-	void StartAiming();
-	void StopAiming();
+	
 
 };
