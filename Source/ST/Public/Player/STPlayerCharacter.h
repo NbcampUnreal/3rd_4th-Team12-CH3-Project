@@ -20,6 +20,7 @@ class UST_PlayerAnimMontageConfig;
 class USTWeaponManagerComponent;
 class USTStatusComponent;
 class USTPlayerInputConfig;
+class ASTPlayerState;
 
 UENUM(BlueprintType)
 enum class EViewMode : uint8
@@ -115,9 +116,6 @@ protected:
     virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
 
     UFUNCTION()
-    void HandleTakeDamage(float InNewHp, float InMaxHp);
-
-    UFUNCTION()
     void HandleDeath();
 
     void OnDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted);
@@ -156,5 +154,10 @@ protected:
 #pragma region Delegate
 public:
     FOnCharacterZooming FOnCharacterZooming;
+#pragma endregion
+
+#pragma region PlayerState
+protected:
+    TObjectPtr<ASTPlayerState> CachedPlayerState;
 #pragma endregion 
 };

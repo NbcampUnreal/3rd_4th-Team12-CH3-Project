@@ -77,6 +77,10 @@ void USTWeaponManagerComponent::EquipWeapon(TSubclassOf<ASTWeaponBase> WeaponCla
 		);
      
 		UpdateWeaponVisibility(OwnerChar->GetCurrentViewMode());
+
+		//binding
+		CurrentWeapon->OnWeaponEquipped.AddDynamic(this, &USTWeaponManagerComponent::OnWeaponEquipped);
+		CurrentWeapon->OnAmmoChanged.AddDynamic(this, &USTWeaponManagerComponent::OnWeaponAmmoChanged);
 	}
 	if (IsValid(OwnerChar))
 	{
@@ -146,10 +150,33 @@ void USTWeaponManagerComponent::UnequipWeapon()
 {
 	if (IsValid(CurrentWeapon))
 	{
-		//todo current weapon delete
+		//binding 홰제
+		CurrentWeapon->OnWeaponEquipped.RemoveDynamic(this, &USTWeaponManagerComponent::OnWeaponEquipped);
+		CurrentWeapon->OnAmmoChanged.RemoveDynamic(this, &USTWeaponManagerComponent::OnWeaponAmmoChanged);
+
+		//부착 해제 
+		CurrentWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		//제거
+		CurrentWeapon->Destroy();
+		CurrentWeapon = nullptr;
 	}
 }
 
+void USTWeaponManagerComponent::OnWeaponEquipped(const FText& WeaponName) 
+{
+	if (EquipDelegate.IsBound())
+	{
+		EquipDelegate.Broadcast(WeaponName);
+	}
+}
+
+void USTWeaponManagerComponent::OnWeaponAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo)
+{
+	if (AmmoChangeDelegate.IsBound())
+	{
+		AmmoChangeDelegate.Broadcast(CurrentAmmo, MaxAmmo);
+	}
+}
 
 
 

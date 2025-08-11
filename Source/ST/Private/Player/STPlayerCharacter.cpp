@@ -15,6 +15,8 @@
 #include "Player/STPlayerBaseData.h"
 #include "Player/STWeaponManagerComponent.h"
 #include "Player/ST_PlayerAnimMontageConfig.h"
+#include "System/STGameMode.h"
+#include "System/STPlayerState.h"
 #include "Weapon/STWeaponType.h"
 
 #pragma region DefaultSetting
@@ -72,6 +74,12 @@ ASTPlayerCharacter::ASTPlayerCharacter()
 void ASTPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	//Cached Player State
+	if (AController* PC = GetController())
+	{
+		CachedPlayerState = PC->GetPlayerState<ASTPlayerState>();
+		
+	}
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
 	if (PC && PC->IsLocalController())
 	{
@@ -91,14 +99,16 @@ void ASTPlayerCharacter::BeginPlay()
 	// Health Component Setting
 	if (IsValid(HealthComponent))
 	{
-		// todo playerState에 저장된 정보가 있다면 가져오기
+		if (IsValid(CachedPlayerState))
+		{
+			//CachedPlayerState->GetPlayerStateInfo();
+		}
 		{
 			if (IsValid(PlayerBaseStatData))
 			{
 				HealthComponent->SetMaxHealth(PlayerBaseStatData->BaseMaxHealth);
 			}
 		}
-		HealthComponent->OnHealthChanged.AddDynamic(this, &ASTPlayerCharacter::HandleTakeDamage);
 		HealthComponent->OnCharacterDeath.AddDynamic(this, &ASTPlayerCharacter::HandleDeath);
 		HealthComponent->Initialize();
 	}
@@ -328,12 +338,6 @@ float ASTPlayerCharacter::TakeDamage(float DamageAmount, struct FDamageEvent con
 	
 	return ActualDamage;
 }
-void ASTPlayerCharacter::HandleTakeDamage(float InNewHp, float InMaxHp)
-{
-	// TODO:
-	// A. Hit Montage
-	// B. Request UI Change
-}
 
 void ASTPlayerCharacter::HandleDeath()
 {
@@ -368,7 +372,10 @@ void ASTPlayerCharacter::HandleDeath()
 	{
 		OnDeathMontageEnded(nullptr, true);
 	}
-	
+	if (ASTGameMode* GM = GetWorld()->GetAuthGameMode<ASTGameMode>())
+	{
+		GM->OnPlayerDied();
+	}
 	
 }
 void ASTPlayerCharacter::OnDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted)
