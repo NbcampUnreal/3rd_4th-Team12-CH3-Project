@@ -137,7 +137,7 @@ void ASTPlayerState::SetCurrWeaponName(const FString& WeaponName)
 /********** protected *************/
 void ASTPlayerState::BeginPlay()
 {
-	UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::BeginPlay() Start"));
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::BeginPlay() Start"));
 	Super::BeginPlay();
 
 	// 레벨 로드시 Game Instance에 저장된 정보 불러오기
@@ -145,15 +145,6 @@ void ASTPlayerState::BeginPlay()
 	{
 		PlayerStateInfo = STGameInstance->GetPlayerStateInfo();
 	}
-	UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::BeginPlay() KillCount(%d)"), PlayerStateInfo.KillCount);
-	UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::BeginPlay() End"));
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::BeginPlay() KillCount(%d)"), PlayerStateInfo.KillCount);
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::BeginPlay() End"));
 }
-
-/*
-void ASTPlayerState::ResetPlayerState()
-{
-	SetScore(0.0f);	// PlayerState에서 정의된 private float Score;
-	KillCount = 0;
-	SelectedCharacter = ECharacterType::None;
-}
-*/

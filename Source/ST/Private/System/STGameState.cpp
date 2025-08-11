@@ -29,68 +29,15 @@ void ASTGameState::SetRemainingEnemies(int32 NewRemainingEnemies)
 
 void ASTGameState::SetRemainingTime(int32 NewRemainingTime)
 {
-	UE_LOG(LogSystem, Log, TEXT("ASTGameState::SetRemainingTime(%d) Start"), NewRemainingTime);
+	// UE_LOG(LogSystem, Log, TEXT("ASTGameState::SetRemainingTime(%d) Start"), NewRemainingTime);
 
 	GameStateInfo.RemainingTime = NewRemainingTime;		// 이제 이걸 저장할 필요가 있을까?
 	OnRemainingTimeUpdated.Broadcast(NewRemainingTime);	// Delegate Broadcast
-
-	UE_LOG(LogSystem, Log, TEXT("ASTGameState::SetRemainingTime(%d) End"), NewRemainingTime);
+	
+	// UE_LOG(LogSystem, Log, TEXT("ASTGameState::SetRemainingTime(%d) End"), NewRemainingTime);
 }
 
 void ASTGameState::SetBossPhase(int32 NewBossPhase)
 {
 	GameStateInfo.BossPhase = NewBossPhase;
 }
-
-
-/*
-EStagePhase ASTGameState::GetStagePhase() const
-{
-	return StagePhase;
-}
-
-int32 ASTGameState::GetRemainingEnemies() const
-{
-	return RemainingEnemies;
-}
-
-float ASTGameState::GetRemainingTime() const
-{
-	return RemainingTime;
-}
-
-int32 ASTGameState::GetBossPhase() const
-{
-	return BossPhase;
-}
-
-EStageResult ASTGameState::GetStageResult() const
-{
-	return StageResult;
-}
-
-void ASTGameState::SetStagePhase(EStagePhase NewPhase)
-{
-	StagePhase = NewPhase;
-}
-
-void ASTGameState::SetRemainingEnemies(int32 NewCount)
-{
-	RemainingEnemies = NewCount;
-}
-
-void ASTGameState::SetRemainingTime(float NewTime)
-{
-	RemainingTime = NewTime;
-}
-
-void ASTGameState::SetBossPhase(int32 NewPhase)
-{
-	BossPhase = NewPhase;
-}
-
-void ASTGameState::SetStageResult(EStageResult NewResult)
-{
-	StageResult = NewResult;
-}
-*/

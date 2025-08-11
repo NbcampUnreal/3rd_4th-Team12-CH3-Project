@@ -205,12 +205,12 @@ void ASTStagePlayerController::UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo)
 
 void ASTStagePlayerController::UpdateTimer(int32 RemainingSeconds)
 {
-	UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::UpdateTimer(%d) Start"), RemainingSeconds);    // JM
+	// UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::UpdateTimer(%d) Start"), RemainingSeconds);    // JM
 
 	if (StageWidget)
 		StageWidget->UpdateTimer(RemainingSeconds);
 
-	UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::UpdateTimer(%d) End"), RemainingSeconds);    // JM
+	// UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::UpdateTimer(%d) End"), RemainingSeconds);    // JM
 }
 
 void ASTStagePlayerController::UpdateEnemyStatus(int32 Killed, int32 Total)

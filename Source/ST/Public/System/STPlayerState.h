@@ -40,23 +40,4 @@ protected:
 	
 private:
 	FPlayerStateInfo PlayerStateInfo;
-	
-	
-	
-
-
-
-	/*
-	/*중복선언 에러#1#
-	/*UPROPERTY( BlueprintReadWrite, Category="PlayerState" ) 
-	int32 Score;#1#
-
-	UPROPERTY( BlueprintReadWrite, Category="PlayerState" )
-	int32 KillCount;
-
-	UPROPERTY( BlueprintReadWrite, Category="PlayerState" )
-	ECharacterType SelectedCharacter;
-
-	UFUNCTION( BlueprintCallable )
-	void ResetPlayerState();*/
 };
