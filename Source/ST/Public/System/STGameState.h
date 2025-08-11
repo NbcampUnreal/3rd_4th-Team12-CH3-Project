@@ -5,6 +5,8 @@
 #include "STGameTypes.h"
 #include "STGameState.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnRemainingTimeUpdated, int32, NewRemainingTime);
+
 /**
  *  게임 진행 상태를 저장, 전파
  *  GameMode에서만 Setter 호출, 다른 곳에서는 읽기만 하기 (friend 키워드)
@@ -18,6 +20,9 @@ public:
 
 	UFUNCTION( BlueprintPure )
 	const FGameStateInfo& GetGameStateInfo() const;	// 상수 참조를 통해 불필요한 복사 방지
+
+	UPROPERTY( BlueprintAssignable, Category="Event" )
+	FOnRemainingTimeUpdated OnRemainingTimeUpdated;
 
 	
 	/*
@@ -43,7 +48,7 @@ protected:
 	void SetStagePhase(EStagePhase NewStagePhase);
 	void SetStageResult(EStageResult NewStageResult);
 	void SetRemainingEnemies(int32 NewRemainingEnemies);
-	void SetRemainingTime(float NewRemainingTime);
+	void SetRemainingTime(int32 NewRemainingTime);
 	void SetBossPhase(int32 NewBossPhase);
 
 

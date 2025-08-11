@@ -96,7 +96,7 @@ struct FGameStateInfo
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
 	int32 RemainingEnemies;
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
-	float RemainingTime;
+	int32 RemainingTime;
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
 	int32 BossPhase;	
 };

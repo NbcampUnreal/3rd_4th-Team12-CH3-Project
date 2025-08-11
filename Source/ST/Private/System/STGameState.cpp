@@ -1,5 +1,7 @@
 ﻿#include "System/STGameState.h"
 
+#include "System/STLog.h"
+
 ASTGameState::ASTGameState()
 {
 	// FGameStateInfo struct 자체에서 초기화 리스트 할당함(초기화 불필요) 
@@ -25,9 +27,14 @@ void ASTGameState::SetRemainingEnemies(int32 NewRemainingEnemies)
 	GameStateInfo.RemainingEnemies = NewRemainingEnemies;
 }
 
-void ASTGameState::SetRemainingTime(float NewRemainingTime)
+void ASTGameState::SetRemainingTime(int32 NewRemainingTime)
 {
-	GameStateInfo.RemainingTime = NewRemainingTime;
+	UE_LOG(LogSystem, Log, TEXT("ASTGameState::SetRemainingTime(%d) Start"), NewRemainingTime);
+
+	GameStateInfo.RemainingTime = NewRemainingTime;		// 이제 이걸 저장할 필요가 있을까?
+	OnRemainingTimeUpdated.Broadcast(NewRemainingTime);	// Delegate Broadcast
+
+	UE_LOG(LogSystem, Log, TEXT("ASTGameState::SetRemainingTime(%d) End"), NewRemainingTime);
 }
 
 void ASTGameState::SetBossPhase(int32 NewBossPhase)

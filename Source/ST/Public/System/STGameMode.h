@@ -42,8 +42,9 @@ private:
 	UPROPERTY( VisibleInstanceOnly, Category = "StageInfo" )
 	int32 DeadEnemies;
 	UPROPERTY( VisibleInstanceOnly, Category = "StageInfo" )
-	float StageTimeLimit;
+	int32 StageTimeLimit;
 	FTimerHandle StageTimerHandle;
+	FTimerHandle StageTimerUpdateHandle;
 	bool bStageCleared;
 	UPROPERTY(EditDefaultsOnly, Category="StageInfo", meta = (AllowPrivateAccess = "true"))
 	UDataTable* StageInfoTable;
@@ -56,9 +57,9 @@ private:
 	UFUNCTION()
 	void HandlePlayerEnteredClearZone();
 	void SetStagePhase(const EStagePhase NewPhase) const;
-	float GetStageInfoFromDataTable(const FString& StageName) const;
+	int32 GetStageInfoFromDataTable(const FString& StageName) const;
 	void BindStageClearZoneEnterEvent();
-	
+	void UpdateStageTimerUI();
 
 
 	
