@@ -45,6 +45,9 @@ public:
 	
 	UFUNCTION()
 	void HandleStageClear();	// JM 스테이지 클리어시 델리게이트
+	UFUNCTION()
+	void HandleStageFailed();	// JM 스테이지 실패시 델리게이트
+	
 
 	UFUNCTION( BlueprintImplementableEvent )
 	void LoadNextStage_BP(EStageType NextStage, int32 LoadingScreenIndex);

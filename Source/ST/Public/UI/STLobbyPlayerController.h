@@ -15,10 +15,6 @@ class ST_API ASTLobbyPlayerController : public APlayerController
 public:
 	ASTLobbyPlayerController();
 
-protected:
-	
-	virtual void BeginPlay() override;
-
 	// JM 캐릭터 선택시 바인딩 함수
 	UFUNCTION()
 	void HandleCharacterSelected(const ECharacterType& CharacterType);
@@ -26,6 +22,11 @@ protected:
 	// JM 메인메뉴로 돌아가기 선택시 바인딩 함수
 	UFUNCTION()
 	void OnBackToTitleRequested();
+	
+protected:
+	
+	virtual void BeginPlay() override;
+
 
 	UFUNCTION( BlueprintImplementableEvent )
 	void StartStage1_BP();

@@ -26,8 +26,8 @@ protected:
 
 	// 게임모드에 넘길 델리게이트는 여전히 유지 (후에 연결할 수 있도록)
 public:
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnNewGameRequested);
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnQuitRequested);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnNewGameRequested);	// JM : 델리게이트 없이 바로 MainmenuPC 함수 호출하는게?
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnQuitRequested);		// JM : 델리게이트 없이 바로 MainmenuPC 함수 호출하는게?
 
 	UPROPERTY(BlueprintAssignable)
 	FOnNewGameRequested OnNewGameRequested;

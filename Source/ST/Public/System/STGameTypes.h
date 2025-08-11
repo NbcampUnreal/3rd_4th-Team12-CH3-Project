@@ -46,3 +46,45 @@ enum class EStageType : uint8
 	Stage3		UMETA( DisplayName = "Stage3" ),
 	Ending		UMETA( DisplayName = "Ending" ),
 };
+
+USTRUCT( BlueprintType )
+struct FPlayerStateInfo		// TODO: 향후 PlayerState가 커지면, 레벨 이동간 유지해야할 정보만 따로 뺄 수도 있음
+{
+	GENERATED_BODY()
+
+	FPlayerStateInfo()
+		: LastStage( EStageType::None )
+		, SelectedCharacter( ECharacterType::None )
+	{}
+	
+	UPROPERTY( BlueprintReadOnly, Category="PlayerState" )
+	EStageType LastStage;
+	
+	UPROPERTY( BlueprintReadOnly, Category="PlayerState" )
+	ECharacterType SelectedCharacter;
+};
+
+USTRUCT( BlueprintType )
+struct FGameStateInfo
+{
+	GENERATED_BODY()
+
+	FGameStateInfo()
+		: StagePhase( EStagePhase::Start )
+		, StageResult(EStageResult::None)
+		, RemainingEnemies(0)
+		, RemainingTime(0.0f)
+		, BossPhase(1)
+	{};
+
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	EStagePhase StagePhase;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	EStageResult StageResult;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	int32 RemainingEnemies;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	float RemainingTime;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	int32 BossPhase;	
+};
