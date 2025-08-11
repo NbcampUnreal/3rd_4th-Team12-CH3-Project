@@ -7,6 +7,7 @@
 #include "System/StageClearZone.h"
 #include "System/StageInfoData.h"
 #include "System/STLog.h"
+#include "System/STPlayerState.h"
 #include "UI/STStagePlayerController.h"
 
 /************** public functions **************/
@@ -31,7 +32,15 @@ void ASTGameMode::OnEnemyKilled()
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnEnemyKilled() Start"));
 
 	DeadEnemies++;
-	UE_LOG(LogSystem, Log, TEXT("Enemy killed(%d / %d)"), DeadEnemies, TotalEnemies);
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnEnemyKilled() Enemy killed(%d / %d)"), DeadEnemies, TotalEnemies);
+
+	// STPlayerState Kill Count 증가
+	ASTStagePlayerController* STPlayerController = Cast<ASTStagePlayerController>(GetWorld()->GetFirstPlayerController());
+	if (ASTPlayerState* STPlayerState = STPlayerController->GetPlayerState<ASTPlayerState>())
+	{
+		STPlayerState->AddKillCount();
+	}
+	
 	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
 	{
 		STGameState->SetRemainingEnemies(TotalEnemies - DeadEnemies);

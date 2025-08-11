@@ -44,10 +44,6 @@ void USTGameInstance::GoToNextStage()
 void USTGameInstance::GoToLevel(EStageType StageType)
 {
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToLevel(%s) Start"), *StaticEnum<EStageType>()->GetValueAsString(StageType));
-
-	// TODO: 레벨 이동 전 보존할 정보 저장
-	
-	
 	
 	FName TargetLevelName = FName("MainMenu");	// Default 값
 
@@ -86,6 +82,22 @@ void USTGameInstance::QuitGame()
 
 	UKismetSystemLibrary::QuitGame(World, PlayerController, EQuitPreference::Quit, true);
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::QuitGame() End"));
+}
+
+void USTGameInstance::SetPlayerStateInfo(const FPlayerStateInfo& NewInfo)
+{
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::SetPlayerStateInfo() Start"));
+	
+	PlayerStateInfo = NewInfo;
+	
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::SetPlayerStateInfo() End"));
+}
+
+const FPlayerStateInfo& USTGameInstance::GetPlayerStateInfo() const
+{
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GetPlayerStateInfo() Start"));
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GetPlayerStateInfo() End"));
+	return PlayerStateInfo;
 }
 
 

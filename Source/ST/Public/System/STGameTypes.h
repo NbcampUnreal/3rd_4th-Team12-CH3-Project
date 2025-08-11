@@ -53,15 +53,27 @@ struct FPlayerStateInfo		// TODO: 향후 PlayerState가 커지면, 레벨 이동
 	GENERATED_BODY()
 
 	FPlayerStateInfo()
-		: LastStage( EStageType::None )
-		, SelectedCharacter( ECharacterType::None )
+		: SelectedCharacter(ECharacterType::None)
+		, CurrentHP(100.0f)
+		, MaxHP(100.0f)
+		, CurrentAmmo(0)
+		, MaxAmmo(0)
+		, KillCount(0)
+		, Score(0)
+		, HighScore(0)
+		, CurrWeaponName(TEXT("NONE"))
 	{}
-	
-	UPROPERTY( BlueprintReadOnly, Category="PlayerState" )
-	EStageType LastStage;
-	
-	UPROPERTY( BlueprintReadOnly, Category="PlayerState" )
+
 	ECharacterType SelectedCharacter;
+	float CurrentHP;
+	float MaxHP;
+	int32 CurrentAmmo;
+	int32 MaxAmmo;
+	int32 KillCount;
+	int32 Score;
+	int32 HighScore;
+	FString CurrWeaponName;	// TODO: Enum으로 확장 필요하겠는데
+	
 };
 
 USTRUCT( BlueprintType )
@@ -70,7 +82,7 @@ struct FGameStateInfo
 	GENERATED_BODY()
 
 	FGameStateInfo()
-		: StagePhase( EStagePhase::Start )
+		: StagePhase(EStagePhase::Start)
 		, StageResult(EStageResult::None)
 		, RemainingEnemies(0)
 		, RemainingTime(0.0f)

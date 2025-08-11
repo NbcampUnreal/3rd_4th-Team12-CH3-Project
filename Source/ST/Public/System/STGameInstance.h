@@ -18,7 +18,7 @@ public:
 	USTGameInstance();
 
 	/* member variables */
-	// FPlayerStateInfo PlayerStateInfo;		// TODO: 구조체로 플레이어 체력 등 전달하기
+	FPlayerStateInfo PlayerStateInfo;		// TODO: 구조체로 플레이어 체력 등 전달하기
 	
 	EStageType LastStage;
 	ECharacterType SelectedCharacter;
@@ -39,8 +39,11 @@ public:
 	UFUNCTION( BlueprintCallable, Category="Level" )
 	void QuitGame();
 
-	// UFUNCTION( BlueprintCallable, Category="Save" )
-	// void UpdatePlayerStateInfo(const FPlayerStateInfo& NewInfo);
+	UFUNCTION( BlueprintCallable, Category="Save" )
+	void SetPlayerStateInfo(const FPlayerStateInfo& NewInfo);
+
+	UFUNCTION( BlueprintCallable, Category="Save" )
+	const FPlayerStateInfo& GetPlayerStateInfo() const;
 
 	// TODO: 게임 저장/불러오기(아카이빙) 기능 구현
 	

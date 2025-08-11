@@ -11,7 +11,9 @@
 #include "Player/STHealthComponent.h"
 #include "Player/STPlayerCharacter.h"
 #include "System/STGameMode.h"
+#include "System/STGameState.h"
 #include "System/STLog.h"
+#include "System/STPlayerState.h"
 
 ASTStagePlayerController::ASTStagePlayerController()
 {
@@ -283,6 +285,12 @@ void ASTStagePlayerController::HandleStageClear()
 	USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>();
 	if (!STGameInstance) return;
 
+	// FPlayerStateInfo -> GameInstance에 저장
+	if(ASTPlayerState* STPlayerState = GetPlayerState<ASTPlayerState>())
+	{
+		STGameInstance->PlayerStateInfo = STPlayerState->GetPlayerStateInfo();
+	}
+	
 	EStageType NextStage = EStageType::None;
 	int32 LoadingScreenIndex = 0;
 	switch (STGameInstance->LastStage)
