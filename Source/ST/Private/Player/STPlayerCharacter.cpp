@@ -100,6 +100,7 @@ void ASTPlayerCharacter::BeginPlay()
 		}
 		HealthComponent->OnHealthChanged.AddDynamic(this, &ASTPlayerCharacter::HandleTakeDamage);
 		HealthComponent->OnCharacterDeath.AddDynamic(this, &ASTPlayerCharacter::HandleDeath);
+		HealthComponent->Initialize();
 	}
 	// Movement Component Setting
 	if (IsValid(MovementComponent))
@@ -111,8 +112,8 @@ void ASTPlayerCharacter::BeginPlay()
 			MovementComponent->SetCrouchMultiplier(PlayerBaseStatData->CrouchMultiplier);
 			MovementComponent->SetSprintMultiplier(PlayerBaseStatData->SprintMultiplier);
 			MovementComponent->SetZoomMultiplier(PlayerBaseStatData->ZoomMultiplier);
-			MovementComponent->Initialize();
 		}
+		MovementComponent->Initialize();
 	}
 	
 	
@@ -279,8 +280,12 @@ void ASTPlayerCharacter::Zoom(const FInputActionValue& Value)
 				WeaponManager->StartAiming();
 			}
 		}
+		if (FOnCharacterZooming.IsBound())
+		{
+			FOnCharacterZooming.Broadcast(MovementComponent->IsZooming());
+		}
+		
 	}
-	
 }
 
 void ASTPlayerCharacter::StartFire(const FInputActionValue& Value)

@@ -10,7 +10,6 @@
 #include "Kismet/KismetSystemLibrary.h"
 #include "Player/STHealthComponent.h"
 #include "Player/STPlayerCharacter.h"
-#include "Player/STStatusComponent.h"
 #include "System/STGameMode.h"
 #include "System/STLog.h"
 
