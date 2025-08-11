@@ -15,6 +15,12 @@ class ST_API ASTGameState : public AGameState
 	GENERATED_BODY()
 public:
 	ASTGameState();
+
+	UFUNCTION( BlueprintPure )
+	const FGameStateInfo& GetGameStateInfo() const;	// 상수 참조를 통해 불필요한 복사 방지
+
+	
+	/*
 	UFUNCTION( BlueprintCallable )
 	EStagePhase GetStagePhase() const;
 	UFUNCTION( BlueprintCallable )
@@ -24,12 +30,26 @@ public:
 	UFUNCTION( BlueprintCallable )
 	int32 GetBossPhase() const;
 	UFUNCTION( BlueprintCallable )
-	EStageResult GetStageResult() const;
+	EStageResult GetStageResult() const;*/
 			
 
 protected:
 	friend class ASTGameMode;	// ASTGameMode 클래스에게 protected 멤버 접근을 허용
+
+	UPROPERTY ( BlueprintReadOnly, Category = "GameState" )
+	FGameStateInfo GameStateInfo;
+
+	/* Setters : GameMode만 접근 가능 */
+	void SetStagePhase(EStagePhase NewStagePhase);
+	void SetStageResult(EStageResult NewStageResult);
+	void SetRemainingEnemies(int32 NewRemainingEnemies);
+	void SetRemainingTime(float NewRemainingTime);
+	void SetBossPhase(int32 NewBossPhase);
+
+
 	
+	
+	/*
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
 	EStagePhase StagePhase;
 
@@ -59,5 +79,5 @@ protected:
 	void SetBossPhase(int32 NewPhase);
 
 	UFUNCTION( BlueprintCallable )
-	void SetStageResult(EStageResult NewResult);
+	void SetStageResult(EStageResult NewResult);*/
 };

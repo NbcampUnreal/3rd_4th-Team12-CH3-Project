@@ -6,6 +6,8 @@
 
 class USphereComponent;
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerEnteredClearZone);
+
 UCLASS()
 class ST_API AStageClearZone : public AActor
 {
@@ -13,6 +15,9 @@ class ST_API AStageClearZone : public AActor
 
 public:
 	AStageClearZone();
+
+	UPROPERTY( BlueprintAssignable, Category = "Event" );
+	FOnPlayerEnteredClearZone OnPlayerEnteredClearZone;
 
 protected:
 	UPROPERTY( VisibleAnywhere )

@@ -1,26 +1,221 @@
 ﻿#include "System/STGameMode.h"
 
-#include "SubobjectDataSubsystem.h"
+#include "ToolContextInterfaces.h"
 #include "Kismet/GameplayStatics.h"
 #include "System/STGameState.h"
 #include "Enemy/STEnemyBase.h"
-#include "System/StageTimeLimitData.h"
-#include "System/STGameInstance.h"
+#include "System/StageClearZone.h"
+#include "System/StageInfoData.h"
 #include "System/STLog.h"
+#include "UI/STStagePlayerController.h"
 
+/************** public functions **************/
 ASTGameMode::ASTGameMode()
 {
+	/* 기본 클래스 설정 */
+	GameStateClass = ASTGameState::StaticClass();
+	PlayerControllerClass = ASTStagePlayerController::StaticClass();
+
+	/* 변수 기본값 설정 */
 	TotalEnemies = 0;
 	DeadEnemies = 0;
 	StageTimeLimit = 300.0f;
-	RemainingTime = StageTimeLimit;
-	BossPhase = 1;
 	bStageCleared = false;
+	StageInfoTable = nullptr;
+	/*RemainingTime = StageTimeLimit;
+	BossPhase = 1;*/
 }
 
+void ASTGameMode::OnEnemyKilled()
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnEnemyKilled() Start"));
+
+	DeadEnemies++;
+	UE_LOG(LogSystem, Log, TEXT("Enemy killed(%d / %d)"), DeadEnemies, TotalEnemies);
+	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
+	{
+		STGameState->SetRemainingEnemies(TotalEnemies - DeadEnemies);
+	}
+
+	if (DeadEnemies >= TotalEnemies)
+	{
+		// TODO: 모든 적을 섬멸했다. 다음 스테이지로 이동하라 메시지 표시 (이벤트? OnEnemyAllKilled?)
+		UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnEnemyKilled() All Enemies Defeated. Proceed to the Clear Zone"));
+	}
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnEnemyKilled() End"));
+}
+
+void ASTGameMode::OnPlayerDied()
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnPlayerDied() Start"));
+	
+	SetStagePhase(EStagePhase::Fail);
+	EndStage(EStageResult::Fail);
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnPlayerDied() End"));
+}
+
+/************** protected functions **************/
 void ASTGameMode::BeginPlay()
 {
-	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::BeginPlay() Start"));
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BeginPlay() Start"));
+	
+	Super::BeginPlay();
+	BindStageClearZoneEnterEvent();
+	ResetStage();
+	StartStage();
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BeginPlay() End"));
+}
+
+/************** private functions **************/
+void ASTGameMode::StartStage()
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::StartStage() Start"));
+
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::StartStage() Stage Started. Time Limit : %.f seconds"), StageTimeLimit);
+	GetWorldTimerManager().SetTimer(StageTimerHandle, this, &ASTGameMode::OnTimeOver, StageTimeLimit, false);
+	SetStagePhase(EStagePhase::InProgress);
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::StartStage() End"));
+}
+
+void ASTGameMode::EndStage(const EStageResult Result)
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::EndStage(%s) Start"), *UEnum::GetValueAsString(Result));
+	
+	GetWorldTimerManager().ClearTimer(StageTimerHandle);
+	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
+	{
+		STGameState->SetStageResult(Result);
+	}
+
+	if (Result == EStageResult::Clear)
+	{
+		OnStageClear.Broadcast();
+	}
+	else if (Result == EStageResult::Fail)
+	{
+		OnStageFailed.Broadcast();
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::EndStage() Result == NONE"));
+	}
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::EndStage(%s) End"), *UEnum::GetValueAsString(Result));
+}
+
+void ASTGameMode::ResetStage()
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::ResetStage() Start"));
+
+	DeadEnemies = 0;
+	bStageCleared = false;
+
+	FString CurrentStageName = UGameplayStatics::GetCurrentLevelName(GetWorld());
+	StageTimeLimit = GetStageInfoFromDataTable(CurrentStageName);
+
+	TArray<AActor*> EnemyActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASTEnemyBase::StaticClass(), EnemyActors);
+	TotalEnemies = EnemyActors.Num();
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::ResetStage() Stage(%s) > %d Enemies Found"), *CurrentStageName, TotalEnemies);
+
+	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
+	{
+		STGameState->SetStagePhase(EStagePhase::Start);
+		STGameState->SetRemainingEnemies(TotalEnemies);
+		STGameState->SetRemainingTime(StageTimeLimit);
+		STGameState->SetStageResult(EStageResult::None);
+		STGameState->SetBossPhase(1);
+	}
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::ResetStage() End"));
+}
+
+void ASTGameMode::OnTimeOver()
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnTimeOver() Start"));
+
+	SetStagePhase(EStagePhase::Fail);
+	EndStage(EStageResult::Fail);
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnTimeOver() End"));
+}
+
+void ASTGameMode::HandlePlayerEnteredClearZone()
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() Start"));
+
+	if (DeadEnemies >= TotalEnemies && !bStageCleared)
+	{
+		UE_LOG(LogSystem, Log, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() Stage Clear Condition"));
+		bStageCleared = true;
+		SetStagePhase(EStagePhase::Completed);
+		EndStage(EStageResult::Clear);
+	}
+	else if (DeadEnemies < TotalEnemies)
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() Not Yet Clear Condition(%d/%d enemies killed)"), DeadEnemies, TotalEnemies);
+		// TODO: 아직 조건이 되지 않았다는 UI 메시지 표시
+	}
+	else if (bStageCleared)
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() Already Stage Cleared)"));
+	}
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() End"));
+}
+
+void ASTGameMode::SetStagePhase(const EStagePhase NewPhase) const
+{
+	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
+	{
+		STGameState->SetStagePhase(NewPhase);
+	}
+}
+
+float ASTGameMode::GetStageInfoFromDataTable(const FString& StageName) const
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::GetStageInfoFromDataTable(%s) Start"), *StageName);
+
+	if (!StageInfoTable)
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::GetStageInfoFromDataTable() No Stage Info Table"));
+		return 300.0f;
+	}
+	
+	if (const FStageInfoRow* Row = StageInfoTable->FindRow<FStageInfoRow>(FName(*StageName), TEXT("")))
+	{
+		UE_LOG(LogSystem, Log, TEXT("ASTGameMode::GetStageInfoFromDataTable(%s) End"), *StageName);
+		return Row->TimeLimit;
+	}
+	
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::GetStageInfoFromDataTable(%s) Can not find row for Stage in StageInfoTable"), *StageName);
+	return 300.0f;
+	
+	// TODO: 향후 스테이지 정보 많아지면 구조체로 확장해서 받아오기
+}
+
+void ASTGameMode::BindStageClearZoneEnterEvent()
+{
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AStageClearZone::StaticClass(),FoundActors);
+
+	if (FoundActors.Num() > 0)
+	{
+		if (AStageClearZone* ClearZone = Cast<AStageClearZone>(FoundActors[0]))
+		{
+			ClearZone->OnPlayerEnteredClearZone.AddDynamic(this, &ASTGameMode::ASTGameMode::HandlePlayerEnteredClearZone);
+		}
+	}
+}
+
+/*
+void ASTGameMode::BeginPlay()
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BeginPlay() Start"));
 	Super::BeginPlay();
 
 	OnPlayerEnteredClearZone.AddDynamic(this, &ASTGameMode::HandlePlayerEnteredClearZone);	// Delegate에 함수 바인딩
@@ -122,7 +317,7 @@ void ASTGameMode::ResetStage()
 	TotalEnemies = EnemyActors.Num();
 	RemainingTime = StageTimeLimit;
 
-	/* 상태값 state에 전달 */
+	/* 상태값 state에 전달 #1#
 	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
 	{
 		STGameState->SetStagePhase(EStagePhase::Start);
@@ -196,7 +391,7 @@ void ASTGameMode::HandlePlayerEnteredClearZone()
 		{
 			// TODO: 엔딩처리 또는 결과화면이 뜨게 하기
 			// STGameInstance->GoToLevel(EStage::Ending); 
-		}*/
+		}#1#
 	}
 	
 	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() End"));
@@ -209,3 +404,4 @@ void ASTGameMode::SetStagePhase(EStagePhase NewPhase)
 		STGameState->SetStagePhase(NewPhase);
 	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::SetStagePhase() End"));
 }
+*/

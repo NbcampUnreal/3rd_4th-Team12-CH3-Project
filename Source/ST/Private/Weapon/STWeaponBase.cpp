@@ -1,5 +1,5 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
 // Fill out your copyright notice in the Description page of Project Settings.
-
 
 #include "Weapon/STWeaponBase.h"
 #include "GameFramework/Character.h"
@@ -62,7 +62,16 @@ void ASTWeaponBase::BeginPlay()
 	{
 		UE_LOG(LogTemp, Warning, TEXT("WeaponDataAsset not assigned."));
 	}
-	
+	//이름 전달
+	if (OnWeaponEquipped.IsBound())
+	{
+		OnWeaponEquipped.Broadcast(WeaponName);
+	}
+	//탄약 전달
+	if (OnAmmoChanged.IsBound())
+	{
+		OnAmmoChanged.Broadcast(CurrentAmmo, MagazineSize);
+	}
 }
 
 
@@ -92,6 +101,11 @@ void ASTWeaponBase::HandleFire()
 	//다음 발사를 위해 bCanFire을 비활성화 및 탄약 감소
 	bCanFire = false;
 	CurrentAmmo--;
+	//탄약 전달
+	if (OnAmmoChanged.IsBound())
+	{
+		OnAmmoChanged.Broadcast(CurrentAmmo, MagazineSize);
+	}
 	UE_LOG(LogTemp, Warning, TEXT("Bang! Ammo: %d"), CurrentAmmo);
 	// 60/FireRate
 	//설정 시간후 발사 활성화 함수 실행을 통해 발사 딜레이 설정
@@ -181,9 +195,9 @@ void ASTWeaponBase::PerformTrace(const FVector& Start, const FVector& Direction)
 		}
 		break;
 
-	case EWeaponType::Rifle:
-	case EWeaponType::Sniper:
-	case EWeaponType::Pistol:
+	case EWeaponType::Rifle:// falls through
+	case EWeaponType::Sniper:// falls through
+	case EWeaponType::Pistol:// falls through
 	default:
 		{ // switch case 안에서 지역 변수 선언을 위해 중괄호 추가
 			UE_LOG(LogTemp, Warning, TEXT("Normal gun firing..."));
@@ -222,7 +236,7 @@ void ASTWeaponBase::PerformTrace(const FVector& Start, const FVector& Direction)
 			}
 
 			// 탄퍼짐이 적용된 방향으로 회전값 설정
-			FRotator MuzzleRotation = FinalDirection.Rotation();  // 🎯 핵심 수정
+			FRotator MuzzleRotation = FinalDirection.Rotation();
 
 			// 총구에서 살짝 앞쪽으로
 			MuzzleLocation += FinalDirection * 20.0f;
@@ -277,7 +291,8 @@ void ASTWeaponBase::ProcessHit(const FHitResult& HitResult)
 		AController* OwnerController = GetOwner() ? GetOwner()->GetInstigatorController() : nullptr;
 
 
-		UGameplayStatics::ApplyPointDamage(
+		UGameplayStatics::ApplyPointDamage
+				(
 				   HitActor,                       // 데미지를 받을 액터
 				   Damage,                         // 기본 데미지
 				   HitResult.ImpactPoint,          // 맞은 위치 (월드 좌표)
@@ -328,6 +343,11 @@ void ASTWeaponBase::FinishReload()
 	bIsReloading = false;
 	bCanFire = true;
 
+	//탄약 전달
+	if (OnAmmoChanged.IsBound())
+	{
+		OnAmmoChanged.Broadcast(CurrentAmmo, MagazineSize);
+	}
 	UE_LOG(LogTemp, Log, TEXT("Reload Complete. Ammo: %d"), CurrentAmmo);
 }
 
