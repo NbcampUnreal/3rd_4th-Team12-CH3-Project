@@ -1,3 +1,4 @@
+// Copyright Epic Games, Inc. All Rights Reserved.
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
@@ -7,25 +8,37 @@
 #include "STWeaponDataAsset.h"
 #include "STWeaponBase.generated.h"
 
+//델리게이트 선언
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquippedSignature, const FText&, WeaponName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmmoChangedSignature, int32, CurrentAmmo, int32, MagazineSize);
+
+
 UCLASS()
 class ST_API ASTWeaponBase : public AActor
 {
 	GENERATED_BODY()
 	
 public:
+	// ========== 컴포넌트 ==========
 	//무기 스테틱 메쉬
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Weapon")
 	UStaticMeshComponent* WeaponMesh;
 
-	// 카메라 쉐이크 시스템
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Screen Shake")
-	TSubclassOf<UCameraShakeBase> FireCameraShake;
-	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Weapon")
 	UStaticMeshComponent* WeaponMesh3p;
+
+	// ========== 생성자 ==========
+	//생성자
+	ASTWeaponBase();
+
+	// ========== 변수 ==========
 	//데이터 에셋에서 값 가져오기
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Weapon")
 	USTWeaponDataAsset* WeaponDataAsset;
+	
+	// 카메라 쉐이크 시스템
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Screen Shake")
+	TSubclassOf<UCameraShakeBase> FireCameraShake;
 	
 	// 발사 시 재생할 VFX를 블루프린트나 데이터 애셋에서 설정할 수 있도록 노출시킵니다.
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon|VFX")
@@ -48,10 +61,14 @@ public:
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	USoundBase* ReloadSound ;
 
-	//생성자
-	ASTWeaponBase();
+	// 외부에서 구독할 델리게이트 프로퍼티 선언
+	UPROPERTY(BlueprintAssignable, Category = "Weapon|Delegates")
+	FOnWeaponEquippedSignature OnWeaponEquipped;
+	// 외부에서 구독할 탄약 선언
+	UPROPERTY(BlueprintAssignable, Category = "Weapon|Delegates")
+	FOnAmmoChangedSignature OnAmmoChanged;
 
-
+	// ========== 함수 ==========
 	//1인칭 스테틱 메쉬 가져오기
 	UFUNCTION(BlueprintPure, Category = "Weapon|Components")
 	UStaticMeshComponent* GetWeaponMesh1P() const { return WeaponMesh; }
@@ -73,21 +90,27 @@ public:
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	int32 GetCurrentAmmo() const { return CurrentAmmo; }
 
-
 	//발사 모드 전환
 	void ToggleFireMode();
 
-	
 	//총알 장전 함수
 	void StartReload();     // 장전 시작 함수
 	void FinishReload();    // 장전 완료 함수
 
+	//조준
+	void StartAiming();
+	void StopAiming();
+
 	bool IsReloading() const { return bIsReloading; } // 수정 리로드하기위해서
+
 protected:
-
-
+	// ========== 변수 ==========
 	EWeaponType WeaponType;
 
+	//무기 이름
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
+	FText WeaponName;
+	
 	//무기 속성
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float Damage;
@@ -131,7 +154,7 @@ protected:
 	//장전 딜레이
 	bool bIsReloading = false;
 
-	//함수
+	// ========== 함수 ==========
 	virtual void BeginPlay() override;
 	//연사 조절 함수
 	void EnableFire();
@@ -147,9 +170,4 @@ protected:
 
 	//화면 진동 합수
 	void PlayFireCameraShake();
-
-	//조준
-	void StartAiming();
-	void StopAiming();
-
 };

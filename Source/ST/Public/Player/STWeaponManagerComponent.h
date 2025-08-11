@@ -46,6 +46,8 @@ private:
 public:
 	void StartFire();
 	void StopFire();
+	void StartAiming();
+	void StopAiming();
 	void ReloadAmmo();
 #pragma endregion 
 
