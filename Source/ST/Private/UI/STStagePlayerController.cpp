@@ -11,7 +11,9 @@
 #include "Player/STHealthComponent.h"
 #include "Player/STPlayerCharacter.h"
 #include "System/STGameMode.h"
+#include "System/STGameState.h"
 #include "System/STLog.h"
+#include "System/STPlayerState.h"
 
 ASTStagePlayerController::ASTStagePlayerController()
 {
@@ -76,7 +78,7 @@ void ASTStagePlayerController::BeginPlay()
 	// 실제 데이터 대신 임시 값으로 전달
 	UpdateWeapon(TEXT("라이플")); // 임시 무기 이름
 	UpdateAmmo(25, 90); // 탄약: 현재 25발 / 최대 90발
-	UpdateTimer(180); // 제한시간: 180초 남음
+	// UpdateTimer(180); // 제한시간: 180초 남음 // JM : 수동호출 제거
 	UpdateEnemyStatus(0, 10); // 적 처치: 0 / 총 10명
 	AddDamageKillLog(TEXT("10의 피해를 받았습니다.")); // 로그 메시지
 
@@ -92,6 +94,13 @@ void ASTStagePlayerController::BeginPlay()
 	{
 		STGameMode->OnStageClear.AddDynamic(this, &ASTStagePlayerController::HandleStageClear);
 		STGameMode->OnStageFailed.AddDynamic(this, &ASTStagePlayerController::HandleStageFailed);
+	}
+
+	
+	// JM: 타이머 업데이트 델리게이트 바인딩 (1초마다 호출함)
+	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
+	{
+		STGameState->OnRemainingTimeUpdated.AddDynamic(this, &ASTStagePlayerController::UpdateTimer);
 	}
 	
 }
@@ -196,8 +205,12 @@ void ASTStagePlayerController::UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo)
 
 void ASTStagePlayerController::UpdateTimer(int32 RemainingSeconds)
 {
+	// UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::UpdateTimer(%d) Start"), RemainingSeconds);    // JM
+
 	if (StageWidget)
 		StageWidget->UpdateTimer(RemainingSeconds);
+
+	// UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::UpdateTimer(%d) End"), RemainingSeconds);    // JM
 }
 
 void ASTStagePlayerController::UpdateEnemyStatus(int32 Killed, int32 Total)
@@ -268,6 +281,7 @@ void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
 	}
 }
 
+
 void ASTStagePlayerController::HandleQuitGame()
 {
 	//임시코드(여기에서 종료)
@@ -283,6 +297,12 @@ void ASTStagePlayerController::HandleStageClear()
 	USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>();
 	if (!STGameInstance) return;
 
+	// FPlayerStateInfo -> GameInstance에 저장
+	if(ASTPlayerState* STPlayerState = GetPlayerState<ASTPlayerState>())
+	{
+		STGameInstance->PlayerStateInfo = STPlayerState->GetPlayerStateInfo();
+	}
+	
 	EStageType NextStage = EStageType::None;
 	int32 LoadingScreenIndex = 0;
 	switch (STGameInstance->LastStage)

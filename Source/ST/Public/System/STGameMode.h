@@ -33,7 +33,14 @@ public:
 	void OnPlayerDied();			// PlayerCharacter -> GameMode
 	
 protected:
+	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "PlayerClasses" )
+	TSubclassOf<APawn> MainPlayerClass;
+	
 	virtual void BeginPlay() override;
+	virtual void RestartPlayer(AController* NewPlayer) override;
+
+	
+	
 
 private:
 	// member variables
@@ -42,8 +49,9 @@ private:
 	UPROPERTY( VisibleInstanceOnly, Category = "StageInfo" )
 	int32 DeadEnemies;
 	UPROPERTY( VisibleInstanceOnly, Category = "StageInfo" )
-	float StageTimeLimit;
+	int32 StageTimeLimit;
 	FTimerHandle StageTimerHandle;
+	FTimerHandle StageTimerUpdateHandle;
 	bool bStageCleared;
 	UPROPERTY(EditDefaultsOnly, Category="StageInfo", meta = (AllowPrivateAccess = "true"))
 	UDataTable* StageInfoTable;
@@ -56,61 +64,7 @@ private:
 	UFUNCTION()
 	void HandlePlayerEnteredClearZone();
 	void SetStagePhase(const EStagePhase NewPhase) const;
-	float GetStageInfoFromDataTable(const FString& StageName) const;
+	int32 GetStageInfoFromDataTable(const FString& StageName) const;
 	void BindStageClearZoneEnterEvent();
-	
-
-
-	
-	
-	
-
-/*
-public:
-	/*UPROPERTY( BlueprintAssignable, Category = "Event" )
-		FOnPlayerEnteredClearZone OnPlayerEnteredClearZone;*/
-	/*UFUNCTION( BlueprintCallable )
-	void StartStage();#1#
-protected:
-	/* member variables #1#
-	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "GameRule" )
-	int32 TotalEnemies;
-	
-	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameRule" )
-	int32 DeadEnemies;
-	
-	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameRule" )
-	int32 BossPhase;
-	
-	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category = "GameRule" )
-	float StageTimeLimit;
-	
-	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameRule" )
-	float RemainingTime;
-
-	UPROPERTY( EditDefaultsOnly, Category = "GameRule" )
-	UDataTable* StageTimeTable;
-
-	bool bStageCleared;
-	
-	FTimerHandle StageTimerHandle;
-
-	/* member functions #1#
-	UFUNCTION()
-	void HandlePlayerEnteredClearZone();
-	
-
-	void EndStage(EStageResult Result);
-	void ResetStage();
-	float GetStageTimeLimit(FString StageName) const;
-	/*UFUNCTION( BlueprintCallable )
-	void SetBossPhase(int32 NewPhase);
-	
-	void OnTimeOver();
-	float GetRemainingTime() const;
-	void CheckStageClear();#1#
-
-
-private:
-	void SetStagePhase(EStagePhase NewPhase);*/
+	void UpdateStageTimerUI();
 };
