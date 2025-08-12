@@ -4,11 +4,33 @@
 #include "System/STGameInstance.h"
 #include "System/STLog.h"
 
+/************ public *************/
 ASTMainMenuPlayerController::ASTMainMenuPlayerController()
 {
 	bShowMouseCursor = true;
 }
 
+// JM: 버튼 Onclick 함수
+void ASTMainMenuPlayerController::HandleNewGameRequested()
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTMainMenuPlayerController::HandleNewGameRequested() Start"));
+	
+	LoadLobbyLevel_BP();	// NOTE: 로딩화면 때문에 BP에서만 구현해야 함
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTMainMenuPlayerController::HandleNewGameRequested() End"));
+}
+
+void ASTMainMenuPlayerController::HandleQuitRequested() 
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTMainMenuPlayerController::HandleQuitRequested() Start"));
+	if (USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>())
+	{
+		STGameInstance->QuitGame();
+	}
+	UE_LOG(LogSystem, Log, TEXT("ASTMainMenuPlayerController::HandleQuitRequested() End"));
+}
+
+/************ protected *************/
 void ASTMainMenuPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -19,8 +41,8 @@ void ASTMainMenuPlayerController::BeginPlay()
 		if (MenuInstance)
 		{
 			// JM 델리게이트 바인딩 추가
-			MenuInstance->OnNewGameRequested.AddDynamic(this, &ASTMainMenuPlayerController::HandleNewGameRequested);
-			MenuInstance->OnQuitRequested.AddDynamic(this, &ASTMainMenuPlayerController::HandleQuitRequested);
+			/*MenuInstance->OnNewGameRequested.AddDynamic(this, &ASTMainMenuPlayerController::HandleNewGameRequested);
+			MenuInstance->OnQuitRequested.AddDynamic(this, &ASTMainMenuPlayerController::HandleQuitRequested);*/
 			
 			MenuInstance->AddToViewport();
 
@@ -30,25 +52,4 @@ void ASTMainMenuPlayerController::BeginPlay()
 			SetInputMode(InputMode);
 		}
 	}
-}
-
-// JM 시작버튼 델리게이트 추가
-void ASTMainMenuPlayerController::HandleNewGameRequested()
-{
-	UE_LOG(LogSystem, Warning, TEXT("ASTMainMenuPlayerController::HandleNewGameRequested() Start"));
-	if (USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>())
-	{
-		STGameInstance->StartNewGame();
-	}
-	UE_LOG(LogSystem, Warning, TEXT("ASTMainMenuPlayerController::HandleNewGameRequested() End"));
-}
-
-void ASTMainMenuPlayerController::HandleQuitRequested()
-{
-	UE_LOG(LogSystem, Warning, TEXT("ASTMainMenuPlayerController::HandleQuitRequested() Start"));
-	if (USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>())
-	{
-		STGameInstance->QuitGame();
-	}
-	UE_LOG(LogSystem, Warning, TEXT("ASTMainMenuPlayerController::HandleQuitRequested() End"));
 }

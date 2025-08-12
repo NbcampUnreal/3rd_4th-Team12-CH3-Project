@@ -77,14 +77,10 @@ void USTWeaponManagerComponent::EquipWeapon(TSubclassOf<ASTWeaponBase> WeaponCla
 		);
      
 		UpdateWeaponVisibility(OwnerChar->GetCurrentViewMode());
-	}
-	else if (OwnerChar == nullptr)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("Owner NUll"));
-	}
-	else if(CurrentWeapon == nullptr)
-	{
-		GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Green, TEXT("Weapon NUll"));
+
+		//binding
+		CurrentWeapon->OnWeaponEquipped.AddDynamic(this, &USTWeaponManagerComponent::OnWeaponEquipped);
+		CurrentWeapon->OnAmmoChanged.AddDynamic(this, &USTWeaponManagerComponent::OnWeaponAmmoChanged);
 	}
 	if (IsValid(OwnerChar))
 	{
@@ -123,12 +119,30 @@ void USTWeaponManagerComponent::StopFire()
 	}
 }
 
+void USTWeaponManagerComponent::StartAiming()
+{
+	if (IsValid(CurrentWeapon))
+	{
+		CurrentWeapon->StartAiming();
+	}
+		
+}
+
+void USTWeaponManagerComponent::StopAiming()
+{
+	if (IsValid(CurrentWeapon))
+	{
+		CurrentWeapon->StopAiming();
+	}
+}
+
 void USTWeaponManagerComponent::ReloadAmmo()
 {
 	if (IsValid(CurrentWeapon) && !CurrentWeapon->IsReloading())
 	{
-		CurrentWeapon->StartReload();
 		OwnerChar->PlayReloadAnimation();
+		CurrentWeapon->StartReload();
+		
 	}
 }
 
@@ -136,10 +150,33 @@ void USTWeaponManagerComponent::UnequipWeapon()
 {
 	if (IsValid(CurrentWeapon))
 	{
-		//todo current weapon delete
+		//binding 홰제
+		CurrentWeapon->OnWeaponEquipped.RemoveDynamic(this, &USTWeaponManagerComponent::OnWeaponEquipped);
+		CurrentWeapon->OnAmmoChanged.RemoveDynamic(this, &USTWeaponManagerComponent::OnWeaponAmmoChanged);
+
+		//부착 해제 
+		CurrentWeapon->DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		//제거
+		CurrentWeapon->Destroy();
+		CurrentWeapon = nullptr;
 	}
 }
 
+void USTWeaponManagerComponent::OnWeaponEquipped(const FText& WeaponName) 
+{
+	if (EquipDelegate.IsBound())
+	{
+		EquipDelegate.Broadcast(WeaponName);
+	}
+}
+
+void USTWeaponManagerComponent::OnWeaponAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo)
+{
+	if (AmmoChangeDelegate.IsBound())
+	{
+		AmmoChangeDelegate.Broadcast(CurrentAmmo, MaxAmmo);
+	}
+}
 
 
 

@@ -17,6 +17,15 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void SetResultInfo(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken);
 
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRetryRequested);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReturnToMainRequested);
+
+	UPROPERTY(BlueprintAssignable, Category="Event")
+	FOnRetryRequested OnRetryRequested;
+
+	UPROPERTY(BlueprintAssignable, Category="Event")
+	FOnReturnToMainRequested OnReturnToMainRequested;
+	
 protected:
 	virtual void NativeConstruct() override;
 
@@ -37,4 +46,8 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	UButton* Btn_ReturnToMain;
+	
+private:
+	UFUNCTION() void HandleRetryClicked();
+	UFUNCTION() void HandleReturnToMainClicked();
 };

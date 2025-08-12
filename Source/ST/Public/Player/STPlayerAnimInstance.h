@@ -28,7 +28,6 @@ protected:
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 	
 	void UpdateMovementProperties();
-	void UpdateStatusProperties();
 	void CalculateAimOffset(float DeltaSeconds);
 	
 #pragma region Character References
@@ -64,6 +63,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	uint8 bIsCrouching : 1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	uint8 bIsDead : 1;
 #pragma endregion
 
 #pragma region Aim Properties
@@ -77,13 +79,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Aim")
 	uint8 bIsZooming : 1;
-#pragma endregion
-
-#pragma region Status Properties
-protected:
-	// Character Status
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
-	uint8 bIsDead : 1;
 #pragma endregion
 
 #pragma region Weapons Properties

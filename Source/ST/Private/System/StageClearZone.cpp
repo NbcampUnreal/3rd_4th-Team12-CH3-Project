@@ -1,9 +1,11 @@
 ﻿#include "System/StageClearZone.h"
 #include "Components/SphereComponent.h"
 #include "GameFramework/Character.h"
+#include "Player/STPlayerCharacter.h"
 #include "System/STGameMode.h"
 #include "System/STLog.h"
 
+/************ public ************/
 AStageClearZone::AStageClearZone()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -21,6 +23,7 @@ AStageClearZone::AStageClearZone()
 	StaticMesh->SetSimulatePhysics(false);
 }
 
+/************ protected ************/
 void AStageClearZone::BeginPlay()
 {
 	Super::BeginPlay();
@@ -30,17 +33,13 @@ void AStageClearZone::BeginPlay()
 void AStageClearZone::OnOverlapBegin(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
 	UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	UE_LOG(LogSystem, Warning, TEXT("AStageClearZone::OnOverlapBegin() Start"));
-	if (OtherActor && OtherActor->IsA(ACharacter::StaticClass()))	// TODO: STPlayerCharacter 클래스로 변경?
+	UE_LOG(LogSystem, Log, TEXT("AStageClearZone::OnOverlapBegin() Start"));
+	if (OtherActor && OtherActor->IsA(ASTPlayerCharacter::StaticClass()))	// TODO: AI가 들어갔을때 발동되진 않는지 테스트
 	{
-		if (ASTGameMode* STGameMode = Cast<ASTGameMode>(GetWorld()->GetAuthGameMode()))
-		{
-			UE_LOG(LogSystem, Warning, TEXT("AStageClearZone::OnOverlapBegin() Call Delegate(GameMode::OnPlayerEnteredClearZone)"));
-			STGameMode->OnPlayerEnteredClearZone.Broadcast();	// DYNAMIC_MULTICAST_DELEGATE
-			// STGameMode->CheckStageClear();	// 직접 호출 말고 Delegate 호출로 변경
-		}
+		UE_LOG(LogSystem, Log, TEXT("AStageClearZone::OnOverlapBegin() Call Delegate(OnPlayerEnteredClearZone)"));
+		OnPlayerEnteredClearZone.Broadcast();
 	}
-	UE_LOG(LogSystem, Warning, TEXT("AStageClearZone::OnOverlapBegin() End"));
+	UE_LOG(LogSystem, Log, TEXT("AStageClearZone::OnOverlapBegin() End"));
 }
 
 

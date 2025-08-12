@@ -8,48 +8,67 @@
 void UUWCrosshairWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+
+	CrosshairLines.Empty();
+	if (LineTopImage)    { CrosshairLines.Emplace(LineTopImage,    ELineDirection::Top); }        // SH
+	if (LineBottomImage) { CrosshairLines.Emplace(LineBottomImage, ELineDirection::Bottom); }     // SH
+	if (LineLeftImage)   { CrosshairLines.Emplace(LineLeftImage,   ELineDirection::Left); }       // SH
+	if (LineRightImage)  { CrosshairLines.Emplace(LineRightImage,  ELineDirection::Right); }      // SH
+
+	for (auto& CrosshairLine : CrosshairLines)                                                     // SH
+	{
+		CrosshairLine.SetZoomOffset(ZoomOffset);                                                   // SH
+	}
+	
 	bIsInitialized =false;
 
+	if (bHasPendingZoom)                                                                           // SH
+	{
+		for (auto& Line : CrosshairLines)                                                          // SH
+		{
+			Line.SetZooming(bDesiredZoomState);                                                    // SH
+		}
+		bHasPendingZoom = false;                                                                   // SH
+	}
 }
 
 void UUWCrosshairWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
-
+	
 	if (!bIsInitialized)
 	{
-		CrosshairLines.Empty();
-		if (LineTopImage)
-		{
-			CrosshairLines.Emplace(LineTopImage, ELineDirection::Top);
-		}
-		if (LineBottomImage)
-		{
-			CrosshairLines.Emplace(LineBottomImage, ELineDirection::Bottom);
-		}
-		if (LineLeftImage)
-		{
-			CrosshairLines.Emplace(LineLeftImage, ELineDirection::Left);
-		}
-		if (LineRightImage)
-		{
-			CrosshairLines.Emplace(LineRightImage, ELineDirection::Right);
-		}
 		for (auto& CrosshairLine : CrosshairLines)
 		{
 			CrosshairLine.SetZoomOffset(ZoomOffset);
 		}
 		bIsInitialized = true;
+		
+		if (bHasPendingZoom)
+		{
+			for (auto& CrosshairLine : CrosshairLines)
+			{
+				CrosshairLine.SetZooming(bDesiredZoomState);
+			}
+			bHasPendingZoom = false;
+		}
 	}
+	
 	for (auto& CrosshairLine : CrosshairLines)
 	{
-		CrosshairLine.UpdatePosition(InDeltaTime,MoveSpeed);
-	}
-		
+		CrosshairLine.UpdatePosition(InDeltaTime, MoveSpeed);
+	}	
 }
 
 void UUWCrosshairWidget::SetZoom(bool NewZoomMode)
 {
+	if (!bIsInitialized)                             // SH
+	{
+		bDesiredZoomState = NewZoomMode;             
+		bHasPendingZoom = true;                      
+		return;                                      
+	}
+
 	for (auto& CrosshairLine : CrosshairLines)
 	{
 		CrosshairLine.SetZooming(NewZoomMode);
@@ -66,14 +85,14 @@ void UUWCrosshairWidget::HitEffect()
 }
 
 #pragma region FCrosshairLine
-UUWCrosshairWidget::FCrosshairLine::FCrosshairLine(UImage* InImage, ELineDirection InDirection):
-	LineImage(InImage)
+UUWCrosshairWidget::FCrosshairLine::FCrosshairLine(UImage* InImage, ELineDirection InDirection)
+	: LineImage(InImage)
 	, LineDirection(InDirection)
 	, DefaultPosition(FVector2D::ZeroVector)
 	, MovementDirection(FVector2D::ZeroVector)
 	, bIsZooming(false)
+	, ZoomOffset(0.f) 
 {
-	LineImage = InImage;
 	if (IsValid(InImage))
 	{
 		LineSlot = Cast<UCanvasPanelSlot>(InImage->Slot);
@@ -82,20 +101,20 @@ UUWCrosshairWidget::FCrosshairLine::FCrosshairLine(UImage* InImage, ELineDirecti
 			DefaultPosition = LineSlot->GetPosition();
 		}
 	}
-	LineDirection = InDirection;
+
 	switch (LineDirection)
 	{
 	case ELineDirection::Top:    MovementDirection = FVector2D(0.f, -1.f); break;
-	case ELineDirection::Bottom: MovementDirection = FVector2D(0.f, 1.f);  break; 
+	case ELineDirection::Bottom: MovementDirection = FVector2D(0.f,  1.f); break; 
 	case ELineDirection::Left:   MovementDirection = FVector2D(-1.f, 0.f); break; 
-	case ELineDirection::Right:  MovementDirection = FVector2D(1.f, 0.f);  break; 
+	case ELineDirection::Right:  MovementDirection = FVector2D(1.f,  0.f); break; 
 	}
 }
 
 FVector2D UUWCrosshairWidget::FCrosshairLine::CalculateTotalOffset() const
 {
-	
 	FVector2D TotalOffset = FVector2D::ZeroVector;
+	
 	if (bIsZooming)
 	{
 		TotalOffset += MovementDirection * ZoomOffset;

@@ -18,15 +18,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
 	TSubclassOf<USTMainMenuWidget> MainMenuWidgetClass;
 
+	UFUNCTION()
+	void HandleNewGameRequested();	// JM: 새 게임시작 버튼 Onclick 함수(STMainMenuWidget에서 직접호출)
+
+	UFUNCTION()
+	void HandleQuitRequested();		// JM: 게임종료 버튼 Onclick 함수(STMainMenuWidget에서 직접호출)
+	
 protected:
 	virtual void BeginPlay() override;
-
-	// JM 델리게이트 함수 추가
-	UFUNCTION()
-	void HandleNewGameRequested();
-
-	UFUNCTION()
-	void HandleQuitRequested();
+	
+	UFUNCTION( BlueprintImplementableEvent )
+	void LoadLobbyLevel_BP();	// JM: Loading 화면 띄우기(BP Only) -> 레벨이동
 
 private:
 	UPROPERTY()

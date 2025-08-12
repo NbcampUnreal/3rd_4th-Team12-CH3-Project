@@ -28,6 +28,7 @@ public:
     // 전투 피드백
     UFUNCTION(BlueprintCallable) void ShowHitMarker();
     UFUNCTION(BlueprintCallable) void ShowDamageTextAt(FVector WorldLocation, int32 Damage);
+    UFUNCTION(BlueprintCallable) void ShowDamageTextAtEx(FVector WorldLocation, int32 Damage, bool bCritical);
     UFUNCTION(BlueprintCallable) void ShowKillConfirmedImage();
 
 protected:

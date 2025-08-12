@@ -1,60 +1,43 @@
 ﻿#include "System/STGameState.h"
 
+#include "System/STLog.h"
+
 ASTGameState::ASTGameState()
 {
-	StagePhase = EStagePhase::Start;
-	RemainingEnemies = 0;
-	RemainingTime = 0.0f;
-	BossPhase = 1;
-	StageResult = EStageResult::None;
+	// FGameStateInfo struct 자체에서 초기화 리스트 할당함(초기화 불필요) 
 }
 
-EStagePhase ASTGameState::GetStagePhase() const
+const FGameStateInfo& ASTGameState::GetGameStateInfo() const
 {
-	return StagePhase;
+	return GameStateInfo;
 }
 
-int32 ASTGameState::GetRemainingEnemies() const
+void ASTGameState::SetStagePhase(EStagePhase NewStagePhase)
 {
-	return RemainingEnemies;
+	GameStateInfo.StagePhase = NewStagePhase;
 }
 
-float ASTGameState::GetRemainingTime() const
+void ASTGameState::SetStageResult(EStageResult NewStageResult)
 {
-	return RemainingTime;
+	GameStateInfo.StageResult = NewStageResult;
 }
 
-int32 ASTGameState::GetBossPhase() const
+void ASTGameState::SetRemainingEnemies(int32 NewRemainingEnemies)
 {
-	return BossPhase;
+	GameStateInfo.RemainingEnemies = NewRemainingEnemies;
 }
 
-EStageResult ASTGameState::GetStageResult() const
+void ASTGameState::SetRemainingTime(int32 NewRemainingTime)
 {
-	return StageResult;
+	// UE_LOG(LogSystem, Log, TEXT("ASTGameState::SetRemainingTime(%d) Start"), NewRemainingTime);
+
+	GameStateInfo.RemainingTime = NewRemainingTime;		// 이제 이걸 저장할 필요가 있을까?
+	OnRemainingTimeUpdated.Broadcast(NewRemainingTime);	// Delegate Broadcast
+	
+	// UE_LOG(LogSystem, Log, TEXT("ASTGameState::SetRemainingTime(%d) End"), NewRemainingTime);
 }
 
-void ASTGameState::SetStagePhase(EStagePhase NewPhase)
+void ASTGameState::SetBossPhase(int32 NewBossPhase)
 {
-	StagePhase = NewPhase;
-}
-
-void ASTGameState::SetRemainingEnemies(int32 NewCount)
-{
-	RemainingEnemies = NewCount;
-}
-
-void ASTGameState::SetRemainingTime(float NewTime)
-{
-	RemainingTime = NewTime;
-}
-
-void ASTGameState::SetBossPhase(int32 NewPhase)
-{
-	BossPhase = NewPhase;
-}
-
-void ASTGameState::SetStageResult(EStageResult NewResult)
-{
-	StageResult = NewResult;
+	GameStateInfo.BossPhase = NewBossPhase;
 }

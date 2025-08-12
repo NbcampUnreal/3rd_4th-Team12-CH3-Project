@@ -46,3 +46,57 @@ enum class EStageType : uint8
 	Stage3		UMETA( DisplayName = "Stage3" ),
 	Ending		UMETA( DisplayName = "Ending" ),
 };
+
+USTRUCT( BlueprintType )
+struct FPlayerStateInfo		// TODO: 향후 PlayerState가 커지면, 레벨 이동간 유지해야할 정보만 따로 뺄 수도 있음
+{
+	GENERATED_BODY()
+
+	FPlayerStateInfo()
+		: SelectedCharacter(ECharacterType::None)
+		, CurrentHP(100.0f)
+		, MaxHP(100.0f)
+		, CurrentAmmo(0)
+		, MaxAmmo(0)
+		, KillCount(0)
+		, Score(0)
+		, HighScore(0)
+		, CurrWeaponName(TEXT("NONE"))
+	{}
+
+	ECharacterType SelectedCharacter;
+	float CurrentHP;
+	float MaxHP;
+	int32 CurrentAmmo;
+	int32 MaxAmmo;
+	int32 KillCount;
+	int32 Score;
+	int32 HighScore;
+	FString CurrWeaponName;	// TODO: Enum으로 확장 필요하겠는데
+	
+};
+
+USTRUCT( BlueprintType )
+struct FGameStateInfo
+{
+	GENERATED_BODY()
+
+	FGameStateInfo()
+		: StagePhase(EStagePhase::Start)
+		, StageResult(EStageResult::None)
+		, RemainingEnemies(0)
+		, RemainingTime(0.0f)
+		, BossPhase(1)
+	{};
+
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	EStagePhase StagePhase;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	EStageResult StageResult;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	int32 RemainingEnemies;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	int32 RemainingTime;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	int32 BossPhase;	
+};

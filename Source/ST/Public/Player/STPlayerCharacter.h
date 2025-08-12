@@ -6,12 +6,21 @@
 #include "GameFramework/Character.h"
 #include "STPlayerCharacter.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCharacterZooming, bool);
+
+
+
+
+class USTPlayerBaseData;
+class USTMovementComponent;
+class USTHealthComponent;
 class USTPlayerAnimInstance;
 enum class EWeaponType : uint8;
 class UST_PlayerAnimMontageConfig;
 class USTWeaponManagerComponent;
 class USTStatusComponent;
 class USTPlayerInputConfig;
+class ASTPlayerState;
 
 UENUM(BlueprintType)
 enum class EViewMode : uint8
@@ -34,7 +43,6 @@ class ST_API ASTPlayerCharacter : public ACharacter
 
 public:
     ASTPlayerCharacter();
-    USTStatusComponent* GetStatusComponent() const { return StatusComponent; }
     virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 protected:
@@ -83,8 +91,6 @@ protected:
 
 #pragma region Input System
 protected:
-   
- 
     // Input Action Functions
     void Move(const FInputActionValue& Value);
     void Look(const FInputActionValue& Value);
@@ -99,22 +105,25 @@ protected:
 
 #pragma endregion
 
-#pragma region Status System
+#pragma region Component
+//health
+public:
+    USTHealthComponent* GetHealthComponent() const { return HealthComponent; }
 protected:
-
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Status")
-    TObjectPtr<USTStatusComponent> StatusComponent;
-
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component|Health")
+    TObjectPtr<USTHealthComponent> HealthComponent;
+    
     virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser) override;
-    UFUNCTION()
-    void HandleTakeDamage(float InNewHp, float InMaxHp);
 
     UFUNCTION()
     void HandleDeath();
 
-    
-#pragma endregion
-
+public:
+    USTMovementComponent* GetPlayerMovementComponent() const {return MovementComponent;}
+protected:
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Component|Movement")
+    TObjectPtr<USTMovementComponent> MovementComponent;
+#pragma  endregion
 
 #pragma region Weapon System
 
@@ -136,5 +145,18 @@ protected:
     
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config", meta = (AllowPrivateAccess = "true"))
     TObjectPtr<UST_PlayerAnimMontageConfig> MontageConfig;
+
+    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config", meta = (AllowPrivateAccess = "true"))
+    TObjectPtr<USTPlayerBaseData> PlayerBaseStatData;
+#pragma endregion
+
+#pragma region Delegate
+public:
+    FOnCharacterZooming FOnCharacterZooming;
+#pragma endregion
+
+#pragma region PlayerState
+protected:
+    TObjectPtr<ASTPlayerState> CachedPlayerState;
 #pragma endregion 
 };

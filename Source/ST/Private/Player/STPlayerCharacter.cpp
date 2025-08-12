@@ -5,17 +5,23 @@
 #include "Player/STPlayerInputConfig.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
-#include "Player/STStatusComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Player/STHealthComponent.h"
+#include "Player/STMovementComponent.h"
 #include "Player/STPlayerAnimInstance.h"
+#include "Player/STPlayerBaseData.h"
 #include "Player/STWeaponManagerComponent.h"
 #include "Player/ST_PlayerAnimMontageConfig.h"
+#include "System/STGameMode.h"
+#include "System/STPlayerState.h"
 #include "Weapon/STWeaponType.h"
 
 #pragma region DefaultSetting
+
 ASTPlayerCharacter::ASTPlayerCharacter()
 {
 	// Character Movement Settings
@@ -54,9 +60,12 @@ ASTPlayerCharacter::ASTPlayerCharacter()
 	FPSSkeletalMeshComponent->SetRelativeLocation(FVector(0, 0, -20));
 	FPSSkeletalMeshComponent->bAutoActivate = false;
 
-	// Status Component
-	StatusComponent = CreateDefaultSubobject<USTStatusComponent>(TEXT("StatusComponent"));
+	//HealthCompoennt
+	HealthComponent = CreateDefaultSubobject<USTHealthComponent>(TEXT("HealthComponent"));
 
+	//MovementComponent
+	MovementComponent = CreateDefaultSubobject<USTMovementComponent>(TEXT("MovementComponent"));
+	
 	//Weapon Component
 	WeaponManager = CreateDefaultSubobject<USTWeaponManagerComponent>(TEXT("WeaponManager"));
 
@@ -66,6 +75,12 @@ ASTPlayerCharacter::ASTPlayerCharacter()
 void ASTPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	//Cached Player State
+	if (AController* PC = GetController())
+	{
+		CachedPlayerState = PC->GetPlayerState<ASTPlayerState>();
+		
+	}
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
 	if (PC && PC->IsLocalController())
 	{
@@ -80,19 +95,38 @@ void ASTPlayerCharacter::BeginPlay()
 		}
 	}
 	
-	if (GetCharacterMovement() && IsValid(StatusComponent))
-	{
-		GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetMoveSpeed();
-		GetCharacterMovement()->MaxWalkSpeedCrouched = StatusComponent->GetCrouchSpeed();
-	}
 	SetViewMode(true); //  TPS view
 	
-	// Bind Status Component Events
-	if (IsValid(StatusComponent))
+	// Health Component Setting
+	if (IsValid(HealthComponent))
 	{
-		StatusComponent->OnHealthChanged.AddDynamic(this, &ASTPlayerCharacter::HandleTakeDamage);
-		StatusComponent->OnCharacterDeath.AddDynamic(this, &ASTPlayerCharacter::HandleDeath);
+		if (IsValid(CachedPlayerState))
+		{
+			//CachedPlayerState->GetPlayerStateInfo();
+		}
+		{
+			if (IsValid(PlayerBaseStatData))
+			{
+				HealthComponent->SetMaxHealth(PlayerBaseStatData->BaseMaxHealth);
+			}
+		}
+		HealthComponent->OnCharacterDeath.AddDynamic(this, &ASTPlayerCharacter::HandleDeath);
+		HealthComponent->Initialize();
 	}
+	// Movement Component Setting
+	if (IsValid(MovementComponent))
+	{
+		//todo 이것도 playerstate에 
+		if (IsValid(PlayerBaseStatData))
+		{
+			MovementComponent->SetWalkSpeed(PlayerBaseStatData->BaseWalkSpeed);
+			MovementComponent->SetCrouchMultiplier(PlayerBaseStatData->CrouchMultiplier);
+			MovementComponent->SetSprintMultiplier(PlayerBaseStatData->SprintMultiplier);
+			MovementComponent->SetZoomMultiplier(PlayerBaseStatData->ZoomMultiplier);
+		}
+		MovementComponent->Initialize();
+	}
+	
 	
 }
 
@@ -154,22 +188,19 @@ void ASTPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 #pragma endregion 
 
 #pragma region Camera System
+
 void ASTPlayerCharacter::SetViewMode(bool bIsTPS)
 {
 	CurrentViewMode = bIsTPS ? EViewMode::TPS : EViewMode::FPS;
 
-
 	TPSCameraComponent->SetActive(bIsTPS);
 	FPSCameraComponent->SetActive(!bIsTPS);
-
-
+	
 	bUseControllerRotationYaw = !bIsTPS;
 	bUseControllerRotationPitch = true;
-
-	// 메시 가시성 제어
+	
 	if (bIsTPS)
 	{
-	
 		GetMesh()->SetOwnerNoSee(false);             
 		FPSSkeletalMeshComponent->SetOwnerNoSee(true);  
 	}
@@ -183,7 +214,6 @@ void ASTPlayerCharacter::SetViewMode(bool bIsTPS)
 }
 
 #pragma endregion
-
 
 #pragma region Input System
 
@@ -209,7 +239,6 @@ void ASTPlayerCharacter::Look(const FInputActionValue& Value)
 
 void ASTPlayerCharacter::Crouch(const FInputActionValue& Value)
 {
-	
 	if (GetCharacterMovement()->IsCrouching())
 	{
 		UnCrouch();
@@ -218,27 +247,25 @@ void ASTPlayerCharacter::Crouch(const FInputActionValue& Value)
 	{
 		ACharacter::Crouch();
 	}
-	
 }
 
 
 
 void ASTPlayerCharacter::Sprint(const FInputActionValue& Value)
 {
-	if (!IsValid(StatusComponent) || StatusComponent->IsSprinting())
+
+	if (IsValid(MovementComponent))
 	{
-		return;
+		MovementComponent->StartSprinting();
 	}
-	StatusComponent->SetSprinting(true);
-	GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetMoveSpeed();
+	
 }
 
 void ASTPlayerCharacter::EndSprint(const FInputActionValue& Value)
 {
-	if (IsValid(StatusComponent) && StatusComponent->IsSprinting())
+	if (IsValid(MovementComponent))
 	{
-		StatusComponent->SetSprinting(false);
-		GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetMoveSpeed();
+		MovementComponent->StopSprinting();
 	}
 }
 
@@ -250,16 +277,31 @@ void ASTPlayerCharacter::ChangeView(const FInputActionValue& Value)
 
 void ASTPlayerCharacter::Zoom(const FInputActionValue& Value)
 {
-	if (IsValid(StatusComponent))
+	if (IsValid(MovementComponent))
 	{
-		StatusComponent->SetZoom(!StatusComponent->IsZooming());
-		GetCharacterMovement()->MaxWalkSpeed = StatusComponent->GetMoveSpeed();
+		MovementComponent->ChangeZoomMode();
+		if (IsValid(WeaponManager))
+		{
+			if (MovementComponent->IsZooming())
+			{
+				WeaponManager->StartAiming();				
+			}
+			else
+			{
+				WeaponManager->StartAiming();
+			}
+		}
+		if (FOnCharacterZooming.IsBound())
+		{
+			FOnCharacterZooming.Broadcast(MovementComponent->IsZooming());
+		}
+		
 	}
 }
 
 void ASTPlayerCharacter::StartFire(const FInputActionValue& Value)
 {
-	if (IsValid(WeaponManager))
+	if (IsValid(WeaponManager) && !GetMovementComponent()->IsFalling())
 	{
 		WeaponManager->StartFire();
 	}
@@ -284,39 +326,28 @@ void ASTPlayerCharacter::ReloadAmmo(const FInputActionValue& Value)
 
 #pragma region Status System
 
-
 float ASTPlayerCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
 	class AController* EventInstigator, AActor* DamageCauser)
 {
 
 	float ActualDamage = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
 	
-	if (IsValid(StatusComponent))
+	if (IsValid(HealthComponent))
 	{
-		StatusComponent->TakeDamage(ActualDamage);
+		HealthComponent->TakeDamage(ActualDamage);
 	}
 	
 	return ActualDamage;
 }
 
-void ASTPlayerCharacter::HandleTakeDamage(float InNewHp, float InMaxHp)
-{
-	// TODO:
-	// A. Hit Montage
-	// B. Request UI Change
-}
-
 void ASTPlayerCharacter::HandleDeath()
 {
-	// TODO:
-	// A. Death Montage
-	// B. Change Collision
-	// C. Show Death UI
+	SetViewMode(true);
+	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
+#pragma endregion
 
-
-#pragma endregion 
-
+#pragma region WeaponSystem
 void ASTPlayerCharacter::OnWeaponEquipped(EWeaponType NewWeapon)
 {
 	if (USTPlayerAnimInstance* AnimInstance = Cast<USTPlayerAnimInstance>(GetMesh()->GetAnimInstance()))
@@ -349,29 +380,22 @@ void ASTPlayerCharacter::OnWeaponFired()
 }
 void ASTPlayerCharacter::PlayReloadAnimation()
 {
-	if (CurrentViewMode == EViewMode::FPS)
+	if (UAnimInstance* AnimInstance = Cast<UAnimInstance>(FPSSkeletalMeshComponent->GetAnimInstance()))
 	{
-		if (UAnimInstance* AnimInstance = Cast<UAnimInstance>(FPSSkeletalMeshComponent->GetAnimInstance()))
+		if (IsValid(MontageConfig->FPSReloadMontage))
 		{
-			if (IsValid(MontageConfig->FPSReloadMontage))
-			{
-				AnimInstance->Montage_Play(MontageConfig->FPSReloadMontage);
-			}
+			AnimInstance->Montage_Play(MontageConfig->FPSReloadMontage);
 		}
 	}
-	else
+	if (UAnimInstance* AnimInstance = Cast<UAnimInstance>(GetMesh()->GetAnimInstance()))
 	{
-		if (UAnimInstance* AnimInstance = Cast<UAnimInstance>(GetMesh()->GetAnimInstance()))
+		if (IsValid(MontageConfig->ReloadMontage))
 		{
-			if (IsValid(MontageConfig->ReloadMontage))
-			{
-				AnimInstance->Montage_Play(MontageConfig->ReloadMontage);
-			}
+			AnimInstance->Montage_Play(MontageConfig->ReloadMontage);
 		}
-			
 	}
 }
-
+#pragma endregion
 
 
 

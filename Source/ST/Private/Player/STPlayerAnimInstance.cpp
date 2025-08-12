@@ -3,9 +3,10 @@
 
 #include "Player/STPlayerAnimInstance.h"
 #include "Player/STPlayerCharacter.h"
-#include "Player/STStatusComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Player/STHealthComponent.h"
+#include "Player/STMovementComponent.h"
 #include "Weapon/STWeaponType.h"
 
 USTPlayerAnimInstance::USTPlayerAnimInstance()
@@ -18,9 +19,9 @@ USTPlayerAnimInstance::USTPlayerAnimInstance()
 	bShouldMove = false;
 	bIsFalling = false;
 	bIsCrouching = false;
-	bIsDead = false;
 	bIsZooming = false;
 	WeaponType = EWeaponType::Rifle;
+	bIsDead = false;
 }
 
 void USTPlayerAnimInstance::NativeInitializeAnimation()
@@ -45,7 +46,6 @@ void USTPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	}
 
 	UpdateMovementProperties();
-	UpdateStatusProperties();
 	CalculateAimOffset(DeltaSeconds);
 	
 }
@@ -57,13 +57,11 @@ void USTPlayerAnimInstance::UpdateMovementProperties()
 	{
 		return;
 	}
-
 	
 	Velocity = OwnerCharacterMovement->Velocity;
 	GroundSpeed = UKismetMathLibrary::VSizeXY(Velocity);
 	bIsFalling = OwnerCharacterMovement->IsFalling();
 	bIsCrouching = OwnerCharacterMovement->IsCrouching();
-
 	
 	if (Velocity.SizeSquared() > 0.0f)
 	{
@@ -74,7 +72,8 @@ void USTPlayerAnimInstance::UpdateMovementProperties()
 	float GroundAcceleration = UKismetMathLibrary::VSizeXY(OwnerCharacterMovement->GetCurrentAcceleration());
 	bool bIsAccelerated = !FMath::IsNearlyZero(GroundAcceleration);
 	bShouldMove = (GroundSpeed > KINDA_SMALL_NUMBER) && bIsAccelerated;
-	bIsZooming = OwnerCharacter->GetStatusComponent()->IsZooming();
+	bIsZooming = OwnerCharacter->GetPlayerMovementComponent()->IsZooming();
+	bIsDead = OwnerCharacter->GetHealthComponent()->IsDead();
 }
 #pragma endregion
 
@@ -101,27 +100,6 @@ void USTPlayerAnimInstance::CalculateAimOffset(float DeltaSeconds)
 
 }
 
-#pragma endregion
-
-#pragma region Status Properties
-void USTPlayerAnimInstance::UpdateStatusProperties()
-{
-	if (!IsValid(OwnerCharacter))
-	{
-		bIsDead = false;
-		return;
-	}
-
-	USTStatusComponent* CurrentStatusComponent = OwnerCharacter->GetStatusComponent();
-	if (IsValid(CurrentStatusComponent))
-	{
-		bIsDead = CurrentStatusComponent->IsDead();
-	}
-	else
-	{
-		bIsDead = false;
-	}
-}
 #pragma endregion
 
 #pragma region WeaponProperties

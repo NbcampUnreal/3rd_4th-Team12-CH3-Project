@@ -6,6 +6,9 @@
 #include "Components/ActorComponent.h"
 #include "STWeaponManagerComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquip, const FText&, WeaponName);
+// 탄약 변경 이벤트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponAmmoChange, int32, CurrentAmmo, int32, MaxAmmo);
 
 enum class EViewMode : uint8;
 class ASTPlayerCharacter;
@@ -46,8 +49,22 @@ private:
 public:
 	void StartFire();
 	void StopFire();
+	void StartAiming();
+	void StopAiming();
 	void ReloadAmmo();
 #pragma endregion 
 
-		
+#pragma region DelegateChaning  // ui에 무기 데이터 전달을 위한 delegate chain필요 
+public:
+	FOnWeaponEquip EquipDelegate;
+	FOnWeaponAmmoChange AmmoChangeDelegate;
+protected:
+	UFUNCTION()
+	void OnWeaponEquipped(const FText& WeaponName);
+
+	UFUNCTION()
+	void OnWeaponAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo);
+
+	
+#pragma endregion 
 };
