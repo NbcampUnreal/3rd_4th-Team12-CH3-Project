@@ -116,6 +116,16 @@ protected:
 	void HideScoreboard();
 
 private:
+	UFUNCTION()
+	void OnEnemyPointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy,
+							FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName,
+							FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser);
+
+	UFUNCTION()
+	void ShowDamageNumberAtActor(AActor* Target, int32 Damage, bool bCritical, FName SocketName = TEXT("HealthBar"));
+
+	FDelegateHandle ActorSpawnedHandle;
+	
 	UPROPERTY()
 	UUWCrosshairWidget* CachedCrosshair = nullptr;
 	

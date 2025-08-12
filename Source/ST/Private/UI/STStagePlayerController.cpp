@@ -10,6 +10,7 @@
 #include "Blueprint/UserWidget.h"
 #include "System/STGameInstance.h"
 #include "System/STGameTypes.h"
+#include "Enemy/STEnemyBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Player/STHealthComponent.h"
@@ -18,6 +19,7 @@
 #include "System/STGameState.h"
 #include "System/STLog.h"
 #include "System/STPlayerState.h"
+#include "Components/SkeletalMeshComponent.h"
 
 ASTStagePlayerController::ASTStagePlayerController()
 {
@@ -29,6 +31,16 @@ ASTStagePlayerController::ASTStagePlayerController()
 	if (WidgetClass.Succeeded())
 	{
 		ScoreboardWidgetClass = WidgetClass.Class;
+	}
+
+	TArray<AActor*> Enemies;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASTEnemyBase::StaticClass(), Enemies);
+	for (AActor* E : Enemies)
+	{
+		if (E)
+		{
+			E->OnTakePointDamage.AddDynamic(this, &ASTStagePlayerController::OnEnemyPointDamage); // SH
+		}
 	}
 
 	// 게임 오버 UI 위젯 연결
@@ -159,6 +171,45 @@ void ASTStagePlayerController::Tick(float DeltaSeconds)
 			CachedCrosshair->SetZoom(bNow);
 		}
 	}
+}
+
+// 히트마커&데미지량
+static bool IsHeadShot(const FName& BoneName)
+{
+	const FString B = BoneName.ToString();
+	return B.Equals(TEXT("head"), ESearchCase::IgnoreCase)
+		|| B.Equals(TEXT("Head"), ESearchCase::IgnoreCase)
+		|| B.Contains(TEXT("head"), ESearchCase::IgnoreCase);
+}
+
+void ASTStagePlayerController::OnEnemyPointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy,
+												  FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName,
+												  FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
+{
+	ShowHitMarker();
+	const bool bCritical = IsHeadShot(BoneName);
+	const int32 ShownDamage = FMath::Max(1, FMath::RoundToInt(Damage));
+	ShowDamageNumberAtActor(DamagedActor, ShownDamage, bCritical, TEXT("HealthBar"));
+}
+
+void ASTStagePlayerController::ShowDamageNumberAtActor(AActor* Target, int32 Damage, bool bCritical, FName SocketName)
+{
+	if (!Target || !StageWidget) return;
+
+	FVector WorldLoc = Target->GetActorLocation() + FVector(0,0,100.f); // fallback
+
+	if (const ACharacter* Char = Cast<ACharacter>(Target))
+	{
+		if (USkeletalMeshComponent* Mesh = Char->GetMesh())
+		{
+			if (Mesh->DoesSocketExist(SocketName))
+			{
+				WorldLoc = Mesh->GetSocketLocation(SocketName) + FVector(0,0,20.f); // 살짝 위로
+			}
+		}
+	}
+
+	StageWidget->ShowDamageTextAtEx(WorldLoc, Damage, bCritical);
 }
 
 // 점수판 표시
