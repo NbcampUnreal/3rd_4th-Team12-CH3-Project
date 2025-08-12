@@ -4,8 +4,10 @@
 #include "Kismet/GameplayStatics.h"
 #include "System/STGameState.h"
 #include "Enemy/STEnemyBase.h"
+#include "Player/STPlayerCharacter.h"
 #include "System/StageClearZone.h"
 #include "System/StageInfoData.h"
+#include "System/STGameInstance.h"
 #include "System/STLog.h"
 #include "System/STPlayerState.h"
 #include "UI/STStagePlayerController.h"
@@ -16,6 +18,7 @@ ASTGameMode::ASTGameMode()
 	/* 기본 클래스 설정 */
 	GameStateClass = ASTGameState::StaticClass();
 	PlayerControllerClass = ASTStagePlayerController::StaticClass();
+	DefaultPawnClass = nullptr;
 
 	/* 변수 기본값 설정 */
 	TotalEnemies = 0;
@@ -77,6 +80,131 @@ void ASTGameMode::BeginPlay()
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BeginPlay() End"));
 }
+
+void ASTGameMode::RestartPlayer(AController* NewPlayer)
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::RestartPlayer() Start"));
+
+	USTGameInstance* STGameInstance = Cast<USTGameInstance>(GetGameInstance());
+	if (!STGameInstance)
+	{
+		Super::RestartPlayer(NewPlayer);
+		return;
+	}
+
+	if (!STGameInstance->PlayerPawnInstance)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		STGameInstance->PlayerPawnInstance = GetWorld()->SpawnActor<APawn>(STGameInstance->MainPlayerClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	}
+
+	APawn* PlayerPawnInstance = STGameInstance->PlayerPawnInstance;
+	if (!PlayerPawnInstance)
+	{
+		UE_LOG(LogSystem, Error, TEXT("ASTGameMode::RestartPlayer() PlayerpawnInstance is nullptr in GameInstance!"));
+		Super::RestartPlayer(NewPlayer);
+		return;
+	}
+
+	AActor* PlayerStart = FindPlayerStart(NewPlayer, "");
+	if (PlayerStart)
+	{
+		PlayerPawnInstance->SetActorLocationAndRotation(PlayerStart->GetActorLocation(), PlayerStart->GetActorRotation());
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::RestartPlayer() No PlayerStart found. Spawning at default location."));
+		PlayerPawnInstance->SetActorLocationAndRotation(FVector::ZeroVector, FRotator::ZeroRotator);
+	}
+
+	// 캐릭터의 상태를 활성화
+	PlayerPawnInstance->SetActorHiddenInGame(false);
+	PlayerPawnInstance->SetActorEnableCollision(true);
+	PlayerPawnInstance->SetActorTickEnabled(true);
+
+	// PlayerController가 캐릭터를 소유
+	NewPlayer->Possess(PlayerPawnInstance);
+
+	// 스켈레탈 메시 교체 로직
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::RestartPlayer() Character Type : %s"), *StaticEnum<ECharacterType>()->GetValueAsString(STGameInstance->SelectedCharacter));
+	ASTPlayerCharacter* PlayerCharacter = Cast<ASTPlayerCharacter>(PlayerPawnInstance);
+	if (PlayerCharacter)
+	{
+		USkeletalMesh* MeshToUse = nullptr;
+		if (STGameInstance->SelectedCharacter == ECharacterType::JaxMercer)
+		{
+			UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::RestartPlayer() Use Jax mercer Mesh"));
+			MeshToUse = STGameInstance->JaxMercerCharacterMesh;
+		}
+		else if (STGameInstance->SelectedCharacter == ECharacterType::AvaRaines)
+		{
+			UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::RestartPlayer() Use AvaRaines Mesh"));
+			MeshToUse = STGameInstance->AvaRainesCharacterMesh;
+		}
+
+		if (MeshToUse)
+		{
+			PlayerCharacter->GetMesh()->SetSkeletalMesh(MeshToUse);
+		}
+		else
+		{
+			UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::PostLogin() No Mesh To Use!"));
+		}
+	}
+
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::RestartPlayer() End"));
+}
+
+/*
+void ASTGameMode::PostLogin(APlayerController* NewPlayer)
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::PostLogin() Start"));
+	Super::PostLogin(NewPlayer);
+
+	USTGameInstance* STGameInstance = Cast<USTGameInstance>(GetGameInstance());
+	if (!STGameInstance)	return;
+
+	APawn* CurrentPawn = NewPlayer->GetPawn();
+	if (!CurrentPawn)	// Pawn이 스폰되지 않았을 경우, 기본 폰을 스폰
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::PostLogin() Spawn New Current Pawn"));
+		FActorSpawnParameters SpawnParameters;
+		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		CurrentPawn = GetWorld()->SpawnActor<APawn>(DefaultPawnClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParameters);
+		if (CurrentPawn)
+		{
+			NewPlayer->Possess(CurrentPawn);
+		}
+	}
+
+	// STPlayerCharacter로 캐스팅하여 스켈레탈 메시 컴포넌트에 접근
+	ASTPlayerCharacter* PlayerCharacter = Cast<ASTPlayerCharacter>(CurrentPawn);
+	if (!PlayerCharacter)	return;
+
+	USkeletalMesh* MeshToUse = nullptr;
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::PostLogin() Character Type : %s"), *StaticEnum<ECharacterType>()->GetValueAsString(STGameInstance->SelectedCharacter));
+	if (STGameInstance->SelectedCharacter == ECharacterType::JaxMercer)
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::PostLogin() Use Jax mercer Mesh"));
+		MeshToUse = STGameInstance->JaxMercerCharacterMesh;
+	}
+	else if (STGameInstance->SelectedCharacter == ECharacterType::AvaRaines)
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::PostLogin() Use Jax mercer Mesh"));
+		MeshToUse = STGameInstance->AvaRainesCharacterMesh;
+	}
+
+	if (MeshToUse)
+	{
+		PlayerCharacter->GetMesh()->SetSkeletalMesh(MeshToUse);
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::PostLogin() No Mesh To Use!"));
+	}
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::PostLogin() End"));
+}*/
 
 /************** private functions **************/
 void ASTGameMode::StartStage()
@@ -233,7 +361,7 @@ void ASTGameMode::UpdateStageTimerUI()
 	{
 		float RemainingTimeFloat = GetWorld()->GetTimerManager().GetTimerRemaining(StageTimerHandle);	// 내림(0~29초), 올림(1~30초)
 		int32 RemainingTimeSeconds = FMath::CeilToInt(RemainingTimeFloat);
-		UE_LOG(LogSystem, Log, TEXT("ASTGameMode::UpdateStageTimerUI() RemainingTime(%f), (%d)"), RemainingTimeFloat, RemainingTimeSeconds);
+		// UE_LOG(LogSystem, Log, TEXT("ASTGameMode::UpdateStageTimerUI() RemainingTime(%f), (%d)"), RemainingTimeFloat, RemainingTimeSeconds);
 		STGameState->SetRemainingTime(RemainingTimeSeconds);
 		if (RemainingTimeSeconds <= 0)
 		{

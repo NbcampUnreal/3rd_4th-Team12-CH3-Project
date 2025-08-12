@@ -33,7 +33,14 @@ public:
 	void OnPlayerDied();			// PlayerCharacter -> GameMode
 	
 protected:
+	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "PlayerClasses" )
+	TSubclassOf<APawn> MainPlayerClass;
+	
 	virtual void BeginPlay() override;
+	virtual void RestartPlayer(AController* NewPlayer) override;
+
+	
+	
 
 private:
 	// member variables
