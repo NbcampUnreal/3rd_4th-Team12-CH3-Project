@@ -105,6 +105,9 @@ void ASTStagePlayerController::BeginPlay()
 	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
 	{
 		STGameState->OnRemainingTimeUpdated.AddDynamic(this, &ASTStagePlayerController::UpdateTimer);
+
+		const int32 InitialRemaining = STGameState->GetGameStateInfo().RemainingTime;
+		UpdateTimer(InitialRemaining);
 	}
 
 	if (ASTPlayerCharacter* PC = Cast<ASTPlayerCharacter>(GetPawn()))
