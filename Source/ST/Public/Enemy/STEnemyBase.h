@@ -6,6 +6,11 @@
 #include "Enemy/STPatrolPoint.h"
 #include "STEnemyBase.generated.h"
 
+// SH: UI로 데미지 표시를 보내기 위한 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_ThreeParams(FOnDamageTaken, AActor*, DamagedActor, float, DamageAmount, bool, bCritical);
+// SH: UI로 적 사망상태를 보내기 위한 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnDied, AActor*, DeadEnemy);
+
 UCLASS()
 class ST_API ASTEnemyBase : public ACharacter
 {
@@ -61,6 +66,13 @@ public:
 	float GetHealth() const { return Health; }
 	UFUNCTION(BlueprintPure, Category = "Enemy|Stats")
 	float GetMaxHealth() const { return MaxHealth; }
+
+	// SH: UI로 데미지 표시를 보내기 위한 델리게이트
+	UPROPERTY(BlueprintAssignable, Category = "Events")
+	FOnDamageTaken OnDamageTaken;
+	// SH: UI로 적 사망상태를 보내기 위한 델리게이트
+	UPROPERTY(BlueprintAssignable, Category="Events")
+	FOnDied OnDied;
 
 protected:
 	virtual void BeginPlay() override;
