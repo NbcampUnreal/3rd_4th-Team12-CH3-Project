@@ -8,9 +8,8 @@
 
 class UCanvasPanelSlot;
 class UImage;
-/**
- * 
- */
+
+
 UCLASS()
 class ST_API UUWCrosshairWidget : public UUserWidget
 {
@@ -18,17 +17,36 @@ class ST_API UUWCrosshairWidget : public UUserWidget
 
 
 public:
-	virtual void NativeConstruct() override;
-	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
-
 	UFUNCTION(BlueprintCallable)
 	void SetZoom(bool NewZoomMode);
 
 	UFUNCTION(BlueprintCallable)
 	void HitEffect();
 	
-#pragma region FCrosshairLine
-public:
+	virtual void NativeConstruct() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+
+protected:
+	UPROPERTY(meta = (BindWidget)) UImage* LineTopImage;
+	UPROPERTY(meta = (BindWidget)) UImage* LineBottomImage;
+	UPROPERTY(meta = (BindWidget)) UImage* LineLeftImage;
+	UPROPERTY(meta = (BindWidget)) UImage* LineRightImage;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crosshair|Offset")
+	float ZoomOffset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crosshair|Offset")
+	float SpreadOffset;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crosshair|Speed")
+	float MoveSpeed;
+
+	UPROPERTY(meta = (BindWidgetAnim), Transient)
+	TObjectPtr<UWidgetAnimation> HitAnim;
+
+	
+
+private:
 	enum class ELineDirection
 	{
 		Top,
@@ -55,41 +73,16 @@ public:
 		FVector2D MovementDirection;
 
 		//zoom
-		bool bIsZooming;
-		float ZoomOffset;
+		bool bIsZooming = false;   // SH: 기본값 초기화
+		float ZoomOffset = 0.f;    // SH: 기본값 초기화
 		
 	};
-#pragma endregion  
-protected:
 	
-	UPROPERTY(meta = (BindWidget))
-	UImage* LineTopImage;
-
-	UPROPERTY(meta = (BindWidget))
-	UImage* LineBottomImage;
-
-	UPROPERTY(meta = (BindWidget))
-	UImage* LineLeftImage;
-
-	UPROPERTY(meta = (BindWidget))
-	UImage* LineRightImage;
-	
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crosshair|Offset")
-	float ZoomOffset;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crosshair|Offset")
-	float SpreadOffset;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Crosshair|Speed")
-	float MoveSpeed;
-
-	UPROPERTY(meta = (BindWidgetAnim), Transient)
-	TObjectPtr<UWidgetAnimation> HitAnim;
-
-private:
 	TArray<FCrosshairLine> CrosshairLines;
-	
-	bool bIsInitialized;
+
+	bool bIsInitialized = false;;        // SH: 초기화 완료 플래그
+	bool bDesiredZoomState = false;      // SH: 초기화 전에 전달된 줌 상태 저장
+	bool bHasPendingZoom = false;        // SH: 초기화 후 1회 적용 플래그
 	
 	
 	

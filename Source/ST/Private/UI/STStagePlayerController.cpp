@@ -4,8 +4,13 @@
 #include "UI/STScoreboardWidget.h"
 #include "UI/STGameOverWidget.h"
 #include "UI/STGameClearWidget.h"
+#include "UI/UWCrosshairWidget.h"            
+#include "Player/STMovementComponent.h"      
+#include "Player/STPlayerCharacter.h"        
 #include "Blueprint/UserWidget.h"
 #include "System/STGameInstance.h"
+#include "System/STGameTypes.h"
+#include "Enemy/STEnemyBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Player/STHealthComponent.h"
@@ -14,16 +19,28 @@
 #include "System/STGameState.h"
 #include "System/STLog.h"
 #include "System/STPlayerState.h"
+#include "Components/SkeletalMeshComponent.h"
 
 ASTStagePlayerController::ASTStagePlayerController()
 {
 	bShowMouseCursor = false;
 
+	PrimaryActorTick.bCanEverTick = true;
 	
 	static ConstructorHelpers::FClassFinder<USTScoreboardWidget> WidgetClass(TEXT("/Game/UI/UI_BP/BP_ScoreboardUI"));
 	if (WidgetClass.Succeeded())
 	{
 		ScoreboardWidgetClass = WidgetClass.Class;
+	}
+
+	TArray<AActor*> Enemies;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASTEnemyBase::StaticClass(), Enemies);
+	for (AActor* E : Enemies)
+	{
+		if (E)
+		{
+			E->OnTakePointDamage.AddDynamic(this, &ASTStagePlayerController::OnEnemyPointDamage); // SH
+		}
 	}
 
 	// 게임 오버 UI 위젯 연결
@@ -101,6 +118,30 @@ void ASTStagePlayerController::BeginPlay()
 	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
 	{
 		STGameState->OnRemainingTimeUpdated.AddDynamic(this, &ASTStagePlayerController::UpdateTimer);
+
+		const int32 InitialRemaining = STGameState->GetGameStateInfo().RemainingTime;
+		UpdateTimer(InitialRemaining);
+	}
+
+	if (ASTPlayerCharacter* PC = Cast<ASTPlayerCharacter>(GetPawn()))
+	{
+		CachedMoveComp = PC->GetPlayerMovementComponent();
+		if (CachedMoveComp)
+		{
+			bPrevZoomState = CachedMoveComp->IsZooming();
+
+			if (StageWidget)
+			{
+				if (UWidget* Found = StageWidget->GetWidgetFromName(TEXT("WBP_CrossHair")))
+				{
+					CachedCrosshair = Cast<UUWCrosshairWidget>(Found);
+					if (CachedCrosshair)
+					{
+						CachedCrosshair->SetZoom(bPrevZoomState);
+					}
+				}
+			}
+		}
 	}
 	
 }
@@ -115,6 +156,60 @@ void ASTStagePlayerController::SetupInputComponent()
 	// Tab 키 입력 바인딩
 	InputComponent->BindKey(EKeys::Tab, IE_Pressed, this, &ASTStagePlayerController::ShowScoreboard);
 	InputComponent->BindKey(EKeys::Tab, IE_Released, this, &ASTStagePlayerController::HideScoreboard);
+}
+
+void ASTStagePlayerController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	
+	if (CachedMoveComp && CachedCrosshair)
+	{
+		const bool bNow = CachedMoveComp->IsZooming();
+		if (bNow != bPrevZoomState)
+		{
+			bPrevZoomState = bNow;
+			CachedCrosshair->SetZoom(bNow);
+		}
+	}
+}
+
+// 히트마커&데미지량
+static bool IsHeadShot(const FName& BoneName)
+{
+	const FString B = BoneName.ToString();
+	return B.Equals(TEXT("head"), ESearchCase::IgnoreCase)
+		|| B.Equals(TEXT("Head"), ESearchCase::IgnoreCase)
+		|| B.Contains(TEXT("head"), ESearchCase::IgnoreCase);
+}
+
+void ASTStagePlayerController::OnEnemyPointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy,
+												  FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName,
+												  FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
+{
+	ShowHitMarker();
+	const bool bCritical = IsHeadShot(BoneName);
+	const int32 ShownDamage = FMath::Max(1, FMath::RoundToInt(Damage));
+	ShowDamageNumberAtActor(DamagedActor, ShownDamage, bCritical, TEXT("HealthBar"));
+}
+
+void ASTStagePlayerController::ShowDamageNumberAtActor(AActor* Target, int32 Damage, bool bCritical, FName SocketName)
+{
+	if (!Target || !StageWidget) return;
+
+	FVector WorldLoc = Target->GetActorLocation() + FVector(0,0,100.f); // fallback
+
+	if (const ACharacter* Char = Cast<ACharacter>(Target))
+	{
+		if (USkeletalMeshComponent* Mesh = Char->GetMesh())
+		{
+			if (Mesh->DoesSocketExist(SocketName))
+			{
+				WorldLoc = Mesh->GetSocketLocation(SocketName) + FVector(0,0,20.f); // 살짝 위로
+			}
+		}
+	}
+
+	StageWidget->ShowDamageTextAtEx(WorldLoc, Damage, bCritical);
 }
 
 // 점수판 표시
@@ -171,6 +266,7 @@ void ASTStagePlayerController::TogglePauseMenu()
 			if (PauseMenuWidget)
 			{
 				PauseMenuWidget->AddToViewport(100);
+				PauseMenuWidget->OnReturnToMainRequested.AddDynamic(this, &ASTStagePlayerController::HandlePauseReturnToMain);
 				PauseMenuWidget->OnQuitGameRequested.AddDynamic(this, &ASTStagePlayerController::HandleQuitGame);
 			}
 		}
@@ -182,6 +278,26 @@ void ASTStagePlayerController::TogglePauseMenu()
 
 		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
+	}
+}
+
+void ASTStagePlayerController::HandlePauseReturnToMain()
+{
+	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	{
+		SetPause(false);
+		SetInputMode(FInputModeUIOnly());
+		bShowMouseCursor = true;
+		
+		GI->GoToMainMenu();
+	}
+}
+
+void ASTStagePlayerController::HandleQuitGame()
+{
+	if (USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>())
+	{
+		STGameInstance->QuitGame();
 	}
 }
 
@@ -251,6 +367,9 @@ void ASTStagePlayerController::ShowGameOverResult(int32 Score, int32 KillCount, 
 		if (GameOverWidget)
 		{
 			GameOverWidget->AddToViewport(500);
+
+			GameOverWidget->OnRetryRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameOverRetry);
+			GameOverWidget->OnReturnToMainRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameOverReturnToMain);
 		}
 	}
 
@@ -270,6 +389,9 @@ void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
 		if (GameClearWidget)
 		{
 			GameClearWidget->AddToViewport(600); // ZOrder 높게 설정
+			
+			GameClearWidget->OnRetryRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameClearRetry);
+			GameClearWidget->OnReturnToMainRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameClearReturnToMain);
 		}
 	}
 
@@ -281,12 +403,6 @@ void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
 	}
 }
 
-
-void ASTStagePlayerController::HandleQuitGame()
-{
-	//임시코드(여기에서 종료)
-	UKismetSystemLibrary::QuitGame(this, this, EQuitPreference::Quit, false);
-}
 
 // JM: 스테이지 클리어시 호출됨
 void ASTStagePlayerController::HandleStageClear()
@@ -340,4 +456,38 @@ void ASTStagePlayerController::HandleStageFailed()
 	// TODO: 스테이지 실패 화면 띄우기
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::HandleStageFailed() End"));
+}
+
+//Game Over 버튼
+void ASTStagePlayerController::HandleGameOverRetry()
+{
+	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	{
+		GI->GoToLevel(EStageType::Stage1);
+	}
+}
+
+void ASTStagePlayerController::HandleGameOverReturnToMain()
+{
+	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	{
+		GI->GoToMainMenu();
+	}
+}
+
+//Game Clear 버튼
+void ASTStagePlayerController::HandleGameClearRetry()
+{
+	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	{
+		GI->GoToLevel(EStageType::Stage1);
+	}
+}
+
+void ASTStagePlayerController::HandleGameClearReturnToMain()
+{
+	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	{
+		GI->GoToMainMenu();
+	}
 }

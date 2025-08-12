@@ -5,6 +5,7 @@
 #include "Components/VerticalBox.h"
 #include "Components/Image.h"
 #include "Kismet/GameplayStatics.h"
+#include "Engine/Engine.h"
 #include "TimerManager.h"
 #include "System/STGameState.h"
 #include "System/STLog.h"
@@ -127,20 +128,37 @@ void USTStageWidget::HideKillConfirmedImage()
 
 void USTStageWidget::ShowDamageTextAt(FVector WorldLocation, int32 Damage)
 {
-    if (!STDamageTextWidgetClass) return;
+    ShowDamageTextAtEx(WorldLocation, Damage, false);
+}
 
-    APlayerController* PC = GetWorld()->GetFirstPlayerController();
-    if (!PC) return;
+void USTStageWidget::ShowDamageTextAtEx(FVector WorldLocation, int32 Damage, bool bCritical)
+{
+    if (!STDamageTextWidgetClass)
+    {
+        UE_LOG(LogTemp, Error, TEXT("ShowDamageTextAtEx: STDamageTextWidgetClass NOT set."));
+        return;
+    }
+
+    APlayerController* PC = GetOwningPlayer();
+    if (!PC) { PC = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr; }
+    if (!PC) { UE_LOG(LogTemp, Error, TEXT("ShowDamageTextAtEx: No PlayerController.")); return; }
 
     FVector2D ScreenPos;
-    if (UGameplayStatics::ProjectWorldToScreen(PC, WorldLocation, ScreenPos))
+    if (!UGameplayStatics::ProjectWorldToScreen(PC, WorldLocation, ScreenPos))
     {
-        USTDamageTextWidget* Widget = CreateWidget<USTDamageTextWidget>(PC, STDamageTextWidgetClass);
-        if (Widget)
-        {
-            Widget->AddToViewport();
-            Widget->SetDamageText(Damage);
-            Widget->SetPositionInViewport(ScreenPos, true);
-        }
+        UE_LOG(LogTemp, Warning, TEXT("ShowDamageTextAtEx: ProjectWorldToScreen failed. WL=%s"), *WorldLocation.ToString());
+        return;
     }
+
+    USTDamageTextWidget* W = CreateWidget<USTDamageTextWidget>(PC, STDamageTextWidgetClass);
+    if (!W) { UE_LOG(LogTemp, Error, TEXT("ShowDamageTextAtEx: CreateWidget failed.")); return; }
+    
+    W->SetRenderOpacity(0.f);
+    W->SetVisibility(ESlateVisibility::HitTestInvisible);
+    W->SetAlignmentInViewport(FVector2D(0.5f, 0.5f));
+    W->SetPositionInViewport(ScreenPos, true);
+    W->AddToViewport(2000);
+    
+    W->SetDamage(Damage, bCritical);
+    W->SetRenderOpacity(1.f);
 }

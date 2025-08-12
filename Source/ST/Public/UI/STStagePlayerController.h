@@ -11,6 +11,8 @@ class USTScoreboardWidget;
 class USTGameOverWidget;
 class USTGameClearWidget;
 class UUserWidget;
+class UUWCrosshairWidget;
+class USTMovementComponent;
 
 UCLASS()
 class ST_API ASTStagePlayerController : public APlayerController
@@ -21,6 +23,7 @@ public:
 	ASTStagePlayerController();
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	// UI 업데이트 함수
 	UFUNCTION()	// NOTE: FROM JM, 이거 에러 안났나요..? UFUNCTION 안붙이면 예외나던데
@@ -42,12 +45,24 @@ public:
 	void TogglePauseMenu();
 
 	UFUNCTION()
+	void HandlePauseReturnToMain();
+	UFUNCTION()
 	void HandleQuitGame();
 	
 	UFUNCTION()
 	void HandleStageClear();	// JM 스테이지 클리어시 델리게이트
 	UFUNCTION()
 	void HandleStageFailed();	// JM 스테이지 실패시 델리게이트
+
+	UFUNCTION()
+	void HandleGameOverRetry();
+	UFUNCTION()
+	void HandleGameOverReturnToMain();
+	
+	UFUNCTION()
+	void HandleGameClearRetry();
+	UFUNCTION()
+	void HandleGameClearReturnToMain();
 	
 
 	UFUNCTION( BlueprintImplementableEvent )
@@ -99,4 +114,23 @@ protected:
 	// [Tab] 키 입력 핸들러
 	void ShowScoreboard();
 	void HideScoreboard();
+
+private:
+	UFUNCTION()
+	void OnEnemyPointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy,
+							FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName,
+							FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser);
+
+	UFUNCTION()
+	void ShowDamageNumberAtActor(AActor* Target, int32 Damage, bool bCritical, FName SocketName = TEXT("HealthBar"));
+
+	FDelegateHandle ActorSpawnedHandle;
+	
+	UPROPERTY()
+	UUWCrosshairWidget* CachedCrosshair = nullptr;
+	
+	UPROPERTY()
+	USTMovementComponent* CachedMoveComp = nullptr;
+
+	bool bPrevZoomState = false;
 };
