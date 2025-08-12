@@ -12,6 +12,9 @@ void USTPauseMenuWidget::NativeConstruct()
 
 	if (Btn_QuitGame)
 		Btn_QuitGame->OnClicked.AddDynamic(this, &USTPauseMenuWidget::OnQuitClicked);
+	
+	if (Btn_ReturnToMain)
+		Btn_ReturnToMain->OnClicked.AddDynamic(this, &USTPauseMenuWidget::OnReturnToMainClicked);
 }
 
 void USTPauseMenuWidget::OnResumeClicked()
@@ -28,4 +31,9 @@ void USTPauseMenuWidget::OnResumeClicked()
 void USTPauseMenuWidget::OnQuitClicked()
 {
 	OnQuitGameRequested.Broadcast();
+}
+
+void USTPauseMenuWidget::OnReturnToMainClicked()
+{
+	OnReturnToMainRequested.Broadcast();
 }

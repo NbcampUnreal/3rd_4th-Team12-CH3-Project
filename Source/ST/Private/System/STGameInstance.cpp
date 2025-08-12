@@ -12,6 +12,25 @@ USTGameInstance::USTGameInstance()
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::Constructor() End"));
 }
 
+/*void USTGameInstance::Init()
+{
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::Init() Start"));
+	Super::Init();
+
+	if (MainPlayerClass)	// 게임 시작시 한 번만 캐릭터 인스턴스 생성 및 보관
+	{
+		PlayerPawnInstance = GetWorld()->SpawnActor<APawn>(MainPlayerClass);
+		if (PlayerPawnInstance)
+		{
+			UE_LOG(LogSystem, Log, TEXT("USTGameInstance::Init() Set PlayerPawnInstance"));
+			PlayerPawnInstance->SetActorHiddenInGame(true);
+			PlayerPawnInstance->SetActorEnableCollision(false);
+			PlayerPawnInstance->SetActorTickEnabled(false);
+		}
+	}
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::Init() End"));
+}*/
+
 
 void USTGameInstance::StartNewGame()
 {
@@ -44,10 +63,6 @@ void USTGameInstance::GoToNextStage()
 void USTGameInstance::GoToLevel(EStageType StageType)
 {
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToLevel(%s) Start"), *StaticEnum<EStageType>()->GetValueAsString(StageType));
-
-	// TODO: 레벨 이동 전 보존할 정보 저장
-	
-	
 	
 	FName TargetLevelName = FName("MainMenu");	// Default 값
 
@@ -88,6 +103,22 @@ void USTGameInstance::QuitGame()
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::QuitGame() End"));
 }
 
+void USTGameInstance::SetPlayerStateInfo(const FPlayerStateInfo& NewInfo)
+{
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::SetPlayerStateInfo() Start"));
+	
+	PlayerStateInfo = NewInfo;
+	
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::SetPlayerStateInfo() End"));
+}
+
+const FPlayerStateInfo& USTGameInstance::GetPlayerStateInfo() const
+{
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GetPlayerStateInfo() Start"));
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GetPlayerStateInfo() End"));
+	return PlayerStateInfo;
+}
+
 
 /************** private functions **************/
 EStageType USTGameInstance::GetNextStageType(EStageType CurrentStage) const
@@ -125,99 +156,3 @@ void USTGameInstance::ResetGameData()
 	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetGameData() End"));
 }
-
-
-
-/*
-void USTGameInstance::SaveGameData()
-{
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::SaveGameData() Start"));
-	// TODO: 게임 진행상황 Save 기능 구현
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::SaveGameData() End"));
-}
-
-void USTGameInstance::LoadGameData()
-{
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::LoadGameData() Start"));
-	// TODO: 게임 진행상황 Load 기능 구현
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::LoadGameData() End"));
-}
-
-void USTGameInstance::ResetGame()
-{
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::ResetGame() Start"));
-	SelectedCharacter = ECharacterType::None;
-	LastStage = EStageType::None;
-	bIsContinue = false;
-	/*MasterVolume = 1.0f;#1#
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::ResetGame() End"));
-}
-
-void USTGameInstance::GoToLevel(EStageType StageType)
-{
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::GoToLevel(%s) Start"), *StaticEnum<EStageType>()->GetValueAsString(StageType));
-	// TODO: 레벨 이동 전 세이브, 상태저장, 로딩화면, 사운드 등 제어 가능
-	FName TargetLevel = FName("MainMenu");	// Default 값
-
-	switch (StageType)
-	{
-		case EStageType::MainMenu:	TargetLevel = FName("MainMenu"); break;
-		case EStageType::Lobby:		TargetLevel = FName("LobbyLevel"); break;
-		case EStageType::Stage1:	TargetLevel = FName("Stage1"); break;
-		case EStageType::Stage2:	TargetLevel = FName("Stage2"); break;
-		case EStageType::Stage3:	TargetLevel = FName("Stage3"); break;
-		case EStageType::Ending:	TargetLevel = FName("Ending"); break;
-		default:					TargetLevel = FName("MainMenu"); break;
-	}
-	
-	UGameplayStatics::OpenLevel(GetWorld(), TargetLevel);
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::GoToLevel(%s) End"), *StaticEnum<EStageType>()->GetValueAsString(StageType));
-}
-
-void USTGameInstance::LoadMainMenuLevel()
-{
-	// TODO: 불필요한 Rapper 인가..? 메인메뉴로 돌아갈 때 추가로 작업해야 할 게 있지 않을까?
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::LoadMainMenuLevel() Start"));
-	GoToLevel(EStageType::MainMenu);
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::LoadMainMenuLevel() End"));
-}
-
-void USTGameInstance::StartNewGame()
-{
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::StartNewGame() Start"));
-	
-	ResetGame();
-	GoToLevel(EStageType::Lobby);
-	
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::StartNewGame() End"));
-}
-
-void USTGameInstance::StartStage1()
-{
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::StartStage1() Start"));
-	// GameInstance 설정
-	LastStage = EStageType::Stage1;
-	GoToLevel(EStageType::Stage1);
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::StartStage1() End"));
-}
-
-void USTGameInstance::StartContinuousGame()
-{
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::StartContinuousGame() Start"));
-	LoadGameData();
-	bIsContinue = true;
-	GoToLevel(LastStage);
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::StartContinuousGame() End"));
-}
-
-void USTGameInstance::QuitGame()
-{
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::QuitGame() Start"));
-	UWorld* World = GetWorld();
-	APlayerController* PlayerController = nullptr;
-	if (World)
-		PlayerController = World->GetFirstPlayerController();
-
-	UKismetSystemLibrary::QuitGame(World, PlayerController, EQuitPreference::Quit, true);
-	UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::QuitGame() End"));
-}*/
