@@ -9,6 +9,7 @@
 #include "Player/STPlayerCharacter.h"        
 #include "Blueprint/UserWidget.h"
 #include "System/STGameInstance.h"
+#include "System/STGameTypes.h"
 #include "Kismet/GameplayStatics.h"
 #include "Kismet/KismetSystemLibrary.h"
 #include "Player/STHealthComponent.h"
@@ -214,6 +215,7 @@ void ASTStagePlayerController::TogglePauseMenu()
 			if (PauseMenuWidget)
 			{
 				PauseMenuWidget->AddToViewport(100);
+				PauseMenuWidget->OnReturnToMainRequested.AddDynamic(this, &ASTStagePlayerController::HandlePauseReturnToMain);
 				PauseMenuWidget->OnQuitGameRequested.AddDynamic(this, &ASTStagePlayerController::HandleQuitGame);
 			}
 		}
@@ -225,6 +227,26 @@ void ASTStagePlayerController::TogglePauseMenu()
 
 		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
+	}
+}
+
+void ASTStagePlayerController::HandlePauseReturnToMain()
+{
+	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	{
+		SetPause(false);
+		SetInputMode(FInputModeUIOnly());
+		bShowMouseCursor = true;
+		
+		GI->GoToMainMenu();
+	}
+}
+
+void ASTStagePlayerController::HandleQuitGame()
+{
+	if (USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>())
+	{
+		STGameInstance->QuitGame();
 	}
 }
 
@@ -294,6 +316,9 @@ void ASTStagePlayerController::ShowGameOverResult(int32 Score, int32 KillCount, 
 		if (GameOverWidget)
 		{
 			GameOverWidget->AddToViewport(500);
+
+			GameOverWidget->OnRetryRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameOverRetry);
+			GameOverWidget->OnReturnToMainRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameOverReturnToMain);
 		}
 	}
 
@@ -313,6 +338,9 @@ void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
 		if (GameClearWidget)
 		{
 			GameClearWidget->AddToViewport(600); // ZOrder 높게 설정
+			
+			GameClearWidget->OnRetryRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameClearRetry);
+			GameClearWidget->OnReturnToMainRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameClearReturnToMain);
 		}
 	}
 
@@ -324,12 +352,6 @@ void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
 	}
 }
 
-
-void ASTStagePlayerController::HandleQuitGame()
-{
-	//임시코드(여기에서 종료)
-	UKismetSystemLibrary::QuitGame(this, this, EQuitPreference::Quit, false);
-}
 
 // JM: 스테이지 클리어시 호출됨
 void ASTStagePlayerController::HandleStageClear()
@@ -383,4 +405,38 @@ void ASTStagePlayerController::HandleStageFailed()
 	// TODO: 스테이지 실패 화면 띄우기
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::HandleStageFailed() End"));
+}
+
+//Game Over 버튼
+void ASTStagePlayerController::HandleGameOverRetry()
+{
+	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	{
+		GI->GoToLevel(EStageType::Stage1);
+	}
+}
+
+void ASTStagePlayerController::HandleGameOverReturnToMain()
+{
+	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	{
+		GI->GoToMainMenu();
+	}
+}
+
+//Game Clear 버튼
+void ASTStagePlayerController::HandleGameClearRetry()
+{
+	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	{
+		GI->GoToLevel(EStageType::Stage1);
+	}
+}
+
+void ASTStagePlayerController::HandleGameClearReturnToMain()
+{
+	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	{
+		GI->GoToMainMenu();
+	}
 }

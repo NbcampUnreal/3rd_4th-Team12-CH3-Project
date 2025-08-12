@@ -45,12 +45,24 @@ public:
 	void TogglePauseMenu();
 
 	UFUNCTION()
+	void HandlePauseReturnToMain();
+	UFUNCTION()
 	void HandleQuitGame();
 	
 	UFUNCTION()
 	void HandleStageClear();	// JM 스테이지 클리어시 델리게이트
 	UFUNCTION()
 	void HandleStageFailed();	// JM 스테이지 실패시 델리게이트
+
+	UFUNCTION()
+	void HandleGameOverRetry();
+	UFUNCTION()
+	void HandleGameOverReturnToMain();
+	
+	UFUNCTION()
+	void HandleGameClearRetry();
+	UFUNCTION()
+	void HandleGameClearReturnToMain();
 	
 
 	UFUNCTION( BlueprintImplementableEvent )
