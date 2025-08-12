@@ -24,6 +24,8 @@ public:
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	virtual void Tick(float DeltaSeconds) override;
+	virtual void OnPossess(APawn* InPawn) override;
+	virtual void OnUnPossess() override;
 
 	// UI 업데이트 함수
 	UFUNCTION()	// NOTE: FROM JM, 이거 에러 안났나요..? UFUNCTION 안붙이면 예외나던데
@@ -37,9 +39,10 @@ public:
 	void AddDamageKillLog(const FString& LogText);
 
 	// 전투 피드백
-	void ShowHitMarker();
-	void ShowKillConfirmed();
-	void ShowDamageTextAt(FVector WorldLocation, int32 Damage);
+	UFUNCTION() void ShowHitMarker();
+	UFUNCTION() void ShowKillConfirmed();
+	UFUNCTION() void ShowDamageTextAt(FVector WorldLocation, int32 Damage);
+	UFUNCTION() void HandleEnemyDied_ShowConfirm(AActor* DeadEnemy);
 
 	// ESC 메뉴 토글
 	void TogglePauseMenu();
@@ -117,13 +120,16 @@ protected:
 
 private:
 	UFUNCTION()
-	void OnEnemyPointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy,
-							FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName,
-							FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser);
-
+	void HandleEnemyDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical);
+	
 	UFUNCTION()
 	void ShowDamageNumberAtActor(AActor* Target, int32 Damage, bool bCritical, FName SocketName = TEXT("HealthBar"));
 
+	UFUNCTION()
+	void TriggerGameOverWithTempData();
+	UFUNCTION()
+	void TriggerGameClearWithTempData();
+	
 	FDelegateHandle ActorSpawnedHandle;
 	
 	UPROPERTY()
@@ -131,6 +137,8 @@ private:
 	
 	UPROPERTY()
 	USTMovementComponent* CachedMoveComp = nullptr;
-
+	
 	bool bPrevZoomState = false;
+	bool bGameOverShown = false;
+	bool bGameClearShown = false;
 };
