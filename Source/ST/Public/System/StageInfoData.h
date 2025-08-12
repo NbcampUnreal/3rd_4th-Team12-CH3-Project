@@ -14,6 +14,6 @@ struct FStageInfoRow : public FTableRowBase
 	FString StageName;
 
 	UPROPERTY( EditAnywhere, BlueprintReadWrite )
-	float TimeLimit;
+	int32 TimeLimit;
 	
 };
