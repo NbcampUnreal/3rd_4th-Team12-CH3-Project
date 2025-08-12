@@ -35,8 +35,13 @@ public:
 	void SetHighScore( const int32 NewHighScore );
 	void SetCurrWeaponName( const FString& WeaponName );
 
+
 protected:
 	virtual void BeginPlay() override;
+	UFUNCTION()
+	void OnHealthChanged(float CurrentHP, float MaxHP);
+	UFUNCTION()
+	void OnAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo);
 	
 private:
 	FPlayerStateInfo PlayerStateInfo;
