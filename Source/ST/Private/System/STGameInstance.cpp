@@ -12,6 +12,25 @@ USTGameInstance::USTGameInstance()
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::Constructor() End"));
 }
 
+/*void USTGameInstance::Init()
+{
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::Init() Start"));
+	Super::Init();
+
+	if (MainPlayerClass)	// 게임 시작시 한 번만 캐릭터 인스턴스 생성 및 보관
+	{
+		PlayerPawnInstance = GetWorld()->SpawnActor<APawn>(MainPlayerClass);
+		if (PlayerPawnInstance)
+		{
+			UE_LOG(LogSystem, Log, TEXT("USTGameInstance::Init() Set PlayerPawnInstance"));
+			PlayerPawnInstance->SetActorHiddenInGame(true);
+			PlayerPawnInstance->SetActorEnableCollision(false);
+			PlayerPawnInstance->SetActorTickEnabled(false);
+		}
+	}
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::Init() End"));
+}*/
+
 
 void USTGameInstance::StartNewGame()
 {

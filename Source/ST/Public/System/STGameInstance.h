@@ -17,11 +17,28 @@ class ST_API USTGameInstance : public UGameInstance
 public:
 	USTGameInstance();
 
+	/*virtual void Init() override;*/
+
 	/* member variables */
-	FPlayerStateInfo PlayerStateInfo;		// TODO: 구조체로 플레이어 체력 등 전달하기
+	FPlayerStateInfo PlayerStateInfo;
 	
 	EStageType LastStage;
+
+	UPROPERTY( BlueprintReadWrite, Category="PlayerInfo" )
 	ECharacterType SelectedCharacter;
+
+	UPROPERTY()
+	APawn* PlayerPawnInstance;
+
+	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category="PlayerClasses" )
+	TSubclassOf<APawn> MainPlayerClass;
+
+	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category="PlayerMeshs" )
+	USkeletalMesh* JaxMercerCharacterMesh;		// Blueprint에서 할당
+
+	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category="PlayerMeshs" )
+	USkeletalMesh* AvaRainesCharacterMesh;		// Blueprint에서 할당
+	
 	
 	/* member functions */
 	UFUNCTION( BlueprintCallable, Category="Level" )
