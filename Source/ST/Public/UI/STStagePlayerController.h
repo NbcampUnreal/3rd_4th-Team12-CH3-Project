@@ -11,6 +11,8 @@ class USTScoreboardWidget;
 class USTGameOverWidget;
 class USTGameClearWidget;
 class UUserWidget;
+class UUWCrosshairWidget;
+class USTMovementComponent;
 
 UCLASS()
 class ST_API ASTStagePlayerController : public APlayerController
@@ -21,6 +23,7 @@ public:
 	ASTStagePlayerController();
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
+	virtual void Tick(float DeltaSeconds) override;
 
 	// UI 업데이트 함수
 	UFUNCTION()	// NOTE: FROM JM, 이거 에러 안났나요..? UFUNCTION 안붙이면 예외나던데
@@ -94,4 +97,13 @@ protected:
 	// [Tab] 키 입력 핸들러
 	void ShowScoreboard();
 	void HideScoreboard();
+
+private:
+	UPROPERTY()
+	UUWCrosshairWidget* CachedCrosshair = nullptr;
+	
+	UPROPERTY()
+	USTMovementComponent* CachedMoveComp = nullptr;
+
+	bool bPrevZoomState = false;
 };

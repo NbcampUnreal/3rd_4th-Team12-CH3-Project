@@ -4,6 +4,9 @@
 #include "UI/STScoreboardWidget.h"
 #include "UI/STGameOverWidget.h"
 #include "UI/STGameClearWidget.h"
+#include "UI/UWCrosshairWidget.h"            
+#include "Player/STMovementComponent.h"      
+#include "Player/STPlayerCharacter.h"        
 #include "Blueprint/UserWidget.h"
 #include "System/STGameInstance.h"
 #include "Kismet/GameplayStatics.h"
@@ -17,6 +20,7 @@ ASTStagePlayerController::ASTStagePlayerController()
 {
 	bShowMouseCursor = false;
 
+	PrimaryActorTick.bCanEverTick = true;
 	
 	static ConstructorHelpers::FClassFinder<USTScoreboardWidget> WidgetClass(TEXT("/Game/UI/UI_BP/BP_ScoreboardUI"));
 	if (WidgetClass.Succeeded())
@@ -92,6 +96,27 @@ void ASTStagePlayerController::BeginPlay()
 	{
 		STGameMode->OnStageClear.AddDynamic(this, &ASTStagePlayerController::HandleStageClear);
 	}
+
+	if (ASTPlayerCharacter* PC = Cast<ASTPlayerCharacter>(GetPawn()))
+	{
+		CachedMoveComp = PC->GetPlayerMovementComponent();
+		if (CachedMoveComp)
+		{
+			bPrevZoomState = CachedMoveComp->IsZooming();
+
+			if (StageWidget)
+			{
+				if (UWidget* Found = StageWidget->GetWidgetFromName(TEXT("WBP_CrossHair")))
+				{
+					CachedCrosshair = Cast<UUWCrosshairWidget>(Found);
+					if (CachedCrosshair)
+					{
+						CachedCrosshair->SetZoom(bPrevZoomState);
+					}
+				}
+			}
+		}
+	}
 	
 }
 
@@ -105,6 +130,21 @@ void ASTStagePlayerController::SetupInputComponent()
 	// Tab 키 입력 바인딩
 	InputComponent->BindKey(EKeys::Tab, IE_Pressed, this, &ASTStagePlayerController::ShowScoreboard);
 	InputComponent->BindKey(EKeys::Tab, IE_Released, this, &ASTStagePlayerController::HideScoreboard);
+}
+
+void ASTStagePlayerController::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	
+	if (CachedMoveComp && CachedCrosshair)
+	{
+		const bool bNow = CachedMoveComp->IsZooming();
+		if (bNow != bPrevZoomState)
+		{
+			bPrevZoomState = bNow;
+			CachedCrosshair->SetZoom(bNow);
+		}
+	}
 }
 
 // 점수판 표시
