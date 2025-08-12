@@ -1,4 +1,7 @@
 ﻿#include "System/STPlayerState.h"
+
+#include "Player/STHealthComponent.h"
+#include "Player/STPlayerCharacter.h"
 #include "System/STGameInstance.h"
 #include "System/STLog.h"
 
@@ -138,6 +141,7 @@ void ASTPlayerState::SetCurrWeaponName(const FString& WeaponName)
 void ASTPlayerState::BeginPlay()
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::BeginPlay() Start"));
+	
 	Super::BeginPlay();
 
 	// 레벨 로드시 Game Instance에 저장된 정보 불러오기
@@ -146,5 +150,31 @@ void ASTPlayerState::BeginPlay()
 		PlayerStateInfo = STGameInstance->GetPlayerStateInfo();
 	}
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::BeginPlay() KillCount(%d)"), PlayerStateInfo.KillCount);
+
+
+	// 이벤트 바인딩
+	if (AController* Controller = GetOwner<APlayerController>())
+	{
+		if (ASTPlayerCharacter* STPlayerCharacter = Cast<ASTPlayerCharacter>(Controller->GetPawn()))
+		{
+			if (USTHealthComponent* HealthComponent = STPlayerCharacter->GetHealthComponent())
+			{
+				// HealthComponent의 델리게이트에 PlayerState의 함수를 바인딩합니다.
+				HealthComponent->OnHealthChanged.AddDynamic(this, &ASTPlayerState::OnHealthChanged);
+				UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::BeginPlay() - Delegates Bound to HealthComponent"));
+			}
+		}
+	}
+	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::BeginPlay() End"));
+}
+
+void ASTPlayerState::OnHealthChanged(float CurrentHP, float MaxHP)
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnHealthChanged(%f / %f) Start"), CurrentHP, MaxHP);
+
+	SetCurrentHP(CurrentHP);
+	SetMaxHP(MaxHP);	// 굳이...?
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnHealthChanged(%f / %f) End"), CurrentHP, MaxHP);
 }
