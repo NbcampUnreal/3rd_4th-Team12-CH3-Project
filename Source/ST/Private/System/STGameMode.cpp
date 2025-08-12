@@ -156,55 +156,6 @@ void ASTGameMode::RestartPlayer(AController* NewPlayer)
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::RestartPlayer() End"));
 }
 
-/*
-void ASTGameMode::PostLogin(APlayerController* NewPlayer)
-{
-	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::PostLogin() Start"));
-	Super::PostLogin(NewPlayer);
-
-	USTGameInstance* STGameInstance = Cast<USTGameInstance>(GetGameInstance());
-	if (!STGameInstance)	return;
-
-	APawn* CurrentPawn = NewPlayer->GetPawn();
-	if (!CurrentPawn)	// Pawn이 스폰되지 않았을 경우, 기본 폰을 스폰
-	{
-		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::PostLogin() Spawn New Current Pawn"));
-		FActorSpawnParameters SpawnParameters;
-		SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		CurrentPawn = GetWorld()->SpawnActor<APawn>(DefaultPawnClass, FVector::ZeroVector, FRotator::ZeroRotator, SpawnParameters);
-		if (CurrentPawn)
-		{
-			NewPlayer->Possess(CurrentPawn);
-		}
-	}
-
-	// STPlayerCharacter로 캐스팅하여 스켈레탈 메시 컴포넌트에 접근
-	ASTPlayerCharacter* PlayerCharacter = Cast<ASTPlayerCharacter>(CurrentPawn);
-	if (!PlayerCharacter)	return;
-
-	USkeletalMesh* MeshToUse = nullptr;
-	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::PostLogin() Character Type : %s"), *StaticEnum<ECharacterType>()->GetValueAsString(STGameInstance->SelectedCharacter));
-	if (STGameInstance->SelectedCharacter == ECharacterType::JaxMercer)
-	{
-		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::PostLogin() Use Jax mercer Mesh"));
-		MeshToUse = STGameInstance->JaxMercerCharacterMesh;
-	}
-	else if (STGameInstance->SelectedCharacter == ECharacterType::AvaRaines)
-	{
-		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::PostLogin() Use Jax mercer Mesh"));
-		MeshToUse = STGameInstance->AvaRainesCharacterMesh;
-	}
-
-	if (MeshToUse)
-	{
-		PlayerCharacter->GetMesh()->SetSkeletalMesh(MeshToUse);
-	}
-	else
-	{
-		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::PostLogin() No Mesh To Use!"));
-	}
-	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::PostLogin() End"));
-}*/
 
 /************** private functions **************/
 void ASTGameMode::StartStage()
@@ -225,6 +176,8 @@ void ASTGameMode::EndStage(const EStageResult Result)
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::EndStage(%s) Start"), *UEnum::GetValueAsString(Result));
 	
 	GetWorldTimerManager().ClearTimer(StageTimerHandle);
+	GetWorldTimerManager().ClearTimer(StageTimerUpdateHandle);
+	
 	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
 	{
 		STGameState->SetStageResult(Result);
@@ -277,6 +230,11 @@ void ASTGameMode::OnTimeOver()
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnTimeOver() Start"));
 
+	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
+	{
+		STGameState->SetRemainingTime(0);
+	}
+	
 	SetStagePhase(EStagePhase::Fail);
 	EndStage(EStageResult::Fail);
 	
@@ -361,12 +319,7 @@ void ASTGameMode::UpdateStageTimerUI()
 	{
 		float RemainingTimeFloat = GetWorld()->GetTimerManager().GetTimerRemaining(StageTimerHandle);	// 내림(0~29초), 올림(1~30초)
 		int32 RemainingTimeSeconds = FMath::CeilToInt(RemainingTimeFloat);
-		// UE_LOG(LogSystem, Log, TEXT("ASTGameMode::UpdateStageTimerUI() RemainingTime(%f), (%d)"), RemainingTimeFloat, RemainingTimeSeconds);
 		STGameState->SetRemainingTime(RemainingTimeSeconds);
-		if (RemainingTimeSeconds <= 0)
-		{
-			GetWorldTimerManager().ClearTimer(StageTimerUpdateHandle);
-		}
 	}
 	
 	// UE_LOG(LogSystem, Log, TEXT("ASTGameMode::UpdateStageTimerUI() Start"));
