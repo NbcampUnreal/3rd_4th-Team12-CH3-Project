@@ -2,6 +2,7 @@
 
 #include "Player/STHealthComponent.h"
 #include "Player/STPlayerCharacter.h"
+#include "Player/STWeaponManagerComponent.h"
 #include "System/STGameInstance.h"
 #include "System/STLog.h"
 
@@ -163,6 +164,11 @@ void ASTPlayerState::BeginPlay()
 				HealthComponent->OnHealthChanged.AddDynamic(this, &ASTPlayerState::OnHealthChanged);
 				UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::BeginPlay() - Delegates Bound to HealthComponent"));
 			}
+			if (USTWeaponManagerComponent* WeaponManagerComponent = STPlayerCharacter->FindComponentByClass<USTWeaponManagerComponent>())
+			{
+				WeaponManagerComponent->AmmoChangeDelegate.AddDynamic(this, &ASTPlayerState::OnAmmoChanged);
+				// TODO: 장비 장착시 이름 가져오기 // WeaponManagerComponent->EquipDelegate.AddDynamic(this, &ASTPlayerState::OnEquipWeapon); 
+			}
 		}
 	}
 	
@@ -177,4 +183,14 @@ void ASTPlayerState::OnHealthChanged(float CurrentHP, float MaxHP)
 	SetMaxHP(MaxHP);	// 굳이...?
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnHealthChanged(%f / %f) End"), CurrentHP, MaxHP);
+}
+
+void ASTPlayerState::OnAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo)
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnAmmoChanged(%d / %d) Start"), CurrentAmmo, MaxAmmo);
+
+	SetCurrentAmmo(CurrentAmmo);
+	SetMaxAmmo(MaxAmmo);
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnAmmoChanged(%d / %d) End"), CurrentAmmo, MaxAmmo);
 }
