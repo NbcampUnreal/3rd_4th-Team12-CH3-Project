@@ -101,10 +101,16 @@ public:
 	void StartAiming();
 	void StopAiming();
 
+	bool IsFiring() const
+	{ 
+		// 연발 모드에서 자동연사 중일 때만 발사 중으로 판단
+		return GetWorld() && GetWorld()->GetTimerManager().IsTimerActive(AutoFireTimerHandle);
+	}
+	
 	bool IsReloading() const { return bIsReloading; } // 수정 리로드하기위해서
 
 protected:
-	// ========== 변수 ==========
+	// ========== 변수 ==========ㅇ
 	EWeaponType WeaponType;
 
 	//무기 이름
