@@ -4,6 +4,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "System/STGameState.h"
 #include "Enemy/STEnemyBase.h"
+#include "Player/STHealthComponent.h"
 #include "Player/STPlayerCharacter.h"
 #include "System/StageClearZone.h"
 #include "System/StageInfoData.h"
@@ -75,6 +76,7 @@ void ASTGameMode::BeginPlay()
 	
 	Super::BeginPlay();
 	BindStageClearZoneEnterEvent();
+	BindPlayerDeathEvent();
 	ResetStage();
 	StartStage();
 	
@@ -309,6 +311,22 @@ void ASTGameMode::BindStageClearZoneEnterEvent()
 		}
 	}
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BindStageClearZoneEnterEvent() End"));
+}
+
+void ASTGameMode::BindPlayerDeathEvent()
+{
+	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::BindPlayerDeathEvent() Start"));
+
+	if (ASTPlayerCharacter* STPlayerCharacter = Cast<ASTPlayerCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn()))
+	{
+		if (USTHealthComponent* HealthComponent = STPlayerCharacter->GetHealthComponent())
+		{
+			HealthComponent->OnCharacterDeath.AddDynamic(this, &ASTGameMode::OnPlayerDied);
+			UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BindPlayerDeathEvent() Death Event Bind"));
+		}
+	}
+
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BindPlayerDeathEvent() End"));
 }
 
 void ASTGameMode::UpdateStageTimerUI()
