@@ -9,12 +9,15 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Player/STHealthComponent.h"
 #include "Player/STMovementComponent.h"
 #include "Player/STPlayerAnimInstance.h"
 #include "Player/STPlayerBaseData.h"
 #include "Player/STWeaponManagerComponent.h"
 #include "Player/ST_PlayerAnimMontageConfig.h"
+#include "System/STGameMode.h"
+#include "System/STPlayerState.h"
 #include "Weapon/STWeaponType.h"
 
 #pragma region DefaultSetting
@@ -72,6 +75,12 @@ ASTPlayerCharacter::ASTPlayerCharacter()
 void ASTPlayerCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	//Cached Player State
+	if (AController* PC = GetController())
+	{
+		CachedPlayerState = PC->GetPlayerState<ASTPlayerState>();
+		
+	}
 	APlayerController* PC = GetWorld()->GetFirstPlayerController();
 	if (PC && PC->IsLocalController())
 	{
@@ -91,14 +100,16 @@ void ASTPlayerCharacter::BeginPlay()
 	// Health Component Setting
 	if (IsValid(HealthComponent))
 	{
-		// todo playerState에 저장된 정보가 있다면 가져오기
+		if (IsValid(CachedPlayerState))
+		{
+			//CachedPlayerState->GetPlayerStateInfo();
+		}
 		{
 			if (IsValid(PlayerBaseStatData))
 			{
 				HealthComponent->SetMaxHealth(PlayerBaseStatData->BaseMaxHealth);
 			}
 		}
-		HealthComponent->OnHealthChanged.AddDynamic(this, &ASTPlayerCharacter::HandleTakeDamage);
 		HealthComponent->OnCharacterDeath.AddDynamic(this, &ASTPlayerCharacter::HandleDeath);
 		HealthComponent->Initialize();
 	}
@@ -328,59 +339,12 @@ float ASTPlayerCharacter::TakeDamage(float DamageAmount, struct FDamageEvent con
 	
 	return ActualDamage;
 }
-void ASTPlayerCharacter::HandleTakeDamage(float InNewHp, float InMaxHp)
-{
-	// TODO:
-	// A. Hit Montage
-	// B. Request UI Change
-}
 
 void ASTPlayerCharacter::HandleDeath()
 {
-
 	SetViewMode(true);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	if (UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance())
-	{
-		if (AnimInstance->IsAnyMontagePlaying())
-		{
-			AnimInstance->Montage_Stop(0.2f);
-		}
-
-		if (MontageConfig && MontageConfig->DeadMontage)
-		{
-			AnimInstance->Montage_Play(MontageConfig->DeadMontage);
-			FOnMontageEnded EndDelegate;
-			EndDelegate.BindWeakLambda(this, [this](UAnimMontage* Montage, bool bInterrupted)
-			{
-				OnDeathMontageEnded(Montage, bInterrupted);
-			});
-			AnimInstance->Montage_SetEndDelegate(EndDelegate, MontageConfig->DeadMontage);
-		}
-		else
-		{
-			
-			OnDeathMontageEnded(nullptr, true);
-		}
-	}
-	else
-	{
-		OnDeathMontageEnded(nullptr, true);
-	}
-	
-	
 }
-void ASTPlayerCharacter::OnDeathMontageEnded(UAnimMontage* Montage, bool bInterrupted)
-{
-	GetMesh()->bPauseAnims = true;
-	
-	if (APlayerController* PC = GetController<APlayerController>())
-	{
-		DisableInput(PC);
-	} 
-}
-
 #pragma endregion
 
 #pragma region WeaponSystem

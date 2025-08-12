@@ -5,6 +5,7 @@
 #include "Player/STPlayerCharacter.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Player/STHealthComponent.h"
 #include "Player/STMovementComponent.h"
 #include "Weapon/STWeaponType.h"
 
@@ -20,6 +21,7 @@ USTPlayerAnimInstance::USTPlayerAnimInstance()
 	bIsCrouching = false;
 	bIsZooming = false;
 	WeaponType = EWeaponType::Rifle;
+	bIsDead = false;
 }
 
 void USTPlayerAnimInstance::NativeInitializeAnimation()
@@ -71,6 +73,7 @@ void USTPlayerAnimInstance::UpdateMovementProperties()
 	bool bIsAccelerated = !FMath::IsNearlyZero(GroundAcceleration);
 	bShouldMove = (GroundSpeed > KINDA_SMALL_NUMBER) && bIsAccelerated;
 	bIsZooming = OwnerCharacter->GetPlayerMovementComponent()->IsZooming();
+	bIsDead = OwnerCharacter->GetHealthComponent()->IsDead();
 }
 #pragma endregion
 
