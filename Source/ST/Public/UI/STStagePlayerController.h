@@ -31,6 +31,7 @@ public:
 	
 	void UpdateWeapon(const FString& WeaponName);
 	void UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo);
+	UFUNCTION( BlueprintCallable, Category="Timer")	// JM : 1초마다 반복 이벤트 호출
 	void UpdateTimer(int32 RemainingSeconds);
 	void UpdateEnemyStatus(int32 Killed, int32 Total);
 	void AddDamageKillLog(const FString& LogText);
@@ -48,6 +49,9 @@ public:
 	
 	UFUNCTION()
 	void HandleStageClear();	// JM 스테이지 클리어시 델리게이트
+	UFUNCTION()
+	void HandleStageFailed();	// JM 스테이지 실패시 델리게이트
+	
 
 	UFUNCTION( BlueprintImplementableEvent )
 	void LoadNextStage_BP(EStageType NextStage, int32 LoadingScreenIndex);
@@ -58,6 +62,7 @@ public:
 	void ShowGameClearResult(int32 Score, int32 HighScore);
 	
 protected:
+
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> StageWidgetClass;
 

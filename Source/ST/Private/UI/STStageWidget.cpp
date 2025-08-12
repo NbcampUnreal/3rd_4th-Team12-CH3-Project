@@ -6,6 +6,8 @@
 #include "Components/Image.h"
 #include "Kismet/GameplayStatics.h"
 #include "TimerManager.h"
+#include "System/STGameState.h"
+#include "System/STLog.h"
 #include "UI/STDamageLogUIWidget.h"
 
 void USTStageWidget::NativeConstruct()

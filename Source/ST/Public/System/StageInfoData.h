@@ -1,12 +1,12 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "StageTimeLimitData.generated.h"
+#include "StageInfoData.generated.h"
 /**
  * 
  */
 USTRUCT( BlueprintType )
-struct FStageTimeLimitRow : public FTableRowBase
+struct FStageInfoRow : public FTableRowBase
 {
 	GENERATED_BODY()
 
@@ -14,6 +14,6 @@ struct FStageTimeLimitRow : public FTableRowBase
 	FString StageName;
 
 	UPROPERTY( EditAnywhere, BlueprintReadWrite )
-	float TimeLimit;
+	int32 TimeLimit;
 	
 };

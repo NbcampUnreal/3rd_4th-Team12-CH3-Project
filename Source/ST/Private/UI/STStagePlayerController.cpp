@@ -14,7 +14,9 @@
 #include "Player/STHealthComponent.h"
 #include "Player/STPlayerCharacter.h"
 #include "System/STGameMode.h"
+#include "System/STGameState.h"
 #include "System/STLog.h"
+#include "System/STPlayerState.h"
 
 ASTStagePlayerController::ASTStagePlayerController()
 {
@@ -80,7 +82,7 @@ void ASTStagePlayerController::BeginPlay()
 	// 실제 데이터 대신 임시 값으로 전달
 	UpdateWeapon(TEXT("라이플")); // 임시 무기 이름
 	UpdateAmmo(25, 90); // 탄약: 현재 25발 / 최대 90발
-	UpdateTimer(180); // 제한시간: 180초 남음
+	// UpdateTimer(180); // 제한시간: 180초 남음 // JM : 수동호출 제거
 	UpdateEnemyStatus(0, 10); // 적 처치: 0 / 총 10명
 	AddDamageKillLog(TEXT("10의 피해를 받았습니다.")); // 로그 메시지
 
@@ -95,6 +97,14 @@ void ASTStagePlayerController::BeginPlay()
 	if (ASTGameMode* STGameMode = GetWorld()->GetAuthGameMode<ASTGameMode>())
 	{
 		STGameMode->OnStageClear.AddDynamic(this, &ASTStagePlayerController::HandleStageClear);
+		STGameMode->OnStageFailed.AddDynamic(this, &ASTStagePlayerController::HandleStageFailed);
+	}
+
+	
+	// JM: 타이머 업데이트 델리게이트 바인딩 (1초마다 호출함)
+	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
+	{
+		STGameState->OnRemainingTimeUpdated.AddDynamic(this, &ASTStagePlayerController::UpdateTimer);
 	}
 
 	if (ASTPlayerCharacter* PC = Cast<ASTPlayerCharacter>(GetPawn()))
@@ -235,8 +245,12 @@ void ASTStagePlayerController::UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo)
 
 void ASTStagePlayerController::UpdateTimer(int32 RemainingSeconds)
 {
+	// UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::UpdateTimer(%d) Start"), RemainingSeconds);    // JM
+
 	if (StageWidget)
 		StageWidget->UpdateTimer(RemainingSeconds);
+
+	// UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::UpdateTimer(%d) End"), RemainingSeconds);    // JM
 }
 
 void ASTStagePlayerController::UpdateEnemyStatus(int32 Killed, int32 Total)
@@ -307,6 +321,7 @@ void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
 	}
 }
 
+
 void ASTStagePlayerController::HandleQuitGame()
 {
 	//임시코드(여기에서 종료)
@@ -316,14 +331,18 @@ void ASTStagePlayerController::HandleQuitGame()
 // JM: 스테이지 클리어시 호출됨
 void ASTStagePlayerController::HandleStageClear()
 {
-	UE_LOG(LogSystem, Warning, TEXT(" ASTStagePlayerController::HandleStageClear() Start"));
-
-	// TODO: StagePlayerController에서 해줘야 할 작업들
-
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::HandleStageClear() Start"));
+	
 	// 현재 스테이지 정보 가져오기
 	USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>();
 	if (!STGameInstance) return;
 
+	// FPlayerStateInfo -> GameInstance에 저장
+	if(ASTPlayerState* STPlayerState = GetPlayerState<ASTPlayerState>())
+	{
+		STGameInstance->PlayerStateInfo = STPlayerState->GetPlayerStateInfo();
+	}
+	
 	EStageType NextStage = EStageType::None;
 	int32 LoadingScreenIndex = 0;
 	switch (STGameInstance->LastStage)
@@ -336,7 +355,7 @@ void ASTStagePlayerController::HandleStageClear()
 			NextStage = EStageType::Stage3;
 			LoadingScreenIndex = 3;
 			break;
-		// TODO: 엔딩처리 or 결과화면 처리
+		// TODO: 보스스테이지 클리어시 처리
 		default:	
 			break;
 	}
@@ -344,13 +363,21 @@ void ASTStagePlayerController::HandleStageClear()
 	if (NextStage != EStageType::None)
 	{
 		STGameInstance->LastStage = NextStage;
-		LoadNextStage_BP(NextStage, LoadingScreenIndex);
+		LoadNextStage_BP(NextStage, LoadingScreenIndex);	// 다음 스테이지로 이동(BP Implement 이벤트)
 	}
 	else
 	{
-		UE_LOG(LogSystem, Warning, TEXT(" ASTStagePlayerController::HandleStageClear() NextStage == NONE!"));	
+		UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::HandleStageClear() NextStage == NONE!"));	
 	}
 	
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::HandleStageClear() End"));
+}
+
+void ASTStagePlayerController::HandleStageFailed()
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::HandleStageFailed() Start"));
+
+	// TODO: 스테이지 실패 화면 띄우기
 	
-	UE_LOG(LogSystem, Warning, TEXT(" ASTStagePlayerController::HandleStageClear() End"));
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::HandleStageFailed() End"));
 }

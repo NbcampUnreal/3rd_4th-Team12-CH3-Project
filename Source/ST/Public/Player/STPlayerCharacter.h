@@ -6,6 +6,11 @@
 #include "GameFramework/Character.h"
 #include "STPlayerCharacter.generated.h"
 
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnCharacterZooming, bool);
+
+
+
+
 class USTPlayerBaseData;
 class USTMovementComponent;
 class USTHealthComponent;
@@ -146,5 +151,10 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config", meta = (AllowPrivateAccess = "true"))
     TObjectPtr<USTPlayerBaseData> PlayerBaseStatData;
+#pragma endregion
+
+#pragma region Delegate
+public:
+    FOnCharacterZooming FOnCharacterZooming;
 #pragma endregion 
 };
