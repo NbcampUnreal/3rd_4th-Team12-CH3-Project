@@ -9,7 +9,7 @@
 #include "STWeaponBase.generated.h"
 
 //델리게이트 선언
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquippedSignature, const FText&, WeaponName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquippedSignature, const FString&, WeaponName);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmmoChangedSignature, int32, CurrentAmmo, int32, MagazineSize);
 
 
@@ -115,7 +115,7 @@ protected:
 
 	//무기 이름
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
-	FText WeaponName;
+	FString WeaponName;
 	
 	//무기 속성
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
