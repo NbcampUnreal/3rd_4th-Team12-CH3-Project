@@ -21,6 +21,7 @@ class ST_API ASTStagePlayerController : public APlayerController
 
 public:
 	ASTStagePlayerController();
+	
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -28,15 +29,12 @@ public:
 	virtual void OnUnPossess() override;
 
 	// UI 업데이트 함수
-	UFUNCTION()	// NOTE: FROM JM, 이거 에러 안났나요..? UFUNCTION 안붙이면 예외나던데
-	void UpdateHealth(float CurrentHP, float MaxHP);
-	
-	void UpdateWeapon(const FString& WeaponName);
-	void UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo);
-	UFUNCTION( BlueprintCallable, Category="Timer")	// JM : 1초마다 반복 이벤트 호출
-	void UpdateTimer(int32 RemainingSeconds);
-	void UpdateEnemyStatus(int32 Killed, int32 Total);
-	void AddDamageKillLog(const FString& LogText);
+	UFUNCTION() void UpdateHealth(float CurrentHP, float MaxHP);
+	UFUNCTION() void UpdateWeapon(const FString& WeaponName);
+	UFUNCTION()	void UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo);
+	UFUNCTION( BlueprintCallable, Category="Timer")	void UpdateTimer(int32 RemainingSeconds);
+	UFUNCTION()	void UpdateEnemyStatus(int32 Killed, int32 Total);
+	UFUNCTION()	void AddDamageKillLog(const FString& LogText);
 
 	// 전투 피드백
 	UFUNCTION() void ShowHitMarker();
@@ -44,40 +42,35 @@ public:
 	UFUNCTION() void ShowDamageTextAt(FVector WorldLocation, int32 Damage);
 	UFUNCTION() void HandleEnemyDied_ShowConfirm(AActor* DeadEnemy);
 
-	// ESC 메뉴 토글
+	// 일시정지 메뉴
 	void TogglePauseMenu();
 
-	UFUNCTION()
-	void HandlePauseReturnToMain();
-	UFUNCTION()
-	void HandleQuitGame();
-	
-	UFUNCTION()
-	void HandleStageClear();	// JM 스테이지 클리어시 델리게이트
-	UFUNCTION()
-	void HandleStageFailed();	// JM 스테이지 실패시 델리게이트
+	// 메뉴 스테이지 전환
+	UFUNCTION()	void HandlePauseReturnToMain();
+	UFUNCTION()	void HandleQuitGame();
+	UFUNCTION()	void HandleStageClear();	// JM 스테이지 클리어시 델리게이트
+	UFUNCTION()	void HandleStageFailed();	// JM 스테이지 실패시 델리게이트
 
-	UFUNCTION()
-	void HandleGameOverRetry();
-	UFUNCTION()
-	void HandleGameOverReturnToMain();
+	// Game Over / Clear 버튼
+	UFUNCTION()	void HandleGameOverRetry();
+	UFUNCTION()	void HandleGameOverReturnToMain();
+	UFUNCTION()	void HandleGameClearRetry();
+	UFUNCTION()	void HandleGameClearReturnToMain();
 	
+	// Game Over / Clear UI
 	UFUNCTION()
-	void HandleGameClearRetry();
+	void ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken);
 	UFUNCTION()
-	void HandleGameClearReturnToMain();
-	
+	void ShowGameClearResult(int32 Score, int32 HighScore);
 
+	// 로딩 화면
 	UFUNCTION( BlueprintImplementableEvent )
 	void LoadNextStage_BP(EStageType NextStage, int32 LoadingScreenIndex);
-	
 
-	
-	void ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken);
-	void ShowGameClearResult(int32 Score, int32 HighScore);
 	
 protected:
-
+	
+	// 컴포넌트/위젯 클래스
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
 	TSubclassOf<UUserWidget> StageWidgetClass;
 
@@ -114,7 +107,7 @@ protected:
 	UPROPERTY()
 	USTGameClearWidget* GameClearWidget;
 
-	// [Tab] 키 입력 핸들러
+	// 키 입력 핸들러
 	void ShowScoreboard();
 	void HideScoreboard();
 
@@ -129,6 +122,12 @@ private:
 	void TriggerGameOverWithTempData();
 	UFUNCTION()
 	void TriggerGameClearWithTempData();
+
+	// 게임 오버 화면 딜레이
+	UFUNCTION()
+	void ScheduleGameOver(float DelaySeconds);
+	FTimerHandle GameOverTimerHandle;
+	float GameOverDelay = 1.5f;
 	
 	FDelegateHandle ActorSpawnedHandle;
 	
