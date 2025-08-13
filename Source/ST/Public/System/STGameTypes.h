@@ -92,6 +92,7 @@ struct FGameStateInfo
 		, RemainingEnemies(0)
 		, RemainingTime(0.0f)
 		, BossPhase(1)
+		, StageGoalText(FText::GetEmpty())
 	{};
 
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
@@ -103,5 +104,7 @@ struct FGameStateInfo
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
 	int32 RemainingTime;
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
-	int32 BossPhase;	
+	int32 BossPhase;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	FText StageGoalText;
 };

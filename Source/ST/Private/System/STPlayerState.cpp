@@ -260,8 +260,9 @@ void ASTPlayerState::CalculateScore()
 		UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScore() Can't Load STGameState->GameStateInfo.RemainingTime"));
 	}
 
-	int32 NewScore = (RemainingTime * PlayerStateInfo.KillCount * PlayerStateInfo.TotalDamageInflicted)
-							- (PlayerStateInfo.TotalDamageInflicted * PlayerStateInfo.TotalUsedAmmo * ScoreMultiplier);
+	int32 NewScore = RemainingTime;
+		/*(RemainingTime * PlayerStateInfo.KillCount * PlayerStateInfo.TotalDamageInflicted)
+							- (PlayerStateInfo.TotalDamageInflicted * PlayerStateInfo.TotalUsedAmmo * ScoreMultiplier);*/
 
 	SetScore(PlayerStateInfo.Score + NewScore);	// 최고기록 갱신시 내부에서 업데이트 함
 	

@@ -303,6 +303,12 @@ void ASTStagePlayerController::ShowScoreboard()
 	FString TempGoal = TEXT("적 섬멸 후 목표지점 이동");   // 목표 텍스트
 	FString TempProgress = TEXT("적을 섬멸하세요");       // 진행 텍스트
 
+	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
+	{
+		TempGoal = STGameState->GetGameStateInfo().StageGoalText.ToString();
+	}
+	
+
 	ScoreboardWidget->UpdateScoreAndKill(TempScore, TempKills);
 	ScoreboardWidget->UpdateMissionGoal(TempGoal);
 	ScoreboardWidget->UpdateMissionProgress(TempProgress);
