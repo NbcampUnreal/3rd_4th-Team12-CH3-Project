@@ -49,6 +49,8 @@ protected:
 	UFUNCTION()
 	void OnDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical);
 	
+	
 private:
 	FPlayerStateInfo PlayerStateInfo;
+	float ScoreMultiplier = 0.25f; 
 };

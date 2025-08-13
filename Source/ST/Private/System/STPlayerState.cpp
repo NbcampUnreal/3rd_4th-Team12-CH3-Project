@@ -261,7 +261,7 @@ void ASTPlayerState::CalculateScore()
 	}
 
 	int32 NewScore = (RemainingTime * PlayerStateInfo.KillCount * PlayerStateInfo.TotalDamageInflicted)
-							- (PlayerStateInfo.TotalDamageInflicted * PlayerStateInfo.TotalUsedAmmo);
+							- (PlayerStateInfo.TotalDamageInflicted * PlayerStateInfo.TotalUsedAmmo * ScoreMultiplier);
 
 	SetScore(PlayerStateInfo.Score + NewScore);	// 최고기록 갱신시 내부에서 업데이트 함
 	
