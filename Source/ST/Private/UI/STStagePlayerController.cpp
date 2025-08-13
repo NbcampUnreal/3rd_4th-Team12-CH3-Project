@@ -138,8 +138,11 @@ void ASTStagePlayerController::BeginPlay()
 				++BoundCount;
 			}
 		}
+		// 총 적 수 기록 & UI 반영
+		TotalEnemyCount = Enemies.Num();
+		KilledEnemyCount = 0; // 스테이지 시작 시 0부터
+		UpdateEnemyStatus(KilledEnemyCount, TotalEnemyCount);
 	}
-	
 }
 
 void ASTStagePlayerController::SetupInputComponent()
@@ -292,6 +295,10 @@ void ASTStagePlayerController::HandleEnemyDied_ShowConfirm(AActor* DeadEnemy)
 
 	// 변경: 킬 로그 출력 ("적을 쓰러트림")
 	AddDamageKillLog(TEXT("적을 쓰러트림"));
+
+	// 처치 수 증가 후 UI 반영
+	++KilledEnemyCount;
+	UpdateEnemyStatus(KilledEnemyCount, TotalEnemyCount);
 }
 
 // 점수판 표시
@@ -308,13 +315,29 @@ void ASTStagePlayerController::ShowScoreboard()
 		TempGoal = STGameState->GetGameStateInfo().StageGoalText.ToString();
 	}
 	
+	if (ASTPlayerState* PS = GetPlayerState<ASTPlayerState>())
+	{
+		const FPlayerStateInfo& Info = PS->GetPlayerStateInfo();
+		TempScore = Info.Score;
+		TempKills = Info.KillCount;
+	}
 
-	ScoreboardWidget->UpdateScoreAndKill(TempScore, TempKills);
-	ScoreboardWidget->UpdateMissionGoal(TempGoal);
-	ScoreboardWidget->UpdateMissionProgress(TempProgress);
-	
+
 	if (ScoreboardWidget)
 	{
+		// 점수/킬 갱신
+		ScoreboardWidget->UpdateScoreAndKill(TempScore, TempKills);
+
+		// 목표/진행 텍스트 갱신 (있다면)
+		if (!TempGoal.IsEmpty())
+		{
+			ScoreboardWidget->UpdateMissionGoal(TempGoal);
+		}
+		if (!TempProgress.IsEmpty())
+		{
+			ScoreboardWidget->UpdateMissionProgress(TempProgress);
+		}
+
 		ScoreboardWidget->SetVisibility(ESlateVisibility::Visible);
 	}
 }

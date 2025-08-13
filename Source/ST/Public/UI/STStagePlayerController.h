@@ -112,6 +112,9 @@ protected:
 	void HideScoreboard();
 
 private:
+	int32 KilledEnemyCount = 0;
+	int32 TotalEnemyCount  = 0;
+	
 	UFUNCTION()
 	void HandleEnemyDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical);
 	
