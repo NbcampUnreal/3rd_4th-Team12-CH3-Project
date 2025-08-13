@@ -93,6 +93,7 @@ struct FGameStateInfo
 		, RemainingTime(0.0f)
 		, BossPhase(1)
 		, StageGoalText(FText::GetEmpty())
+		// , StageProgressList() // TArray는 초기화 안해도 기본배열
 	{};
 
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
@@ -107,4 +108,6 @@ struct FGameStateInfo
 	int32 BossPhase;
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
 	FText StageGoalText;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	TArray<FText> StageProgressList;
 };
