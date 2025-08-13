@@ -8,6 +8,7 @@
 #include "Player/STMovementComponent.h"      
 #include "Player/STPlayerCharacter.h"        
 #include "Blueprint/UserWidget.h"
+#include "Components/CapsuleComponent.h"
 #include "System/STGameInstance.h"
 #include "System/STGameTypes.h"
 #include "Enemy/STEnemyBase.h"
@@ -20,11 +21,11 @@
 #include "System/STLog.h"
 #include "System/STPlayerState.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 ASTStagePlayerController::ASTStagePlayerController()
 {
 	bShowMouseCursor = false;
-
 	PrimaryActorTick.bCanEverTick = true;
 	
 	static ConstructorHelpers::FClassFinder<USTScoreboardWidget> WidgetClass(TEXT("/Game/UI/UI_BP/BP_ScoreboardUI"));
@@ -32,17 +33,7 @@ ASTStagePlayerController::ASTStagePlayerController()
 	{
 		ScoreboardWidgetClass = WidgetClass.Class;
 	}
-
-	TArray<AActor*> Enemies;
-	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASTEnemyBase::StaticClass(), Enemies);
-	for (AActor* E : Enemies)
-	{
-		if (E)
-		{
-			E->OnTakePointDamage.AddDynamic(this, &ASTStagePlayerController::OnEnemyPointDamage); // SH
-		}
-	}
-
+	
 	// 게임 오버 UI 위젯 연결
 	static ConstructorHelpers::FClassFinder<USTGameOverWidget> GameOverClass(TEXT("/Game/UI/UI_BP/BP_GameOverUI"));
 	if (GameOverClass.Succeeded())
@@ -84,18 +75,10 @@ void ASTStagePlayerController::BeginPlay()
 
 	SetInputMode(FInputModeGameOnly());
 	bShowMouseCursor = false;
-
-
-	ASTPlayerCharacter* PlayerCharacter = Cast<ASTPlayerCharacter>(GetPawn()); 
-	if (PlayerCharacter)
-	{
-		PlayerCharacter->GetHealthComponent()->OnHealthChanged.AddDynamic(this,&ASTStagePlayerController::UpdateHealth);
-	}
 	
 	// 실제 데이터 대신 임시 값으로 전달
 	UpdateWeapon(TEXT("라이플")); // 임시 무기 이름
-	UpdateAmmo(25, 90); // 탄약: 현재 25발 / 최대 90발
-	// UpdateTimer(180); // 제한시간: 180초 남음 // JM : 수동호출 제거
+	UpdateAmmo(25, 90); //	탄약: 현재 25발 / 최대 90발
 	UpdateEnemyStatus(0, 10); // 적 처치: 0 / 총 10명
 	AddDamageKillLog(TEXT("10의 피해를 받았습니다.")); // 로그 메시지
 
@@ -123,6 +106,8 @@ void ASTStagePlayerController::BeginPlay()
 		UpdateTimer(InitialRemaining);
 	}
 
+	
+
 	if (ASTPlayerCharacter* PC = Cast<ASTPlayerCharacter>(GetPawn()))
 	{
 		CachedMoveComp = PC->GetPlayerMovementComponent();
@@ -140,6 +125,21 @@ void ASTStagePlayerController::BeginPlay()
 						CachedCrosshair->SetZoom(bPrevZoomState);
 					}
 				}
+			}
+		}
+	}
+	
+	{
+		int32 BoundCount = 0;
+		TArray<AActor*> Enemies;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASTEnemyBase::StaticClass(), Enemies);
+		for (AActor* E : Enemies)
+		{
+			if (ASTEnemyBase* Enemy = Cast<ASTEnemyBase>(E))
+			{
+				Enemy->OnDamageTaken.AddDynamic(this, &ASTStagePlayerController::HandleEnemyDamageTaken);
+				Enemy->OnDied.AddDynamic(this, &ASTStagePlayerController::HandleEnemyDied_ShowConfirm);
+				++BoundCount;
 			}
 		}
 	}
@@ -173,6 +173,35 @@ void ASTStagePlayerController::Tick(float DeltaSeconds)
 	}
 }
 
+void ASTStagePlayerController::OnPossess(APawn* InPawn)
+{
+	Super::OnPossess(InPawn);
+
+	if (ASTPlayerCharacter* PlayerCharacter = Cast<ASTPlayerCharacter>(InPawn))
+	{
+		if (PlayerCharacter->GetHealthComponent())
+		{
+			PlayerCharacter->GetHealthComponent()->OnHealthChanged.AddDynamic(
+				this, &ASTStagePlayerController::UpdateHealth);
+		}
+		
+		CachedMoveComp = PlayerCharacter->GetPlayerMovementComponent();
+	}
+}
+
+void ASTStagePlayerController::OnUnPossess()
+{
+	Super::OnUnPossess();
+
+	// 엔드 화면이 아니더라도, 폰이 사라진 시점엔 입력/시점 모두 차단
+	SetIgnoreMoveInput(true);
+	SetIgnoreLookInput(true);
+	DisableInput(this);
+
+	SetInputMode(FInputModeUIOnly());
+	bShowMouseCursor = true;
+}
+
 // 히트마커&데미지량
 static bool IsHeadShot(const FName& BoneName)
 {
@@ -182,34 +211,76 @@ static bool IsHeadShot(const FName& BoneName)
 		|| B.Contains(TEXT("head"), ESearchCase::IgnoreCase);
 }
 
-void ASTStagePlayerController::OnEnemyPointDamage(AActor* DamagedActor, float Damage, AController* InstigatedBy,
-												  FVector HitLocation, UPrimitiveComponent* FHitComponent, FName BoneName,
-												  FVector ShotFromDirection, const UDamageType* DamageType, AActor* DamageCauser)
+void ASTStagePlayerController::HandleEnemyDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical)
 {
 	ShowHitMarker();
-	const bool bCritical = IsHeadShot(BoneName);
-	const int32 ShownDamage = FMath::Max(1, FMath::RoundToInt(Damage));
-	ShowDamageNumberAtActor(DamagedActor, ShownDamage, bCritical, TEXT("HealthBar"));
+	
+	FVector WorldLoc = DamagedActor ? DamagedActor->GetActorLocation() : FVector::ZeroVector;
+
+	if (const ACharacter* Char = Cast<ACharacter>(DamagedActor))
+	{
+		if (USkeletalMeshComponent* Mesh = Char->GetMesh())
+		{
+			static const FName HeadSocket(TEXT("head"));
+			if (Mesh->DoesSocketExist(HeadSocket))
+			{
+				WorldLoc = Mesh->GetSocketLocation(HeadSocket) + FVector(0,0,12.f);
+			}
+			else if (const UCapsuleComponent* Capsule = Char->GetCapsuleComponent())
+			{
+				WorldLoc = Char->GetActorLocation() + FVector(0,0, Capsule->GetScaledCapsuleHalfHeight() + 10.f);
+			}
+		}
+	}
+	else
+	{
+		WorldLoc += FVector(0,0,100.f);
+	}
+	
+	const int32 Shown = FMath::Max(1, FMath::RoundToInt(DamageAmount));
+	if (StageWidget)
+	{
+		StageWidget->ShowDamageTextAtEx(WorldLoc, Shown, bCritical);
+	}
 }
 
 void ASTStagePlayerController::ShowDamageNumberAtActor(AActor* Target, int32 Damage, bool bCritical, FName SocketName)
 {
 	if (!Target || !StageWidget) return;
 
-	FVector WorldLoc = Target->GetActorLocation() + FVector(0,0,100.f); // fallback
-
+	FVector WorldLoc = Target->GetActorLocation();
+	
 	if (const ACharacter* Char = Cast<ACharacter>(Target))
 	{
 		if (USkeletalMeshComponent* Mesh = Char->GetMesh())
 		{
-			if (Mesh->DoesSocketExist(SocketName))
+			static const FName HeadSocket(TEXT("head"));
+
+			if (Mesh->DoesSocketExist(HeadSocket))
 			{
-				WorldLoc = Mesh->GetSocketLocation(SocketName) + FVector(0,0,20.f); // 살짝 위로
+				WorldLoc = Mesh->GetSocketLocation(HeadSocket) + FVector(0, 0, 12.f);
+			}
+			else
+			{
+				if (const UCapsuleComponent* Capsule = Char->GetCapsuleComponent())
+				{
+					WorldLoc = Char->GetActorLocation() + FVector(0, 0, Capsule->GetScaledCapsuleHalfHeight() + 10.f);
+				}
 			}
 		}
 	}
-
+	else
+	{
+		WorldLoc += FVector(0, 0, 100.f);
+	}
+	
 	StageWidget->ShowDamageTextAtEx(WorldLoc, Damage, bCritical);
+}
+
+// 킬 확정 표시
+void ASTStagePlayerController::HandleEnemyDied_ShowConfirm(AActor* DeadEnemy)
+{
+	ShowKillConfirmed();
 }
 
 // 점수판 표시
@@ -301,10 +372,90 @@ void ASTStagePlayerController::HandleQuitGame()
 	}
 }
 
+void ASTStagePlayerController::TriggerGameOverWithTempData()
+{
+	if (bGameOverShown)
+	{
+		return;
+	}
+	bGameOverShown = true;
+
+	// 임시값
+	int32 TempScore       = 12450;
+	int32 TempKillCount   = 9;
+	int32 TempDamageDealt = 30500;
+	int32 TempDamageTaken = 11200;
+
+	// PlayerState 값이 있으면 덮어쓰기
+	if (ASTPlayerState* PS = GetPlayerState<ASTPlayerState>())
+	{
+		const FPlayerStateInfo& Info = PS->GetPlayerStateInfo();
+
+		// 필요 시 가져와서 임시값 대체
+		TempScore       = Info.Score;
+		TempKillCount   = Info.KillCount;
+	}
+	
+	ShowGameOverResult(TempScore, TempKillCount, TempDamageDealt, TempDamageTaken);
+}
+
+void ASTStagePlayerController::TriggerGameClearWithTempData()
+{
+	if (bGameClearShown)
+	{
+		return;
+	}
+	bGameClearShown = true;
+	
+	// 기본 임시값
+	int32 TempScore     = 15000;
+	int32 TempHighScore = 20000;
+
+	// PlayerState 있으면 일부 값 대체
+	if (ASTPlayerState* PS = GetPlayerState<ASTPlayerState>())
+	{
+		const FPlayerStateInfo& Info = PS->GetPlayerStateInfo();
+		TempScore     = Info.Score;
+		TempHighScore = Info.HighScore;
+	}
+	
+	ShowGameClearResult(TempScore, TempHighScore);
+}
+
+
+
+
 void ASTStagePlayerController::UpdateHealth(float CurrentHP, float MaxHP)
 {
 	if (StageWidget)
+	{
 		StageWidget->UpdateHealth(CurrentHP, MaxHP);
+	}
+
+	if (CurrentHP <= 0.f)
+	{
+		SetIgnoreMoveInput(true);
+		SetIgnoreLookInput(true);
+		DisableInput(this);
+		
+		if (ACharacter* C = Cast<ACharacter>(GetPawn()))
+		{
+			if (UCharacterMovementComponent* Move = C->GetCharacterMovement())
+			{
+				Move->StopMovementImmediately();
+				Move->DisableMovement();
+			}
+			if (UCapsuleComponent* Capsule = C->GetCapsuleComponent())
+			{
+				Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			}
+		}
+		
+		SetInputMode(FInputModeUIOnly());
+		bShowMouseCursor = true;
+		
+		TriggerGameOverWithTempData();
+	}
 }
 
 void ASTStagePlayerController::UpdateWeapon(const FString& WeaponName)
@@ -324,7 +475,14 @@ void ASTStagePlayerController::UpdateTimer(int32 RemainingSeconds)
 	// UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::UpdateTimer(%d) Start"), RemainingSeconds);    // JM
 
 	if (StageWidget)
+	{
 		StageWidget->UpdateTimer(RemainingSeconds);
+	}
+	
+	if (RemainingSeconds <= 0)
+	{
+		TriggerGameOverWithTempData();
+	}
 
 	// UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::UpdateTimer(%d) End"), RemainingSeconds);    // JM
 }
@@ -376,6 +534,7 @@ void ASTStagePlayerController::ShowGameOverResult(int32 Score, int32 KillCount, 
 	if (GameOverWidget)
 	{
 		GameOverWidget->SetResultInfo(Score, KillCount, DamageDealt, DamageTaken);
+		SetPause(true);
 		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
 	}
@@ -398,6 +557,7 @@ void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
 	if (GameClearWidget)
 	{
 		GameClearWidget->SetResultInfo(Score, HighScore);
+		SetPause(true);
 		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
 	}

@@ -66,5 +66,6 @@ private:
 	void SetStagePhase(const EStagePhase NewPhase) const;
 	int32 GetStageInfoFromDataTable(const FString& StageName) const;
 	void BindStageClearZoneEnterEvent();
+	void BindPlayerDeathEvent();
 	void UpdateStageTimerUI();
 };

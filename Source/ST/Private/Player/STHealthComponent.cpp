@@ -42,7 +42,7 @@ void USTHealthComponent::SetMaxHealth(float NewMaxHealth)
 
 
 
-void USTHealthComponent::UpdateHealthStatus()
+/* void USTHealthComponent::UpdateHealthStatus()
 {
 	if (CurrentHealth < KINDA_SMALL_NUMBER)
 	{
@@ -59,8 +59,26 @@ void USTHealthComponent::UpdateHealthStatus()
 			OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 		}
 	}
-}
+} */
 
+
+void USTHealthComponent::UpdateHealthStatus()
+{
+	if (OnHealthChanged.IsBound())
+	{
+		OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
+	}
+
+	const bool bNowDead = (CurrentHealth <= KINDA_SMALL_NUMBER);
+	if (bNowDead && !bIsDead)
+	{
+		bIsDead = true;
+		if (OnCharacterDeath.IsBound())
+		{
+			OnCharacterDeath.Broadcast();
+		}
+	}
+}
 
 
 
