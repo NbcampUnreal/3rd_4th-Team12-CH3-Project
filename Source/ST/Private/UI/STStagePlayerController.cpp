@@ -757,7 +757,8 @@ void ASTStagePlayerController::HandleGameOverRetry()
 {
 	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
 	{
-		GI->GoToLevel(EStageType::Stage1);
+		// GI->GoToLevel(EStageType::Stage1);
+		GI->GoToRetry();
 	}
 }
 

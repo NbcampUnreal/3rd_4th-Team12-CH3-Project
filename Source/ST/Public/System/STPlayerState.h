@@ -37,7 +37,8 @@ public:
 	void AddTotalDamageReceived( const float Amount );
 	void AddTotalDamageInflicted( const float Amount );
 	void AddTotalUsedAmmo( const int32 Amount );
-	void CalculateScore();
+	UFUNCTION()
+	void CalculateScore(bool bIsStageClear);
 
 
 protected:
