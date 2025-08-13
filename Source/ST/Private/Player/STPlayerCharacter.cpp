@@ -289,7 +289,7 @@ void ASTPlayerCharacter::Zoom(const FInputActionValue& Value)
 			}
 			else
 			{
-				WeaponManager->StartAiming();
+				WeaponManager->StopAiming();
 			}
 		}
 		if (FOnCharacterZooming.IsBound())

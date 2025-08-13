@@ -48,6 +48,8 @@ void USTWeaponManagerComponent::RequestEquipWeapon(TSubclassOf<ASTWeaponBase> We
 	
 }
 
+
+
 void USTWeaponManagerComponent::OnEquipMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
 	if (bInterrupted) return;
