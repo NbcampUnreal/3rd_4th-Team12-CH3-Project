@@ -143,6 +143,9 @@ void ASTStagePlayerController::BeginPlay()
 		KilledEnemyCount = 0; // 스테이지 시작 시 0부터
 		UpdateEnemyStatus(KilledEnemyCount, TotalEnemyCount);
 	}
+	
+	//미션 목표 생성
+	RefreshMissionProgress(0);
 }
 
 void ASTStagePlayerController::SetupInputComponent()
@@ -216,6 +219,23 @@ static bool IsHeadShot(const FName& BoneName)
 	return B.Equals(TEXT("head"), ESearchCase::IgnoreCase)
 		|| B.Equals(TEXT("Head"), ESearchCase::IgnoreCase)
 		|| B.Contains(TEXT("head"), ESearchCase::IgnoreCase);
+}
+
+// 진행 상황 텍스트
+void ASTStagePlayerController::RefreshMissionProgress(int32 ProgressIndex)
+{
+	if (!ScoreboardWidget) return;
+
+	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
+	{
+		const auto& Info = STGameState->GetGameStateInfo();
+		const TArray<FText>& List = Info.StageProgressList;
+
+		if (List.IsValidIndex(ProgressIndex))
+		{
+			ScoreboardWidget->UpdateMissionProgress(List[ProgressIndex].ToString());
+		}
+	}
 }
 
 void ASTStagePlayerController::HandleEnemyDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical)
@@ -310,16 +330,30 @@ void ASTStagePlayerController::ShowScoreboard()
 	FString TempGoal = TEXT("적 섬멸 후 목표지점 이동");   // 목표 텍스트
 	FString TempProgress = TEXT("적을 섬멸하세요");       // 진행 텍스트
 
-	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
-	{
-		TempGoal = STGameState->GetGameStateInfo().StageGoalText.ToString();
-	}
-	
+	// PlayerState에서 점수/킬 최신값
 	if (ASTPlayerState* PS = GetPlayerState<ASTPlayerState>())
 	{
 		const FPlayerStateInfo& Info = PS->GetPlayerStateInfo();
 		TempScore = Info.Score;
 		TempKills = Info.KillCount;
+	}
+
+	// GameState에서 목표/진행 문구
+	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
+	{
+		const auto& GSInfo = STGameState->GetGameStateInfo();
+
+		// 목표 텍스트
+		TempGoal = GSInfo.StageGoalText.ToString();
+
+		// 진행 텍스트
+		const TArray<FText>& ProgressList = GSInfo.StageProgressList;                  
+		const bool bAllKilled = (TotalEnemyCount > 0 && KilledEnemyCount >= TotalEnemyCount);
+		const int32 ProgressIdx = bAllKilled ? 1 : 0;                                  
+		if (ProgressList.IsValidIndex(ProgressIdx))                                    
+		{
+			TempProgress = ProgressList[ProgressIdx].ToString();                       
+		}
 	}
 
 
@@ -328,7 +362,7 @@ void ASTStagePlayerController::ShowScoreboard()
 		// 점수/킬 갱신
 		ScoreboardWidget->UpdateScoreAndKill(TempScore, TempKills);
 
-		// 목표/진행 텍스트 갱신 (있다면)
+		// 목표/진행 텍스트 갱신
 		if (!TempGoal.IsEmpty())
 		{
 			ScoreboardWidget->UpdateMissionGoal(TempGoal);
@@ -555,6 +589,13 @@ void ASTStagePlayerController::UpdateEnemyStatus(int32 Killed, int32 Total)
 {
 	if (StageWidget)
 		StageWidget->UpdateEnemyStatus(Killed, Total);
+	
+
+	// 모두 처치되면 스코어보드 진행 텍스트를 [1]로 전환
+	if (Killed == Total)
+	{
+		RefreshMissionProgress(1);
+	}
 }
 
 void ASTStagePlayerController::AddDamageKillLog(const FString& LogText)
