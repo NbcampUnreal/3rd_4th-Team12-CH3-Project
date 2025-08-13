@@ -6,7 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "STWeaponManagerComponent.generated.h"
 
-DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquip, const FText&, WeaponName);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquip, const FString&, WeaponName);
 // 탄약 변경 이벤트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponAmmoChange, int32, CurrentAmmo, int32, MaxAmmo);
 
@@ -60,7 +60,7 @@ public:
 	FOnWeaponAmmoChange AmmoChangeDelegate;
 protected:
 	UFUNCTION()
-	void OnWeaponEquipped(const FText& WeaponName);
+	void OnWeaponEquipped(const FString& WeaponName);
 
 	UFUNCTION()
 	void OnWeaponAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo);
