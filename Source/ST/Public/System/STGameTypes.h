@@ -62,6 +62,9 @@ struct FPlayerStateInfo		// TODO: 향후 PlayerState가 커지면, 레벨 이동
 		, Score(0)
 		, HighScore(0)
 		, CurrWeaponName(TEXT("NONE"))
+		, TotalDamageReceived(0.0f)
+		, TotalDamageInflicted(0.0f)
+		, TotalUsedAmmo(0)
 	{}
 
 	ECharacterType SelectedCharacter;
@@ -73,7 +76,9 @@ struct FPlayerStateInfo		// TODO: 향후 PlayerState가 커지면, 레벨 이동
 	int32 Score;
 	int32 HighScore;
 	FString CurrWeaponName;	// TODO: Enum으로 확장 필요하겠는데
-	
+	float TotalDamageReceived;	// 받은 피해량
+	float TotalDamageInflicted;	// 가한 피해량
+	int32 TotalUsedAmmo;
 };
 
 USTRUCT( BlueprintType )

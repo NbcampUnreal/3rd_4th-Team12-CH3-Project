@@ -136,12 +136,12 @@ void ASTGameMode::RestartPlayer(AController* NewPlayer)
 		USkeletalMesh* MeshToUse = nullptr;
 		if (STGameInstance->SelectedCharacter == ECharacterType::JaxMercer)
 		{
-			UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::RestartPlayer() Use Jax mercer Mesh"));
+			UE_LOG(LogSystem, Log, TEXT("ASTGameMode::RestartPlayer() Use Jax mercer Mesh"));
 			MeshToUse = STGameInstance->JaxMercerCharacterMesh;
 		}
 		else if (STGameInstance->SelectedCharacter == ECharacterType::AvaRaines)
 		{
-			UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::RestartPlayer() Use AvaRaines Mesh"));
+			UE_LOG(LogSystem, Log, TEXT("ASTGameMode::RestartPlayer() Use AvaRaines Mesh"));
 			MeshToUse = STGameInstance->AvaRainesCharacterMesh;
 		}
 
@@ -183,6 +183,12 @@ void ASTGameMode::EndStage(const EStageResult Result)
 	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
 	{
 		STGameState->SetStageResult(Result);
+	}
+
+	ASTStagePlayerController* STPlayerController = Cast<ASTStagePlayerController>(GetWorld()->GetFirstPlayerController());
+	if (ASTPlayerState* STPlayerState = STPlayerController->GetPlayerState<ASTPlayerState>())
+	{
+		STPlayerState->CalculateScore();
 	}
 
 	if (Result == EStageResult::Clear)
@@ -315,7 +321,7 @@ void ASTGameMode::BindStageClearZoneEnterEvent()
 
 void ASTGameMode::BindPlayerDeathEvent()
 {
-	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::BindPlayerDeathEvent() Start"));
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BindPlayerDeathEvent() Start"));
 
 	if (ASTPlayerCharacter* STPlayerCharacter = Cast<ASTPlayerCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn()))
 	{
@@ -324,6 +330,14 @@ void ASTGameMode::BindPlayerDeathEvent()
 			HealthComponent->OnCharacterDeath.AddDynamic(this, &ASTGameMode::OnPlayerDied);
 			UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BindPlayerDeathEvent() Death Event Bind"));
 		}
+		else
+		{
+			UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::BindPlayerDeathEvent() Can't Death Event Bind"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::BindPlayerDeathEvent() Can't Death Event Bind"));
 	}
 
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BindPlayerDeathEvent() End"));
