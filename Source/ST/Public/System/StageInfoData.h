@@ -18,4 +18,7 @@ struct FStageInfoRow : public FTableRowBase
 
 	UPROPERTY( EditAnywhere, BlueprintReadWrite )
 	FText StageGoalText;
+
+	UPROPERTY( EditAnywhere, BlueprintReadWrite )
+	TArray<FText> StageProgressList;
 };

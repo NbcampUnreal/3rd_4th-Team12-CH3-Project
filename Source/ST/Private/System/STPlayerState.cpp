@@ -208,7 +208,7 @@ void ASTPlayerState::OnDamageTaken(AActor* DamagedActor, float DamageAmount, boo
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnDamageTaken(%f / isCritical(%d) Start"), DamageAmount, bCritical);
 
-	AddTotalDamageReceived(DamageAmount);
+	AddTotalDamageInflicted(DamageAmount);
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnDamageTaken(%f / isCritical(%d) End"), DamageAmount, bCritical);
 }
@@ -224,7 +224,6 @@ void ASTPlayerState::OnHealthChanged(float CurrentHP, float MaxHP)
 		AddTotalDamageReceived(DamageReceived);
 	}
 	
-	
 	SetCurrentHP(CurrentHP);
 	SetMaxHP(MaxHP);	// 굳이...?
 	
@@ -236,7 +235,7 @@ void ASTPlayerState::OnAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnAmmoChanged(%d / %d) Start"), CurrentAmmo, MaxAmmo);
 
-	int32 UsedAmmo = PlayerStateInfo.CurrentAmmo - CurrentAmmo;
+	int32 UsedAmmo = CurrentAmmo - PlayerStateInfo.CurrentAmmo;
 	AddTotalUsedAmmo(UsedAmmo);		// 보통 1발씩 증가
 	
 	SetCurrentAmmo(CurrentAmmo);
@@ -260,9 +259,15 @@ void ASTPlayerState::CalculateScore()
 		UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScore() Can't Load STGameState->GameStateInfo.RemainingTime"));
 	}
 
-	int32 NewScore = RemainingTime;
-		/*(RemainingTime * PlayerStateInfo.KillCount * PlayerStateInfo.TotalDamageInflicted)
-							- (PlayerStateInfo.TotalDamageInflicted * PlayerStateInfo.TotalUsedAmmo * ScoreMultiplier);*/
+	const int32 Time = FMath::Clamp(RemainingTime, 0, RemainingTime);
+	const float Attack = PlayerStateInfo.TotalDamageInflicted;
+	const float Damage = PlayerStateInfo.TotalDamageReceived;
+	const int32 Ammo = PlayerStateInfo.TotalUsedAmmo;
+
+	int32 NewScore = static_cast<int32>((Time * 5) + (Attack * 1) - (Damage * 1) - (Ammo * 0.1f));
+	UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScore() NewScore(%d) = Score(%d) + Time(%d)*5 + Attack(%f)*0.1f - Damage(%f)*1 - Ammo(%d)*0.1"), NewScore, PlayerStateInfo.Score, Time, Attack, Damage, Ammo);
+	// 남은시간 초당 5점, 입힌 피해량 10당 1점, 받은 데미지 1당 -1점, 사용한 총알 수 10발당 -1점
+	NewScore = FMath::Clamp(NewScore, 0, NewScore);
 
 	SetScore(PlayerStateInfo.Score + NewScore);	// 최고기록 갱신시 내부에서 업데이트 함
 	
