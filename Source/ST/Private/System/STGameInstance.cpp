@@ -103,6 +103,29 @@ void USTGameInstance::QuitGame()
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::QuitGame() End"));
 }
 
+void USTGameInstance::ResetDataForRetry()
+{
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetPlayerStateInfo() Start"));
+	
+	int32 HighScore = PlayerStateInfo.HighScore;
+	PlayerStateInfo = FPlayerStateInfo();
+	PlayerStateInfo.HighScore = HighScore;
+
+	LastStage = EStageType::Stage1;
+	
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetPlayerStateInfo() End"));
+}
+
+void USTGameInstance::GoToRetry()
+{
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToRetry() Start"));
+	
+	ResetDataForRetry();
+	GoToLevel(EStageType::Stage1);
+	
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToRetry() End"));
+}
+
 void USTGameInstance::SetPlayerStateInfo(const FPlayerStateInfo& NewInfo)
 {
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::SetPlayerStateInfo() Start"));
