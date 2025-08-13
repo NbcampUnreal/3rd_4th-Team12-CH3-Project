@@ -19,7 +19,7 @@ class ST_API USTStageWidget : public UUserWidget
 public:
     // UI 업데이트 함수
     UFUNCTION(BlueprintCallable) void UpdateHealth(float CurrentHP, float MaxHP);
-    UFUNCTION(BlueprintCallable) void UpdateWeapon(const FString& WeaponName);
+    UFUNCTION(BlueprintCallable) void UpdateWeapon(const FText& WeaponName);
     UFUNCTION(BlueprintCallable) void UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo);
     UFUNCTION(BlueprintCallable) void UpdateTimer(int32 SecondsRemaining);
     UFUNCTION(BlueprintCallable) void UpdateEnemyStatus(int32 Killed, int32 Total);

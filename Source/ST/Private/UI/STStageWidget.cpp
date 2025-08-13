@@ -35,10 +35,12 @@ void USTStageWidget::UpdateHealth(float CurrentHP, float MaxHP)
     }
 }
 
-void USTStageWidget::UpdateWeapon(const FString& WeaponName)
+void USTStageWidget::UpdateWeapon(const FText& WeaponName)
 {
     if (Txt_WeaponType)
-        Txt_WeaponType->SetText(FText::FromString(WeaponName));
+    {
+        Txt_WeaponType->SetText(WeaponName);
+    }
 }
 
 void USTStageWidget::UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo)

@@ -22,6 +22,7 @@
 #include "System/STPlayerState.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Player/STWeaponManagerComponent.h"
 
 ASTStagePlayerController::ASTStagePlayerController()
 {
@@ -77,13 +78,8 @@ void ASTStagePlayerController::BeginPlay()
 	bShowMouseCursor = false;
 	
 	// 실제 데이터 대신 임시 값으로 전달
-	UpdateWeapon(TEXT("라이플")); // 임시 무기 이름
-	UpdateAmmo(25, 90); //	탄약: 현재 25발 / 최대 90발
 	UpdateEnemyStatus(0, 10); // 적 처치: 0 / 총 10명
 	AddDamageKillLog(TEXT("10의 피해를 받았습니다.")); // 로그 메시지
-
-	//게임 오버 화면 테스트
-	//ShowGameOverResult(12450, 22, 30000, 10500);
 
 	//게임 클리어 화면 테스트
 	//ShowGameClearResult(15000, 20000); // 점수: 15000, 최고기록: 20000
@@ -184,6 +180,14 @@ void ASTStagePlayerController::OnPossess(APawn* InPawn)
 			PlayerCharacter->GetHealthComponent()->OnHealthChanged.AddDynamic(
 				this, &ASTStagePlayerController::UpdateHealth);
 		}
+
+		
+
+		if (USTWeaponManagerComponent* WeaponManager = PlayerCharacter->FindComponentByClass<USTWeaponManagerComponent>())
+		{
+			WeaponManager->EquipDelegate.AddDynamic(this, &ASTStagePlayerController::UpdateWeapon);
+			WeaponManager->AmmoChangeDelegate.AddDynamic(this, &ASTStagePlayerController::UpdateAmmo);
+		}
 		
 		CachedMoveComp = PlayerCharacter->GetPlayerMovementComponent();
 	}
@@ -214,6 +218,10 @@ static bool IsHeadShot(const FName& BoneName)
 void ASTStagePlayerController::HandleEnemyDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical)
 {
 	ShowHitMarker();
+
+	// 피해 로그 출력 ("적에게 @@ 데미지")
+	const int32 ShownLog = FMath::Max(1, FMath::RoundToInt(DamageAmount));
+	AddDamageKillLog(FString::Printf(TEXT("적에게 %d 데미지"), ShownLog));
 	
 	FVector WorldLoc = DamagedActor ? DamagedActor->GetActorLocation() : FVector::ZeroVector;
 
@@ -281,6 +289,9 @@ void ASTStagePlayerController::ShowDamageNumberAtActor(AActor* Target, int32 Dam
 void ASTStagePlayerController::HandleEnemyDied_ShowConfirm(AActor* DeadEnemy)
 {
 	ShowKillConfirmed();
+
+	// 변경: 킬 로그 출력 ("적을 쓰러트림")
+	AddDamageKillLog(TEXT("적을 쓰러트림"));
 }
 
 // 점수판 표시
@@ -374,12 +385,6 @@ void ASTStagePlayerController::HandleQuitGame()
 
 void ASTStagePlayerController::TriggerGameOverWithTempData()
 {
-	if (bGameOverShown)
-	{
-		return;
-	}
-	bGameOverShown = true;
-
 	// 임시값
 	int32 TempScore       = 12450;
 	int32 TempKillCount   = 9;
@@ -422,7 +427,42 @@ void ASTStagePlayerController::TriggerGameClearWithTempData()
 	ShowGameClearResult(TempScore, TempHighScore);
 }
 
+void ASTStagePlayerController::ScheduleGameOver(float DelaySeconds)
+{
+	if (bGameOverShown)
+	{
+		return;
+	}
 
+	// 중복 타이머 방지
+	if (GetWorldTimerManager().IsTimerActive(GameOverTimerHandle))
+	{
+		return;
+	}
+	
+	bGameOverShown = true;
+
+	// 카메라 페이드
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->StartCameraFade(
+			0.f,
+			1.f,
+			FMath::Max(0.f, DelaySeconds),
+			FLinearColor::Black,
+			false,
+			true
+		);
+	}
+
+	GetWorldTimerManager().SetTimer(
+		GameOverTimerHandle,
+		this,
+		&ASTStagePlayerController::TriggerGameOverWithTempData,
+		FMath::Max(0.f, DelaySeconds),
+		false
+	);
+}
 
 
 void ASTStagePlayerController::UpdateHealth(float CurrentHP, float MaxHP)
@@ -453,15 +493,15 @@ void ASTStagePlayerController::UpdateHealth(float CurrentHP, float MaxHP)
 		
 		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
-		
-		TriggerGameOverWithTempData();
 	}
 }
 
-void ASTStagePlayerController::UpdateWeapon(const FString& WeaponName)
+void ASTStagePlayerController::UpdateWeapon(const FText& WeaponName)
 {
 	if (StageWidget)
+	{
 		StageWidget->UpdateWeapon(WeaponName);
+	}
 }
 
 void ASTStagePlayerController::UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo)
@@ -479,11 +519,6 @@ void ASTStagePlayerController::UpdateTimer(int32 RemainingSeconds)
 		StageWidget->UpdateTimer(RemainingSeconds);
 	}
 	
-	if (RemainingSeconds <= 0)
-	{
-		TriggerGameOverWithTempData();
-	}
-
 	// UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::UpdateTimer(%d) End"), RemainingSeconds);    // JM
 }
 
@@ -525,6 +560,11 @@ void ASTStagePlayerController::ShowGameOverResult(int32 Score, int32 KillCount, 
 		if (GameOverWidget)
 		{
 			GameOverWidget->AddToViewport(500);
+
+			if (PlayerCameraManager)
+			{
+				PlayerCameraManager->StartCameraFade(1.f, 0.f, 0.25f, FLinearColor::Black, false, false);
+			}
 
 			GameOverWidget->OnRetryRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameOverRetry);
 			GameOverWidget->OnReturnToMainRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameOverReturnToMain);
@@ -613,7 +653,31 @@ void ASTStagePlayerController::HandleStageFailed()
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::HandleStageFailed() Start"));
 
-	// TODO: 스테이지 실패 화면 띄우기
+	// 1) 플레이어 입력/이동 즉시 차단
+	SetIgnoreMoveInput(true);
+	SetIgnoreLookInput(true);
+	DisableInput(this);
+
+	// 2) 캐릭터 즉시 멈추기 & 캡슐 충돌 끄기
+	if (ACharacter* C = Cast<ACharacter>(GetPawn()))
+	{
+		if (UCharacterMovementComponent* Move = C->GetCharacterMovement())
+		{
+			Move->StopMovementImmediately();
+			Move->DisableMovement();
+		}
+		if (UCapsuleComponent* Capsule = C->GetCapsuleComponent())
+		{
+			Capsule->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		}
+	}
+
+	// 3) UI 전용 입력 모드 + 마우스 커서 ON
+	SetInputMode(FInputModeUIOnly());
+	bShowMouseCursor = true;
+
+	// 4) 페이드 후 GameOver UI 띄우기
+	ScheduleGameOver(GameOverDelay);
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::HandleStageFailed() End"));
 }
@@ -623,7 +687,7 @@ void ASTStagePlayerController::HandleGameOverRetry()
 {
 	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
 	{
-		GI->GoToLevel(EStageType::Stage1);
+		GI->GoToLevel(GI->LastStage);
 	}
 }
 
