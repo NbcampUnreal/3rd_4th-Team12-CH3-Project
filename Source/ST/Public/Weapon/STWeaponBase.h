@@ -1,5 +1,4 @@
 // Copyright Epic Games, Inc. All Rights Reserved.
-// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -8,19 +7,18 @@
 #include "STWeaponDataAsset.h"
 #include "STWeaponBase.generated.h"
 
-//델리게이트 선언
+// 델리게이트 선언
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquippedSignature, const FString&, WeaponName);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAmmoChangedSignature, int32, CurrentAmmo, int32, MagazineSize);
 
 
-UCLASS()
+UCLASS(Abstract) // 자식 클래스를 통해서만 사용하도록 Abstract 키워드 추가
 class ST_API ASTWeaponBase : public AActor
 {
 	GENERATED_BODY()
 	
 public:
 	// ========== 컴포넌트 ==========
-	//무기 스테틱 메쉬
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Weapon")
 	UStaticMeshComponent* WeaponMesh;
 
@@ -28,96 +26,65 @@ public:
 	UStaticMeshComponent* WeaponMesh3p;
 
 	// ========== 생성자 ==========
-	//생성자
 	ASTWeaponBase();
 
 	// ========== 변수 ==========
-	//데이터 에셋에서 값 가져오기
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category="Weapon")
 	USTWeaponDataAsset* WeaponDataAsset;
 	
-	// 카메라 쉐이크 시스템
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Screen Shake")
 	TSubclassOf<UCameraShakeBase> FireCameraShake;
 	
-	// 발사 시 재생할 VFX를 블루프린트나 데이터 애셋에서 설정할 수 있도록 노출시킵니다.
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon|VFX")
 	UParticleSystem* MuzzleFlashEffect; // 총구 화염 효과
 
 	UPROPERTY(EditDefaultsOnly, Category = "Weapon|VFX")
 	UParticleSystem* ImpactEffect_Default; // 기본 피격 효과 (벽, 바닥 등)
 
-	UPROPERTY(EditDefaultsOnly, Category = "Weapon|VFX")
-	UParticleSystem* ImpactEffect_Flesh; // 캐릭터(살) 피격 효과
-
-	//발사 궤적 효과 적용
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Weapon|Effects")
-	UParticleSystem* TracerEffect;
-	
-	//총기 발사 소리
 	UPROPERTY(EditAnywhere, Category = "Sound")
 	USoundBase* FireSound;
 
 	UPROPERTY(EditAnywhere, Category = "Sound")
-	USoundBase* ReloadSound ;
+	USoundBase* ReloadSound;
 
-	// 외부에서 구독할 델리게이트 프로퍼티 선언
 	UPROPERTY(BlueprintAssignable, Category = "Weapon|Delegates")
 	FOnWeaponEquippedSignature OnWeaponEquipped;
-	// 외부에서 구독할 탄약 선언
+
 	UPROPERTY(BlueprintAssignable, Category = "Weapon|Delegates")
 	FOnAmmoChangedSignature OnAmmoChanged;
 
 	// ========== 함수 ==========
-	//1인칭 스테틱 메쉬 가져오기
 	UFUNCTION(BlueprintPure, Category = "Weapon|Components")
 	UStaticMeshComponent* GetWeaponMesh1P() const { return WeaponMesh; }
 
-	//3인칭 스테틱 메쉬 가져오기
 	UFUNCTION(BlueprintPure, Category = "Weapon|Components")
 	UStaticMeshComponent* GetWeaponMesh3P() const { return WeaponMesh3p; }
 	
-	//총기 발사 모드 함수
 	EFireMode GetFireMode() const;
 	
-	//총알 발사 함수
 	void Fire();
 	void StartFire();
 	void StopFire();
-	// ASTWeaponBase.h
 	
-	// 현재 탄약 수를 반환하는 함수
 	UFUNCTION(BlueprintPure, Category = "Weapon")
 	int32 GetCurrentAmmo() const { return CurrentAmmo; }
 
-	//발사 모드 전환
 	void ToggleFireMode();
-
-	//총알 장전 함수
-	void StartReload();     // 장전 시작 함수
-	void FinishReload();    // 장전 완료 함수
-
-	//조준
+	void StartReload();
+	void FinishReload();
 	void StartAiming();
 	void StopAiming();
 
-	bool IsFiring() const
-	{ 
-		// 연발 모드에서 자동연사 중일 때만 발사 중으로 판단
-		return GetWorld() && GetWorld()->GetTimerManager().IsTimerActive(AutoFireTimerHandle);
-	}
+	bool IsFiring() const;
+	bool IsReloading() const { return bIsReloading; }
 	
-	bool IsReloading() const { return bIsReloading; } // 수정 리로드하기위해서
-
 protected:
-	// ========== 변수 ==========ㅇ
+	// ========== protected 변수 ==========
 	EWeaponType WeaponType;
 
-	//무기 이름
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Weapon")
 	FString WeaponName;
 	
-	//무기 속성
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float Damage;
 
@@ -133,47 +100,32 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 CurrentAmmo;
 	
-	//샷건
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	float SpreadAngle;
-
+	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	int32 PelletsPerShot;
 	
 	bool bIsAiming = false;
-	
 	float DefaultSpreadAngle = 0.0f;
 
-	//무기 진동 설정
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Screen Shake", meta = (ClampMin = "0.0", ClampMax = "2.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Screen Shake")
 	float CameraShakeScale = 1.0f;
 	
-	//총알 발사 딜레이
 	FTimerHandle FireRateTimerHandle;
-	//장전 타이머
 	FTimerHandle ReloadTimerHandle;
-	//총기 사격 모드 타이머
 	FTimerHandle AutoFireTimerHandle;
 
-	//발사 딜레이 설정 함서
 	bool bCanFire = true;
-	//장전 딜레이
 	bool bIsReloading = false;
 
-	// ========== 함수 ==========
+	// ========== protected 함수 ==========
 	virtual void BeginPlay() override;
-	//연사 조절 함수
+	
 	void EnableFire();
-
-	//fire에서 검사 통과후 총괄 함수
 	void HandleFire();
-
-	//라인 트레이스 함수
-	void PerformTrace(const FVector& Start, const FVector& Direction);
-
-	//라인 트레스 충돌 정보 함수
-	void ProcessHit(const FHitResult& HitResult);
-
-	//화면 진동 합수
 	void PlayFireCameraShake();
+
+	// ★★★ 핵심: 자식 클래스가 반드시 구현해야 할 '발사' 기능 선언 ★★★
+	virtual void FireWeapon();
 };
