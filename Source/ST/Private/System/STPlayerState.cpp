@@ -116,7 +116,7 @@ void ASTPlayerState::SetScore(const int32 NewScore)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::AddScore(%d) Start"), NewScore);
 
-	PlayerStateInfo.Score += NewScore;
+	PlayerStateInfo.Score = NewScore;
 	if (PlayerStateInfo.Score > PlayerStateInfo.HighScore)	// 최고기록 갱신시 같이 업데이트
 		SetHighScore(PlayerStateInfo.Score);
 	
@@ -297,6 +297,7 @@ void ASTPlayerState::CalculateScore(bool bIsStageClear)
 	}
 
 	int32 NewScore = PlayerStateInfo.Score - PlayerStateInfo.TotalDamageReceived * 1 - PlayerStateInfo.TotalUsedAmmo * 0.1f;
+	UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScoreAtGameOver() %d = Score(%d) - %.1f - %f"), NewScore, PlayerStateInfo.Score, PlayerStateInfo.TotalDamageReceived, PlayerStateInfo.TotalUsedAmmo * 0.1f);
 	if (bIsStageClear)
 	{
 		NewScore += RemainingTime * 5; 

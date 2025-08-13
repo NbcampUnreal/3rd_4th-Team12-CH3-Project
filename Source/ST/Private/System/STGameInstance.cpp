@@ -85,6 +85,7 @@ void USTGameInstance::GoToMainMenu()
 {
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToMainMenu() Start"));
 
+	ResetDataForRetry();
 	GoToLevel(EStageType::MainMenu);
 	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToMainMenu() End"));
