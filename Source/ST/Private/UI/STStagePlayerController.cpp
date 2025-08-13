@@ -496,7 +496,7 @@ void ASTStagePlayerController::UpdateHealth(float CurrentHP, float MaxHP)
 	}
 }
 
-void ASTStagePlayerController::UpdateWeapon(const FText& WeaponName)
+void ASTStagePlayerController::UpdateWeapon(const FString& WeaponName)
 {
 	if (StageWidget)
 	{
@@ -687,7 +687,7 @@ void ASTStagePlayerController::HandleGameOverRetry()
 {
 	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
 	{
-		GI->GoToLevel(GI->LastStage);
+		GI->GoToLevel(EStageType::Stage1);
 	}
 }
 

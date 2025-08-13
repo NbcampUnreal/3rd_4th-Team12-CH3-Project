@@ -30,7 +30,7 @@ public:
 
 	// UI 업데이트 함수
 	UFUNCTION() void UpdateHealth(float CurrentHP, float MaxHP);
-	UFUNCTION() void UpdateWeapon(const FText& WeaponName);
+	UFUNCTION() void UpdateWeapon(const FString& WeaponName);
 	UFUNCTION()	void UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo);
 	UFUNCTION( BlueprintCallable, Category="Timer")	void UpdateTimer(int32 RemainingSeconds);
 	UFUNCTION()	void UpdateEnemyStatus(int32 Killed, int32 Total);
