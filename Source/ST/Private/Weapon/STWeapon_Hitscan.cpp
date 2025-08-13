@@ -29,7 +29,7 @@ void ASTWeapon_Hitscan::FireWeapon()
 	}
 }
 
-// ★ 이전 ASTWeaponBase.cpp에서 가져온 함수
+
 void ASTWeapon_Hitscan::PerformTrace(const FVector& Start, const FVector& Direction)
 {
 	//충돌 검사용 변수 생성
@@ -73,6 +73,7 @@ void ASTWeapon_Hitscan::PerformTrace(const FVector& Start, const FVector& Direct
 
 			// 2. 최종 방향으로 라인트레이스의 끝점 계산
 			FVector TraceEnd = Start + (FinalDirection * WeaponDataAsset->WeaponData.TraceDistance);
+			DrawDebugLine(GetWorld(), Start, TraceEnd, FColor::Green, false, 2.0f);
 
 			// 3. 라인트레이스를 발사하여 실제 충돌 지점 확인
 			FHitResult HitResult;
@@ -114,7 +115,7 @@ void ASTWeapon_Hitscan::PerformTrace(const FVector& Start, const FVector& Direct
 	}
 }
 
-// ★ 이전 ASTWeaponBase.cpp에서 가져온 함수
+
 void ASTWeapon_Hitscan::ProcessHit(const FHitResult& HitResult)
 {
 	if (AActor* HitActor = HitResult.GetActor())

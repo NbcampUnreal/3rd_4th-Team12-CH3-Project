@@ -50,7 +50,6 @@ void ASTWeaponBase::BeginPlay()
 	}
 }
 
-// Fire() - 공통 기능
 void ASTWeaponBase::Fire()
 {
 	if (!bCanFire || CurrentAmmo <= 0)
@@ -64,6 +63,7 @@ void ASTWeaponBase::Fire()
 // HandleFire() - 공통 기능만 남기고 수정
 void ASTWeaponBase::HandleFire()
 {
+
 	// 1. 공통 기능 (사운드, 탄약 감소, 연사 타이머, 화면 흔들림, 총구 이펙트)
 	UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
 	
@@ -88,7 +88,6 @@ void ASTWeaponBase::HandleFire()
 		}
 	}
 
-	// 2. ★★★ 핵심: 실제 발사 방식은 자식에게 위임 ★★★
 	FireWeapon();
 }
 
@@ -96,13 +95,10 @@ void ASTWeaponBase::HandleFire()
 void ASTWeaponBase::FireWeapon()
 {
 	// 이 함수는 자식 클래스에서 반드시 재정의(override)되어야 합니다.
-	ensure(false && "FireWeapon() must be implemented in the child class.");
 	UE_LOG(LogTemp, Error, TEXT("FireWeapon() is not implemented in the child class!"));
 }
 
-// --- [ PerformTrace()와 ProcessHit() 함수는 이 파일에서 완전히 삭제됨 ] ---
 
-// --- [ 아래는 모두 공통 기능이므로 그대로 이 파일에 둡니다 ] ---
 void ASTWeaponBase::EnableFire() { bCanFire = true; }
 
 void ASTWeaponBase::StartReload()
@@ -164,15 +160,13 @@ void ASTWeaponBase::StopFire()
 
 void ASTWeaponBase::ToggleFireMode()
 {
-	// ToggleFireMode는 특정 무기 타입(Rifle)에 종속된 로직이므로,
-	// 나중에 Rifle 자식 클래스 등으로 옮기는 것을 고려해볼 수 있습니다.
-	// 지금은 일단 여기에 둡니다.
+
 	if (!WeaponDataAsset) return;
 
-	// if (WeaponDataAsset->WeaponData.WeaponType != EWeaponType::Rifle)
-	// {
-	// 	return;
-	// }
+	if (WeaponDataAsset->WeaponData.WeaponType != EWeaponType::Rifle)
+	{
+		return;
+	}
 	
 	EFireMode& CurrentMode = WeaponDataAsset->WeaponData.FireMode;
 	if (CurrentMode == EFireMode::Automatic)
@@ -202,7 +196,7 @@ void ASTWeaponBase::StartAiming()
 
 	if (WeaponDataAsset->WeaponData.WeaponType == EWeaponType::Shotgun)
 	{
-	SpreadAngle = SpreadAngle / 2.0f;
+	SpreadAngle = SpreadAngle / 1.5f;
 	}
 	 else
 	{
