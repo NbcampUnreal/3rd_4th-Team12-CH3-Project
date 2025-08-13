@@ -1,9 +1,12 @@
 ﻿#include "System/STPlayerState.h"
 
+#include "Enemy/STEnemyBase.h"
+#include "Kismet/GameplayStatics.h"
 #include "Player/STHealthComponent.h"
 #include "Player/STPlayerCharacter.h"
 #include "Player/STWeaponManagerComponent.h"
 #include "System/STGameInstance.h"
+#include "System/STGameState.h"
 #include "System/STLog.h"
 
 /********** public ***********/
@@ -138,6 +141,21 @@ void ASTPlayerState::SetCurrWeaponName(const FString& WeaponName)
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetCurrWeaponName(%s) End"), *WeaponName);
 }
 
+void ASTPlayerState::AddTotalDamageReceived(const float Amount)
+{
+	PlayerStateInfo.TotalDamageReceived += Amount;
+}
+
+void ASTPlayerState::AddTotalDamageInflicted(const float Amount)
+{
+	PlayerStateInfo.TotalDamageInflicted += Amount;
+}
+
+void ASTPlayerState::AddTotalUsedAmmo(const int32 Amount)
+{
+	PlayerStateInfo.TotalUsedAmmo += Amount;
+}
+
 /********** protected *************/
 void ASTPlayerState::BeginPlay()
 {
@@ -171,26 +189,81 @@ void ASTPlayerState::BeginPlay()
 			}
 		}
 	}
+
+	TArray<AActor*> Enemies;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASTEnemyBase::StaticClass(), Enemies);
+	for (AActor* E : Enemies)
+	{
+		if (ASTEnemyBase* Enemy = Cast<ASTEnemyBase>(E))
+		{
+			Enemy->OnDamageTaken.AddDynamic(this, &ASTPlayerState::OnDamageTaken);
+		}
+	}
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::BeginPlay() End"));
 }
 
+// Enemy에게 데미지를 입힐 때 호출
+void ASTPlayerState::OnDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical)
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnDamageTaken(%f / isCritical(%d) Start"), DamageAmount, bCritical);
+
+	AddTotalDamageReceived(DamageAmount);
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnDamageTaken(%f / isCritical(%d) End"), DamageAmount, bCritical);
+}
+
+// Player 체력이 변할 때 호출
 void ASTPlayerState::OnHealthChanged(float CurrentHP, float MaxHP)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnHealthChanged(%f / %f) Start"), CurrentHP, MaxHP);
 
+	float DamageReceived = PlayerStateInfo.CurrentHP - CurrentHP;
+	if (DamageReceived > 0)	// 체력이 회복되어도 받은 데미지가 감소하지 않음
+	{
+		AddTotalDamageReceived(DamageReceived);
+	}
+	
+	
 	SetCurrentHP(CurrentHP);
 	SetMaxHP(MaxHP);	// 굳이...?
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnHealthChanged(%f / %f) End"), CurrentHP, MaxHP);
 }
 
+// 총알 발사시 호출
 void ASTPlayerState::OnAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnAmmoChanged(%d / %d) Start"), CurrentAmmo, MaxAmmo);
 
+	int32 UsedAmmo = PlayerStateInfo.CurrentAmmo - CurrentAmmo;
+	AddTotalUsedAmmo(UsedAmmo);		// 보통 1발씩 증가
+	
 	SetCurrentAmmo(CurrentAmmo);
 	SetMaxAmmo(MaxAmmo);
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnAmmoChanged(%d / %d) End"), CurrentAmmo, MaxAmmo);
+}
+
+// GameMode::EndStage에서 직접 호출
+void ASTPlayerState::CalculateScore()
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::CalculateScore() Start"));
+
+	int32 RemainingTime = 0;
+	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
+	{
+		RemainingTime = STGameState->GetGameStateInfo().RemainingTime;
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScore() Can't Load STGameState->GameStateInfo.RemainingTime"));
+	}
+
+	int32 NewScore = (RemainingTime * PlayerStateInfo.KillCount * PlayerStateInfo.TotalDamageInflicted)
+							- (PlayerStateInfo.TotalDamageInflicted * PlayerStateInfo.TotalUsedAmmo * ScoreMultiplier);
+
+	SetScore(PlayerStateInfo.Score + NewScore);	// 최고기록 갱신시 내부에서 업데이트 함
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::CalculateScore() End"));
 }

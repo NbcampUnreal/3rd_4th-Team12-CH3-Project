@@ -34,6 +34,10 @@ public:
 	void SetScore( const int32 NewScore );
 	void SetHighScore( const int32 NewHighScore );
 	void SetCurrWeaponName( const FString& WeaponName );
+	void AddTotalDamageReceived( const float Amount );
+	void AddTotalDamageInflicted( const float Amount );
+	void AddTotalUsedAmmo( const int32 Amount );
+	void CalculateScore();
 
 
 protected:
@@ -42,7 +46,11 @@ protected:
 	void OnHealthChanged(float CurrentHP, float MaxHP);
 	UFUNCTION()
 	void OnAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo);
+	UFUNCTION()
+	void OnDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical);
+	
 	
 private:
 	FPlayerStateInfo PlayerStateInfo;
+	float ScoreMultiplier = 0.25f; 
 };
