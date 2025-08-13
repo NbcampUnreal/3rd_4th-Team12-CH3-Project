@@ -52,5 +52,5 @@ protected:
 	
 private:
 	FPlayerStateInfo PlayerStateInfo;
-	float ScoreMultiplier = 0.25f; 
+	float ScoreMultiplier = 0.01f; 
 };
