@@ -250,7 +250,7 @@ void USTWeaponManagerComponent::UnequipWeapon()
 	}
 }
 
-void USTWeaponManagerComponent::OnWeaponEquipped(const FText& WeaponName) 
+void USTWeaponManagerComponent::OnWeaponEquipped(const FString& WeaponName) 
 {
 	if (EquipDelegate.IsBound())
 	{

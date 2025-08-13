@@ -40,10 +40,26 @@ void USTHealthComponent::SetMaxHealth(float NewMaxHealth)
 	MaxHealth = NewMaxHealth;
 }
 
-void USTHealthComponent::SetCurrentHealth(float NewCurrentHealth)
+
+
+/* void USTHealthComponent::UpdateHealthStatus()
 {
-	CurrentHealth = NewCurrentHealth;
-}
+	if (CurrentHealth < KINDA_SMALL_NUMBER)
+	{
+		bIsDead = true;
+		if (OnCharacterDeath.IsBound())
+		{
+			OnCharacterDeath.Broadcast();
+		}
+	}
+	else
+	{
+		if (OnHealthChanged.IsBound())
+		{
+			OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
+		}
+	}
+} */
 
 
 void USTHealthComponent::UpdateHealthStatus()
@@ -52,7 +68,9 @@ void USTHealthComponent::UpdateHealthStatus()
 	{
 		OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 	}
-	if (CurrentHealth <= KINDA_SMALL_NUMBER)
+
+	const bool bNowDead = (CurrentHealth <= KINDA_SMALL_NUMBER);
+	if (bNowDead && !bIsDead)
 	{
 		bIsDead = true;
 		if (OnCharacterDeath.IsBound())
@@ -60,9 +78,7 @@ void USTHealthComponent::UpdateHealthStatus()
 			OnCharacterDeath.Broadcast();
 		}
 	}
-	
 }
-
 
 
 

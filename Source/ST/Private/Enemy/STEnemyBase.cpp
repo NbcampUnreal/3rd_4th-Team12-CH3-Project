@@ -31,8 +31,11 @@ void ASTEnemyBase::BeginPlay()
 float ASTEnemyBase::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, AController* EventInstigator,
 	AActor* DamageCauser)
 {
+	// SH 적이 맞았을때를 받아오기 위해서 추가했습니다.
+	Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	
 	if (StateComponent->GetCurrentState() == EEnemyState::Dead)
-	{
+	{	
 		return 0.0f;
 	}
 	
@@ -75,6 +78,10 @@ void ASTEnemyBase::ProcessDamage(float RawDamage, FName HitBone, FVector HitLoca
 	float TrueDamage=FMath::Max(0.0f, RawDamage*Multiplier-Defense);
 	Health=FMath::Max(0.0f, Health-TrueDamage);
 
+	// SH 치명타 확인 후 UI로 전달
+	const bool bCritical = WeakPointMultipliers.Contains(HitBone) && Multiplier > 1.0f;
+	OnDamageTaken.Broadcast(this, TrueDamage, bCritical);
+
 	if (Health<=0 && !StateComponent->IsInState(EEnemyState::Dead))
 	{
 		Die();
@@ -99,6 +106,9 @@ void ASTEnemyBase::Die()
 	// State를 Dead로 변경
 	StateComponent->SetState(EEnemyState::Dead);
 
+	// SH 킬 정보를 UI로 전달
+	OnDied.Broadcast(this);
+	
 	// 게임 모드에 OnEnemyKilled 호출
 	if (UWorld* World = GetWorld())
 	{
