@@ -6,6 +6,7 @@
 #include "Components/ActorComponent.h"
 #include "STWeaponManagerComponent.generated.h"
 
+enum class EWeaponType : uint8;
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquip, const FText&, WeaponName);
 // 탄약 변경 이벤트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponAmmoChange, int32, CurrentAmmo, int32, MaxAmmo);
@@ -13,6 +14,7 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponAmmoChange, int32, Current
 enum class EViewMode : uint8;
 class ASTPlayerCharacter;
 class ASTWeaponBase;
+struct FStItemPivotData;
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ST_API USTWeaponManagerComponent : public UActorComponent
@@ -21,14 +23,23 @@ class ST_API USTWeaponManagerComponent : public UActorComponent
 
 public:	
 	USTWeaponManagerComponent();
+	//equip
 	void EquipWeapon(TSubclassOf<ASTWeaponBase> WeaponClass);
+	//unequip
 	void UnequipWeapon();
+
+	void RequestEquipWeapon(TSubclassOf<ASTWeaponBase> WeaponClass);
 	
 protected:
-	virtual void InitializeComponent() override;
 	virtual void BeginPlay() override;
 	UFUNCTION()
 	void UpdateWeaponVisibility(EViewMode NewMode);
+
+	void OnEquipMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+
+	FStItemPivotData* GetWeaponPivotData(EWeaponType type);
+
+	void UpdateWeaponSocketOffset(EWeaponType type);
 private:
 	UPROPERTY()
 	TObjectPtr<ASTPlayerCharacter> OwnerChar;
@@ -44,6 +55,16 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "Socket")
 	FName AttachSocket3P = TEXT("WeaponSocket3P");
 
+	UPROPERTY(EditDefaultsOnly, Category = "SocketOffsetTable")
+	TObjectPtr<UDataTable> SocketOffsetTable;
+	
+	TSubclassOf<ASTWeaponBase> PendingWeaponClass;
+	
+	FOnMontageEnded MontageEndedDelegate;
+
+	bool bIsWeaponChanged = false;
+
+	bool CanFireWeapon();
 
 #pragma region  Input
 public:

@@ -18,6 +18,7 @@
 #include "Player/ST_PlayerAnimMontageConfig.h"
 #include "System/STGameMode.h"
 #include "System/STPlayerState.h"
+#include "Weapon/STWeaponBase.h"
 #include "Weapon/STWeaponType.h"
 
 #pragma region DefaultSetting
@@ -102,8 +103,10 @@ void ASTPlayerCharacter::BeginPlay()
 	{
 		if (IsValid(CachedPlayerState))
 		{
-			//CachedPlayerState->GetPlayerStateInfo();
+			HealthComponent->SetMaxHealth(CachedPlayerState->GetPlayerStateInfo().MaxHP);
+			HealthComponent->SetCurrentHealth(CachedPlayerState->GetPlayerStateInfo().CurrentHP);
 		}
+		else
 		{
 			if (IsValid(PlayerBaseStatData))
 			{
@@ -116,7 +119,7 @@ void ASTPlayerCharacter::BeginPlay()
 	// Movement Component Setting
 	if (IsValid(MovementComponent))
 	{
-		//todo 이것도 playerstate에 
+	
 		if (IsValid(PlayerBaseStatData))
 		{
 			MovementComponent->SetWalkSpeed(PlayerBaseStatData->BaseWalkSpeed);
@@ -126,7 +129,6 @@ void ASTPlayerCharacter::BeginPlay()
 		}
 		MovementComponent->Initialize();
 	}
-	
 	
 }
 
@@ -182,7 +184,6 @@ void ASTPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	{
 		EnhancedInputComponent->BindAction(InputConfig->ReloadAction, ETriggerEvent::Completed, this, &ASTPlayerCharacter::ReloadAmmo);
 	}
-
 
 }
 #pragma endregion 
@@ -348,6 +349,8 @@ void ASTPlayerCharacter::HandleDeath()
 #pragma endregion
 
 #pragma region WeaponSystem
+
+
 void ASTPlayerCharacter::OnWeaponEquipped(EWeaponType NewWeapon)
 {
 	if (USTPlayerAnimInstance* AnimInstance = Cast<USTPlayerAnimInstance>(GetMesh()->GetAnimInstance()))
