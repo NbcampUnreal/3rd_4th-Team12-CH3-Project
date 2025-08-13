@@ -54,12 +54,9 @@ void USTStageWidget::UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo)
 
 void USTStageWidget::UpdateTimer(int32 SecondsRemaining)
 {
-    int32 Minutes = SecondsRemaining / 60;
-    int32 Seconds = SecondsRemaining % 60;
-
     if (Txt_Timer)
     {
-        FString Text = FString::Printf(TEXT("%02d:%02d"), Minutes, Seconds);
+        FString Text = FString::Printf(TEXT("남은 시간 : %d초"), SecondsRemaining);
         Txt_Timer->SetText(FText::FromString(Text));
     }
 }
@@ -68,7 +65,7 @@ void USTStageWidget::UpdateEnemyStatus(int32 Killed, int32 Total)
 {
     if (Txt_EnemyStatus)
     {
-        FString Text = FString::Printf(TEXT("%d / %d"), Killed, Total);
+        const FString Text = FString::Printf(TEXT("죽인 적 수 : %d / 전체 적 수 : %d"), Killed, Total);
         Txt_EnemyStatus->SetText(FText::FromString(Text));
     }
 }
