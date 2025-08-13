@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "StageInfoData.h"
 #include "GameFramework/GameMode.h"
 #include "STGameTypes.h"
 #include "STGameMode.generated.h"
@@ -64,7 +65,7 @@ private:
 	UFUNCTION()
 	void HandlePlayerEnteredClearZone();
 	void SetStagePhase(const EStagePhase NewPhase) const;
-	int32 GetStageInfoFromDataTable(const FString& StageName) const;
+	FStageInfoRow* GetStageInfoFromDataTable(const FString& StageName) const;
 	void BindStageClearZoneEnterEvent();
 	void BindPlayerDeathEvent();
 	void UpdateStageTimerUI();

@@ -41,3 +41,8 @@ void ASTGameState::SetBossPhase(int32 NewBossPhase)
 {
 	GameStateInfo.BossPhase = NewBossPhase;
 }
+
+void ASTGameState::SetStageGoalText(const FText& NewStageGoalText)
+{
+	GameStateInfo.StageGoalText = NewStageGoalText;
+}
