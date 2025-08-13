@@ -229,6 +229,9 @@ void ASTGameMode::ResetStage()
 		STGameState->SetStageResult(EStageResult::None);
 		STGameState->SetBossPhase(1);
 		STGameState->SetStageGoalText(StageInfo->StageGoalText);
+		STGameState->SetStageProgressList(StageInfo->StageProgressList);
+		/*UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::ResetStage() StageProgressList[0] : %s"), *StageInfo->StageProgressList[0].ToString());
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::ResetStage() StageProgressList[1] : %s"), *StageInfo->StageProgressList[1].ToString());*/
 	}
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::ResetStage() End"));

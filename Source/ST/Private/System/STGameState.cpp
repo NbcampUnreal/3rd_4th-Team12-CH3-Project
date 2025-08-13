@@ -46,3 +46,8 @@ void ASTGameState::SetStageGoalText(const FText& NewStageGoalText)
 {
 	GameStateInfo.StageGoalText = NewStageGoalText;
 }
+
+void ASTGameState::SetStageProgressList(const TArray<FText>& NewStageProgressList)
+{
+	GameStateInfo.StageProgressList = NewStageProgressList;
+}
