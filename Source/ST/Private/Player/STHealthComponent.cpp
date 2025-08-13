@@ -40,6 +40,10 @@ void USTHealthComponent::SetMaxHealth(float NewMaxHealth)
 	MaxHealth = NewMaxHealth;
 }
 
+void USTHealthComponent::SetCurrentHealth(float NewCurrentHealth)
+{
+	CurrentHealth = NewCurrentHealth;
+}
 
 
 /* void USTHealthComponent::UpdateHealthStatus()
