@@ -22,6 +22,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category="TPS")
 	TObjectPtr<UAnimMontage> DeadMontage;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category="TPS")
+	TObjectPtr<UAnimMontage> EquipMontage;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category="FPS")
 	TObjectPtr<UAnimMontage> FPSReloadMontage;
 

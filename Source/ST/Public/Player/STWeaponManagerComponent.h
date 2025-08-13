@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Item/STItemPivotData.h"
 #include "STWeaponManagerComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquip, const FString&, WeaponName);
@@ -23,12 +24,20 @@ public:
 	USTWeaponManagerComponent();
 	void EquipWeapon(TSubclassOf<ASTWeaponBase> WeaponClass);
 	void UnequipWeapon();
-	
+	void RequestEquipWeapon(TSubclassOf<ASTWeaponBase> WeaponClass);
 protected:
-	virtual void InitializeComponent() override;
 	virtual void BeginPlay() override;
+	
+	void OnEquipMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	
+	FStItemPivotData* GetWeaponPivotData(EWeaponType type);
+	
+	void UpdateWeaponSocketOffset(EWeaponType type);
+	
 	UFUNCTION()
 	void UpdateWeaponVisibility(EViewMode NewMode);
+	bool CanFireWeapon();
+
 private:
 	UPROPERTY()
 	TObjectPtr<ASTPlayerCharacter> OwnerChar;
@@ -38,11 +47,21 @@ private:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DefaultWeapon", meta = (AllowPrivateAccess = true))
 	TSubclassOf<ASTWeaponBase> DefaultWeapon;
 
+	TSubclassOf<ASTWeaponBase>PendingWeaponClass;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SocketOffset", meta = (AllowPrivateAccess = true))
+	TObjectPtr<UDataTable> SocketOffsetTable;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Socket")
 	FName AttachSocket1P = TEXT("WeaponSocket1P");
 
 	UPROPERTY(EditDefaultsOnly, Category = "Socket")
 	FName AttachSocket3P = TEXT("WeaponSocket3P");
+
+	bool bIsWeaponChanged =false;
+	
+	FOnMontageEnded MontageEndedDelegate;
+	
 
 
 #pragma region  Input

@@ -6,6 +6,7 @@
 #include "GameFramework/Character.h"
 #include "STPlayerCharacter.generated.h"
 
+class ASTWeaponBase;
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCharacterZooming, bool);
 
 
@@ -128,6 +129,7 @@ protected:
 #pragma region Weapon System
 
 public:
+    USTWeaponManagerComponent* GetWeaponManagerComponent()const {return WeaponManager;}
     void OnWeaponEquipped(EWeaponType NewWeapon);
     void OnWeaponFired();
     void PlayReloadAnimation();
@@ -139,6 +141,9 @@ protected:
 
 #pragma region Config
 
+public:
+    UST_PlayerAnimMontageConfig* GetMontageConfig()const{return MontageConfig;}
+protected:
     // Input Config
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config", meta = (AllowPrivateAccess = "true"))
     TObjectPtr<USTPlayerInputConfig> InputConfig;
