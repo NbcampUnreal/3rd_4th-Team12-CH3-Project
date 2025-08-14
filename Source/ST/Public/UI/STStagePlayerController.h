@@ -57,6 +57,7 @@ public:
 	UFUNCTION()	void HandleGameClearRetry();
 	UFUNCTION()	void HandleGameClearReturnToMain();
 	
+
 	// Game Over / Clear UI
 	UFUNCTION()
 	void ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken, const FText& ReasonText);
@@ -138,6 +139,9 @@ private:
 	void TriggerGameOverWithTempData();
 	UFUNCTION()
 	void TriggerGameClearWithTempData();
+
+	// JM: 레벨이동 담당 함수(로딩 화면 + 데이터 초기화)
+	void LoadLevelWithDataResetAndLoadingScreen(const EStageType& NextStage);
 
 	// 게임 오버 화면 딜레이
 	UFUNCTION()
