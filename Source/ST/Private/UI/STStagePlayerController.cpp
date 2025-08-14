@@ -195,7 +195,8 @@ void ASTStagePlayerController::SetupInputComponent()
 
 	// 테스트용 키 (P)
 	InputComponent->BindKey(EKeys::P, IE_Pressed, this, &ASTStagePlayerController::TogglePauseMenu);
-
+	// ESC도 토글
+	InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASTStagePlayerController::TogglePauseMenu);
 	// Tab 키 입력 바인딩
 	InputComponent->BindKey(EKeys::Tab, IE_Pressed, this, &ASTStagePlayerController::ShowScoreboard);
 	InputComponent->BindKey(EKeys::Tab, IE_Released, this, &ASTStagePlayerController::HideScoreboard);
@@ -608,9 +609,14 @@ void ASTStagePlayerController::HideBossBar()
 
 void ASTStagePlayerController::TogglePauseMenu()
 {
+	if (GameOverWidget || GameClearWidget)
+	{
+		return;
+	}
+
 	if (IsPaused())
 	{
-		// 게임 재개
+		// === 게임 재개 ===
 		SetPause(false);
 
 		if (PauseMenuWidget)
@@ -623,7 +629,7 @@ void ASTStagePlayerController::TogglePauseMenu()
 	}
 	else
 	{
-		// 게임 일시정지
+		// === 게임 일시정지 ===
 		SetPause(true);
 
 		if (!PauseMenuWidget && PauseMenuWidgetClass)
@@ -640,9 +646,13 @@ void ASTStagePlayerController::TogglePauseMenu()
 		if (PauseMenuWidget)
 		{
 			PauseMenuWidget->SetVisibility(ESlateVisibility::Visible);
-		}
 
-		SetInputMode(FInputModeUIOnly());
+			// 입력 모드로 ESC가 컨트롤러에 도달하도록 설정
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(PauseMenuWidget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+		}
 		bShowMouseCursor = true;
 	}
 }
