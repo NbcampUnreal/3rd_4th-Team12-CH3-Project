@@ -160,6 +160,11 @@ void ASTStagePlayerController::BeginPlay()
 				Enemy->OnDied.AddDynamic(this, &ASTStagePlayerController::HandleEnemyDied_ShowConfirm);
 				++BoundCount;
 			}
+
+			if (ASTEnemyBoss* Boss = Cast<ASTEnemyBoss>(E))
+			{
+				Boss->OnPhaseChanged.AddDynamic(this, &ASTStagePlayerController::PlayBossBGM);
+			}
 		}
 		// 총 적 수 기록 & UI 반영
 		TotalEnemyCount = Enemies.Num();
@@ -941,7 +946,7 @@ void ASTStagePlayerController::PlayAnotherBGM(const EBGMType& BGMType)
 	
 	if (AudioComponents.Num() > 0)
 	{
-		UAudioComponent* BGMComp = AudioComponents[0];
+		BGMComp = AudioComponents[0];	
 		if (BGMComp->IsPlaying())
 		{
 			BGMComp->Stop();
@@ -954,8 +959,11 @@ void ASTStagePlayerController::PlayAnotherBGM(const EBGMType& BGMType)
 
 		switch (BGMType)
 		{
-			case EBGMType::ClearBGM:
+			case EBGMType::GameClear:
 				BGMComp->SetSound(ClearBGM);
+				break;
+			case EBGMType::BossPhase2:
+				BGMComp->SetSound(BossPhase2BGM);
 				break;
 			default:
 				UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::PlayAnotherBGM() no Matching BGMType"));
@@ -972,6 +980,16 @@ void ASTStagePlayerController::PlayAnotherBGM(const EBGMType& BGMType)
 	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::PlayAnotherBGM() End"));
 }
 
+void ASTStagePlayerController::PlayBossBGM(int32 OldPhaseInt, int32 NewPhaseInt)
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::PlayBossBGM(%d, %d) Start"), OldPhaseInt, NewPhaseInt);
+
+	PlayAnotherBGM(EBGMType::BossPhase2);
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::PlayBossBGM(%d, %d) End"), OldPhaseInt, NewPhaseInt);
+}
+
+/*
 // JM: 레벨 블루프린트에서 재생 중인 BGM 정지
 void ASTStagePlayerController::StopLevelBGM()
 {
@@ -1007,6 +1025,7 @@ void ASTStagePlayerController::StopLevelBGM()
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::StopLevelBGM() End"));
 }
+*/
 
 
 // JM: 스테이지 클리어시 호출됨
@@ -1051,7 +1070,7 @@ void ASTStagePlayerController::HandleStageClear()
 	}
 	else if (NextStage == EStageType::Ending)
 	{
-		PlayAnotherBGM(EBGMType::ClearBGM);	// JM: 클리어 브금으로 변경
+		PlayAnotherBGM(EBGMType::GameClear);	// JM: 클리어 브금으로 변경
 		ScheduleGameClear(GameClearDelay); // 페이드 아웃 이후 클리어 UI 춫력
 	}
 	else

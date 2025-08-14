@@ -86,6 +86,8 @@ public:
 	void PlayGameClearBGM_BP();		// JM : 스테이지 클리어 BGM 재생
 	void StopLevelBGM();			// JM : 이전 레벨 BGM 정지
 	void PlayAnotherBGM(const EBGMType& BGMType);	// JM : BGM 변경
+	UFUNCTION()
+	void PlayBossBGM(int32 OldPhaseInt, int32 NewPhaseInt);
 
 	// 로딩 화면
 	UFUNCTION( BlueprintImplementableEvent )
@@ -141,7 +143,11 @@ protected:
 	// JM : BGM 에셋
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
 	USoundBase* ClearBGM;
-
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	USoundBase* BossPhase2BGM;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
+	UAudioComponent* BGMComp;
+	
 	// 키 입력 핸들러
 	void ShowScoreboard();
 	void HideScoreboard();

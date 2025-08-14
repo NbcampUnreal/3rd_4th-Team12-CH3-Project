@@ -51,7 +51,8 @@ enum class EStageType : uint8
 UENUM( BlueprintType )
 enum class EBGMType : uint8
 {
-	ClearBGM		UMETA( DisplayName = "ClearBGM" )
+	GameClear		UMETA( DisplayName = "GameClear" ),
+	BossPhase2		UMETA( DisplayName = "BossPhase2" )
 };
 
 USTRUCT(BlueprintType)
