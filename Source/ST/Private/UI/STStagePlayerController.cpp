@@ -8,6 +8,7 @@
 #include "Player/STMovementComponent.h"      
 #include "Player/STPlayerCharacter.h"        
 #include "Blueprint/UserWidget.h"
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "System/STGameInstance.h"
 #include "System/STGameTypes.h"
@@ -21,6 +22,7 @@
 #include "System/STLog.h"
 #include "System/STPlayerState.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/LevelScriptActor.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Player/STWeaponManagerComponent.h"
 
@@ -687,6 +689,42 @@ void ASTStagePlayerController::ShowGameClearResult()
 	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::ShowGameClearResult() End"));
 }
 
+// JM: 레벨 블루프린트에서 재생 중인 BGM 정지
+void ASTStagePlayerController::StopLevelBGM()
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::StopLevelBGM() Start"));
+
+	ALevelScriptActor* LevelBPActor = GetWorld()->GetLevelScriptActor();
+	if (!LevelBPActor)
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::StopLevelBGM() LevelBPActor Not Found"));
+		return;
+	}
+	
+	TArray<UAudioComponent*> AudioComponents;
+	LevelBPActor->GetComponents<UAudioComponent>(AudioComponents);
+	
+	if (AudioComponents.Num() > 0)
+	{
+		UAudioComponent* BGMComp = AudioComponents[0];
+		if (BGMComp->IsPlaying())
+		{
+			BGMComp->Stop();
+			UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::StopLevelBGM() Stop Level BGM"));
+		}
+		else
+		{
+			UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::StopLevelBGM() BGMComponent is not playing"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::StopLevelBGM() BGMComponent not found"));
+	}
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::StopLevelBGM() End"));
+}
+
 
 // JM: 스테이지 클리어시 호출됨
 void ASTStagePlayerController::HandleStageClear()
@@ -725,13 +763,15 @@ void ASTStagePlayerController::HandleStageClear()
 
 	if (NextStage == EStageType::Stage2 || NextStage == EStageType::Stage3)
 	{
-		STGameInstance->LastStage = NextStage;
+		/*STGameInstance->LastStage = NextStage*/;
 		LoadNextStage_BP(NextStage, LoadingScreenIndex);	// 다음 스테이지로 이동(BP Implement 이벤트)
 	}
 	else if (NextStage == EStageType::Ending)
 	{
 		// TODO: 게임 클리어화면 보여주기
 		ShowGameClearResult();
+		StopLevelBGM();				// JM : 기존 레벨BP BGM 정지
+		PlayGameClearBGM_BP();		// JM : 게임 클리어시 BGM 재생
 	}
 	else
 	{
@@ -797,7 +837,8 @@ void ASTStagePlayerController::HandleGameClearRetry()
 {
 	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
 	{
-		GI->GoToLevel(EStageType::Stage1);
+		// GI->GoToLevel(EStageType::Stage1);
+		GI->GoToRetry();	// JM : 초기화 되는 Retry는 이쪽으로
 	}
 }
 
