@@ -138,8 +138,14 @@ void ASTStagePlayerController::BeginPlay()
 				++BoundCount;
 			}
 		}
+		// 총 적 수 기록 & UI 반영
+		TotalEnemyCount = Enemies.Num();
+		KilledEnemyCount = 0; // 스테이지 시작 시 0부터
+		UpdateEnemyStatus(KilledEnemyCount, TotalEnemyCount);
 	}
 	
+	//미션 목표 생성
+	RefreshMissionProgress(0);
 }
 
 void ASTStagePlayerController::SetupInputComponent()
@@ -179,6 +185,12 @@ void ASTStagePlayerController::OnPossess(APawn* InPawn)
 		{
 			PlayerCharacter->GetHealthComponent()->OnHealthChanged.AddDynamic(
 				this, &ASTStagePlayerController::UpdateHealth);
+
+			PlayerCharacter->GetHealthComponent()->OnHealthHeal.AddDynamic(
+				this, &ASTStagePlayerController::HandlePlayerHealed);
+			
+			PlayerCharacter->GetHealthComponent()->OnHealthDamage.AddDynamic(
+			    this, &ASTStagePlayerController::HandlePlayerDamaged);
 		}
 
 		
@@ -196,6 +208,16 @@ void ASTStagePlayerController::OnPossess(APawn* InPawn)
 void ASTStagePlayerController::OnUnPossess()
 {
 	Super::OnUnPossess();
+
+	if (ASTPlayerCharacter* PlayerCharacter = Cast<ASTPlayerCharacter>(GetPawn()))
+	{
+		if (USTHealthComponent* HC = PlayerCharacter->GetHealthComponent())
+		{
+			HC->OnHealthChanged.RemoveDynamic(this, &ASTStagePlayerController::UpdateHealth);
+			HC->OnHealthHeal.RemoveDynamic(this, &ASTStagePlayerController::HandlePlayerHealed);
+			HC->OnHealthDamage.RemoveDynamic(this, &ASTStagePlayerController::HandlePlayerDamaged);
+		}
+	}
 
 	// 엔드 화면이 아니더라도, 폰이 사라진 시점엔 입력/시점 모두 차단
 	SetIgnoreMoveInput(true);
@@ -215,13 +237,46 @@ static bool IsHeadShot(const FName& BoneName)
 		|| B.Contains(TEXT("head"), ESearchCase::IgnoreCase);
 }
 
+// 진행 상황 텍스트
+void ASTStagePlayerController::RefreshMissionProgress(int32 ProgressIndex)
+{
+	if (!ScoreboardWidget) return;
+
+	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
+	{
+		const auto& Info = STGameState->GetGameStateInfo();
+		const TArray<FText>& List = Info.StageProgressList;
+
+		if (List.IsValidIndex(ProgressIndex))
+		{
+			ScoreboardWidget->UpdateMissionProgress(List[ProgressIndex].ToString());
+		}
+	}
+}
+
+// 플레이어 회복 로그
+void ASTStagePlayerController::HandlePlayerHealed(float HealAmount)
+{
+	const int32 ShownLog = FMath::Max(1, FMath::RoundToInt(HealAmount));
+	AddDamageKillLog(FString::Printf(TEXT("플레이어가 %d 회복했습니다."), ShownLog));
+}
+
+// 플레이어 피해 로그
+void ASTStagePlayerController::HandlePlayerDamaged(float DamageAmount)
+{
+	const int32 ShownLog = FMath::Max(1, FMath::RoundToInt(DamageAmount));
+	AddDamageKillLog(FString::Printf(TEXT("플레이어가 %d 피해를 받았습니다."), ShownLog));
+}
+
 void ASTStagePlayerController::HandleEnemyDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical)
 {
 	ShowHitMarker();
 
-	// 피해 로그 출력 ("적에게 @@ 데미지")
+	// 에너미 피해 로그 출력(피격지 데미지 UI가 있어서 보류)
+	/*
 	const int32 ShownLog = FMath::Max(1, FMath::RoundToInt(DamageAmount));
-	AddDamageKillLog(FString::Printf(TEXT("적에게 %d 데미지"), ShownLog));
+	AddDamageKillLog(FString::Printf(TEXT("적에게 %d 피해를 주었습니다."), ShownLog));
+	*/
 	
 	FVector WorldLoc = DamagedActor ? DamagedActor->GetActorLocation() : FVector::ZeroVector;
 
@@ -290,8 +345,12 @@ void ASTStagePlayerController::HandleEnemyDied_ShowConfirm(AActor* DeadEnemy)
 {
 	ShowKillConfirmed();
 
-	// 변경: 킬 로그 출력 ("적을 쓰러트림")
-	AddDamageKillLog(TEXT("적을 쓰러트림"));
+	// 킬 로그 출력
+	AddDamageKillLog(TEXT("적을 처치하였습니다."));
+
+	// 처치 수 증가 후 UI 반영
+	++KilledEnemyCount;
+	UpdateEnemyStatus(KilledEnemyCount, TotalEnemyCount);
 }
 
 // 점수판 표시
@@ -303,18 +362,48 @@ void ASTStagePlayerController::ShowScoreboard()
 	FString TempGoal = TEXT("적 섬멸 후 목표지점 이동");   // 목표 텍스트
 	FString TempProgress = TEXT("적을 섬멸하세요");       // 진행 텍스트
 
+	// PlayerState에서 점수/킬 최신값
+	if (ASTPlayerState* PS = GetPlayerState<ASTPlayerState>())
+	{
+		const FPlayerStateInfo& Info = PS->GetPlayerStateInfo();
+		TempScore = Info.Score;
+		TempKills = Info.KillCount;
+	}
+
+	// GameState에서 목표/진행 문구
 	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
 	{
-		TempGoal = STGameState->GetGameStateInfo().StageGoalText.ToString();
-	}
-	
+		const auto& GSInfo = STGameState->GetGameStateInfo();
 
-	ScoreboardWidget->UpdateScoreAndKill(TempScore, TempKills);
-	ScoreboardWidget->UpdateMissionGoal(TempGoal);
-	ScoreboardWidget->UpdateMissionProgress(TempProgress);
-	
+		// 목표 텍스트
+		TempGoal = GSInfo.StageGoalText.ToString();
+
+		// 진행 텍스트
+		const TArray<FText>& ProgressList = GSInfo.StageProgressList;                  
+		const bool bAllKilled = (TotalEnemyCount > 0 && KilledEnemyCount >= TotalEnemyCount);
+		const int32 ProgressIdx = bAllKilled ? 1 : 0;                                  
+		if (ProgressList.IsValidIndex(ProgressIdx))                                    
+		{
+			TempProgress = ProgressList[ProgressIdx].ToString();                       
+		}
+	}
+
+
 	if (ScoreboardWidget)
 	{
+		// 점수/킬 갱신
+		ScoreboardWidget->UpdateScoreAndKill(TempScore, TempKills);
+
+		// 목표/진행 텍스트 갱신
+		if (!TempGoal.IsEmpty())
+		{
+			ScoreboardWidget->UpdateMissionGoal(TempGoal);
+		}
+		if (!TempProgress.IsEmpty())
+		{
+			ScoreboardWidget->UpdateMissionProgress(TempProgress);
+		}
+
 		ScoreboardWidget->SetVisibility(ESlateVisibility::Visible);
 	}
 }
@@ -405,9 +494,11 @@ void ASTStagePlayerController::TriggerGameOverWithTempData()
 		// 필요 시 가져와서 임시값 대체
 		TempScore       = Info.Score;
 		TempKillCount   = Info.KillCount;
+		TempDamageDealt = Info.TotalDamageInflicted;
+		TempDamageTaken = Info.TotalDamageReceived;
 	}
 	
-	ShowGameOverResult(TempScore, TempKillCount, TempDamageDealt, TempDamageTaken);
+	ShowGameOverResult(TempScore, TempKillCount, TempDamageDealt, TempDamageTaken, PendingGameOverReason);
 }
 
 void ASTStagePlayerController::TriggerGameClearWithTempData()
@@ -480,6 +571,8 @@ void ASTStagePlayerController::UpdateHealth(float CurrentHP, float MaxHP)
 
 	if (CurrentHP <= 0.f)
 	{
+		PendingGameOverReason = NSLOCTEXT("GameOver", "PlayerDead", "캐릭터가 사망했습니다.");
+		
 		SetIgnoreMoveInput(true);
 		SetIgnoreLookInput(true);
 		DisableInput(this);
@@ -524,6 +617,11 @@ void ASTStagePlayerController::UpdateTimer(int32 RemainingSeconds)
 	{
 		StageWidget->UpdateTimer(RemainingSeconds);
 	}
+
+	if (RemainingSeconds <= 0)
+	{
+		PendingGameOverReason = NSLOCTEXT("GameOver", "TimeOver", "제한 시간을 초과하셨습니다.");
+	}
 	
 	// UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::UpdateTimer(%d) End"), RemainingSeconds);    // JM
 }
@@ -532,6 +630,13 @@ void ASTStagePlayerController::UpdateEnemyStatus(int32 Killed, int32 Total)
 {
 	if (StageWidget)
 		StageWidget->UpdateEnemyStatus(Killed, Total);
+	
+
+	// 모두 처치되면 스코어보드 진행 텍스트를 [1]로 전환
+	if (Killed == Total)
+	{
+		RefreshMissionProgress(1);
+	}
 }
 
 void ASTStagePlayerController::AddDamageKillLog(const FString& LogText)
@@ -558,7 +663,7 @@ void ASTStagePlayerController::ShowDamageTextAt(FVector WorldLocation, int32 Dam
 		StageWidget->ShowDamageTextAt(WorldLocation, Damage);
 }
 
-void ASTStagePlayerController::ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken)
+void ASTStagePlayerController::ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken, const FText& ReasonText)
 {
 	if (!GameOverWidget && GameOverWidgetClass)
 	{
@@ -579,7 +684,7 @@ void ASTStagePlayerController::ShowGameOverResult(int32 Score, int32 KillCount, 
 
 	if (GameOverWidget)
 	{
-		GameOverWidget->SetResultInfo(Score, KillCount, DamageDealt, DamageTaken);
+		GameOverWidget->SetResultInfo(Score, KillCount, DamageDealt, DamageTaken, ReasonText);
 		SetPause(true);
 		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
@@ -693,7 +798,8 @@ void ASTStagePlayerController::HandleGameOverRetry()
 {
 	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
 	{
-		GI->GoToLevel(EStageType::Stage1);
+		// GI->GoToLevel(EStageType::Stage1);
+		GI->GoToRetry();
 	}
 }
 

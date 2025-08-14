@@ -7,6 +7,8 @@
 #include "Kismet/KismetMathLibrary.h"
 #include "Player/STHealthComponent.h"
 #include "Player/STMovementComponent.h"
+#include "Player/STWeaponManagerComponent.h"
+#include "Weapon/STWeaponBase.h"
 #include "Weapon/STWeaponType.h"
 
 USTPlayerAnimInstance::USTPlayerAnimInstance()
@@ -47,6 +49,7 @@ void USTPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 
 	UpdateMovementProperties();
 	CalculateAimOffset(DeltaSeconds);
+	UpdateWeaponProperties();
 	
 }
 
@@ -100,15 +103,17 @@ void USTPlayerAnimInstance::CalculateAimOffset(float DeltaSeconds)
 
 }
 
+
+
 #pragma endregion
 
 #pragma region WeaponProperties
-void USTPlayerAnimInstance::SetWeaponType(EWeaponType NewType)
+
+void USTPlayerAnimInstance::UpdateWeaponProperties()
 {
-	if (WeaponType == NewType)
+	if (IsValid(OwnerCharacter))
 	{
-		return;
+		WeaponType = OwnerCharacter->GetWeaponManagerComponent()->GetCurrentWeaponType();
 	}
-	WeaponType = NewType;
 }
 #pragma endregion

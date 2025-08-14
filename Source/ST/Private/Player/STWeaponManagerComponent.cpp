@@ -26,33 +26,57 @@ void USTWeaponManagerComponent::BeginPlay()
 			OwnerChar->OnViewModeChanged.AddUObject(this, &USTWeaponManagerComponent::UpdateWeaponVisibility);
 		}
 	}
-	if (CurrentWeapon == nullptr && IsValid(DefaultWeapon))
-	{
-		EquipWeapon(DefaultWeapon);
-	}
 }
-void USTWeaponManagerComponent::RequestEquipWeapon(TSubclassOf<ASTWeaponBase> WeaponClass)
+void USTWeaponManagerComponent::RequestEquipWeapon(TSoftClassPtr<ASTWeaponBase> WeaponClass)
 {
-	if (!OwnerChar) return;
+	
+	if (!OwnerChar)
+	{
+		return;
+	}
 
 	PendingWeaponClass = WeaponClass;
-	if (PendingWeaponClass == nullptr) return;
-	bIsWeaponChanged  = true;
+	if (PendingWeaponClass.IsNull())
+	{
+		return;
+	}
+	
+	bIsWeaponChanged = true;
 	UAnimInstance* AnimInstance = OwnerChar->GetMesh()->GetAnimInstance();
 	UAnimMontage* EquipMontage = OwnerChar->GetMontageConfig()->EquipMontage;
-	if (!AnimInstance || !EquipMontage) return;
-	
-	float PlayResult = AnimInstance->Montage_Play(EquipMontage);
+
+	if (!AnimInstance)
+	{
+		return;
+	}
+	if (!EquipMontage)
+	{
+		return;
+	}
+	AnimInstance->Montage_Play(EquipMontage);
 	MontageEndedDelegate.BindUObject(this, &USTWeaponManagerComponent::OnEquipMontageEnded);
 	AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, EquipMontage);
 	
+	
 }
 
+EWeaponType USTWeaponManagerComponent::GetCurrentWeaponType()
+{
+	if (CurrentWeapon)
+	{
+		return CurrentWeapon->WeaponDataAsset->WeaponData.WeaponType;
+	}
+	return EWeaponType::Rifle;
+}
 
 
 void USTWeaponManagerComponent::OnEquipMontageEnded(UAnimMontage* Montage, bool bInterrupted)
 {
-	if (bInterrupted) return;
+	if (bInterrupted)
+	{
+		return;
+	}
+
 	EquipWeapon(PendingWeaponClass);
 	PendingWeaponClass = nullptr;
 }
@@ -107,34 +131,50 @@ void USTWeaponManagerComponent::UpdateWeaponSocketOffset(EWeaponType type)
 
 
 
-void USTWeaponManagerComponent::EquipWeapon(TSubclassOf<ASTWeaponBase> WeaponClass)
+
+void USTWeaponManagerComponent::EquipWeapon(TSoftClassPtr<ASTWeaponBase> WeaponClass)
 {
-    if (!WeaponClass)
+    if (WeaponClass.IsNull())
     {
+        bIsWeaponChanged = false;
         return;
     }
-    ASTWeaponBase* NewWeapon = GetWorld()->SpawnActor<ASTWeaponBase>(WeaponClass);
+    
+    UClass* WeaponClassToSpawn = WeaponClass.LoadSynchronous();
+    
+    if (!WeaponClassToSpawn)
+    {
+        bIsWeaponChanged = false;
+        return;
+    }
+    
+    ASTWeaponBase* NewWeapon = GetWorld()->SpawnActor<ASTWeaponBase>(WeaponClassToSpawn);
     if (!NewWeapon)
     {
+        bIsWeaponChanged = false;
         return;
     }
-	if (CurrentWeapon)
-	{
-		UnequipWeapon();
-	}
+    
+    if (CurrentWeapon)
+    {
+        UnequipWeapon();
+    }
+    
     CurrentWeapon = NewWeapon;
+    CurrentWeaponClass = WeaponClass;
     CurrentWeapon->SetOwner(GetOwner());
 
+    // 메시 충돌 비활성화
     if (CurrentWeapon->GetWeaponMesh1P())
     {
         CurrentWeapon->GetWeaponMesh1P()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
-
     if (CurrentWeapon->GetWeaponMesh3P())
     {
         CurrentWeapon->GetWeaponMesh3P()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
     }
 
+    // 캐릭터에 무기 부착 및 설정
     if (OwnerChar && CurrentWeapon)
     {
         CurrentWeapon->GetWeaponMesh1P()->AttachToComponent(
@@ -149,21 +189,20 @@ void USTWeaponManagerComponent::EquipWeapon(TSubclassOf<ASTWeaponBase> WeaponCla
             FAttachmentTransformRules::SnapToTargetIncludingScale,
             AttachSocket3P
         );
-    	UpdateWeaponSocketOffset(CurrentWeapon->WeaponDataAsset->WeaponData.WeaponType);
-
+        UpdateWeaponSocketOffset(CurrentWeapon->WeaponDataAsset->WeaponData.WeaponType);
         UpdateWeaponVisibility(OwnerChar->GetCurrentViewMode());
-
+        
         CurrentWeapon->OnWeaponEquipped.AddDynamic(this, &USTWeaponManagerComponent::OnWeaponEquipped);
         CurrentWeapon->OnAmmoChanged.AddDynamic(this, &USTWeaponManagerComponent::OnWeaponAmmoChanged);
     }
+    
 
-    if (IsValid(OwnerChar) && CurrentWeapon && CurrentWeapon->WeaponDataAsset)
+    bIsWeaponChanged = false;
+    if (EquipChangedDelegate.IsBound())
     {
-        OwnerChar->OnWeaponEquipped(CurrentWeapon->WeaponDataAsset->WeaponData.WeaponType);
+        EquipChangedDelegate.Broadcast(CurrentWeaponClass);
     }
-	bIsWeaponChanged = false;
 }
-
 void USTWeaponManagerComponent::UpdateWeaponVisibility(EViewMode NewMode) // Visible View Mode
 {
 	if (CurrentWeapon)

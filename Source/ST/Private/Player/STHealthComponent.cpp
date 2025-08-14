@@ -15,7 +15,6 @@ USTHealthComponent::USTHealthComponent()
 
 void USTHealthComponent::Initialize()
 {
-	CurrentHealth = MaxHealth;
 	UpdateHealthStatus();
 }
 
@@ -25,6 +24,12 @@ void USTHealthComponent::TakeDamage(float Damage)
 	
 	CurrentHealth = FMath::Clamp(CurrentHealth - Damage, 0.f, MaxHealth);
 
+	// SH 데미지 델리게이트 호출
+	if (OnHealthDamage.IsBound())
+	{
+		OnHealthDamage.Broadcast(Damage);
+	}
+
 	UpdateHealthStatus();
 }
 
@@ -32,6 +37,12 @@ void USTHealthComponent::Heal(float HealAmount)
 {
 	CurrentHealth = FMath::Clamp(CurrentHealth + HealAmount, 0.f, MaxHealth);
 
+	// SH 회복 델리게이트 호출
+	if (OnHealthHeal.IsBound())
+	{
+		OnHealthHeal.Broadcast(HealAmount);
+	}
+	
 	UpdateHealthStatus();
 }
 
@@ -72,7 +83,6 @@ void USTHealthComponent::UpdateHealthStatus()
 	{
 		OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 	}
-
 	const bool bNowDead = (CurrentHealth <= KINDA_SMALL_NUMBER);
 	if (bNowDead && !bIsDead)
 	{

@@ -9,6 +9,10 @@
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnHealthChanged, float, CurrentHP, float, MaxHP);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnCharacterDeath);
 
+// SH 로그용 데미지/회복 델리게이트
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthDamage, float, HealthDamage);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnHealthHeal, float, HealthHeal);
+
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class ST_API USTHealthComponent : public UActorComponent
 {
@@ -39,6 +43,12 @@ public:
 	FOnHealthChanged OnHealthChanged;
 	
 	FOnCharacterDeath OnCharacterDeath;
+
+	// SH 데미지/회복 뉴 펑션
+	UPROPERTY()
+	FOnHealthDamage OnHealthDamage;
+	UPROPERTY()
+	FOnHealthHeal OnHealthHeal;
 
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Health")

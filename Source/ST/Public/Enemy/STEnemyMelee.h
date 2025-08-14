@@ -13,7 +13,6 @@ public:
 	ASTEnemyMelee();
 	
 	virtual void Attack() override;
-	virtual void SetCurrentTarget(AActor* Target) override;
 
 	UFUNCTION(BlueprintCallable)
 	void AttackNotify();
@@ -24,8 +23,6 @@ protected:
 	FTimerHandle AttackCooldownHandle;
 
 	bool bIsAttackCooldown = false;
-	UPROPERTY()
-	AActor* CurrentTarget=nullptr;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat")
 	float AttackCooldown = 2.0f;
