@@ -3,19 +3,16 @@
 
 #include "Player/STWeaponManagerComponent.h"
 
+#include "Item/STItemPivotData.h"
+#include "Kismet/KismetSystemLibrary.h"
 #include "Player/STPlayerCharacter.h"
+#include "Player/ST_PlayerAnimMontageConfig.h"
 #include "Weapon/STWeaponBase.h"
 
 // Sets default values for this component's properties
 USTWeaponManagerComponent::USTWeaponManagerComponent()
 {
 	PrimaryComponentTick.bCanEverTick = false;
-}
-void USTWeaponManagerComponent::InitializeComponent()
-{
-	Super::InitializeComponent();
-
-	
 }
 
 void USTWeaponManagerComponent::BeginPlay()
@@ -29,68 +26,183 @@ void USTWeaponManagerComponent::BeginPlay()
 			OwnerChar->OnViewModeChanged.AddUObject(this, &USTWeaponManagerComponent::UpdateWeaponVisibility);
 		}
 	}
-	if (CurrentWeapon == nullptr && IsValid(DefaultWeapon))
+}
+void USTWeaponManagerComponent::RequestEquipWeapon(TSoftClassPtr<ASTWeaponBase> WeaponClass)
+{
+	
+	if (!OwnerChar)
 	{
-		EquipWeapon(DefaultWeapon);
+		return;
 	}
+
+	PendingWeaponClass = WeaponClass;
+	if (PendingWeaponClass.IsNull())
+	{
+		return;
+	}
+	
+	bIsWeaponChanged = true;
+	UAnimInstance* AnimInstance = OwnerChar->GetMesh()->GetAnimInstance();
+	UAnimMontage* EquipMontage = OwnerChar->GetMontageConfig()->EquipMontage;
+
+	if (!AnimInstance)
+	{
+		return;
+	}
+	if (!EquipMontage)
+	{
+		return;
+	}
+	AnimInstance->Montage_Play(EquipMontage);
+	MontageEndedDelegate.BindUObject(this, &USTWeaponManagerComponent::OnEquipMontageEnded);
+	AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, EquipMontage);
+	
+	
 }
 
-void USTWeaponManagerComponent::EquipWeapon(TSubclassOf<ASTWeaponBase> WeaponClass)
+EWeaponType USTWeaponManagerComponent::GetCurrentWeaponType()
 {
 	if (CurrentWeapon)
 	{
-		UnequipWeapon();
+		return CurrentWeapon->WeaponDataAsset->WeaponData.WeaponType;
 	}
-    
-	ASTWeaponBase* NewWeapon = GetWorld()->SpawnActor<ASTWeaponBase>(WeaponClass);
-	CurrentWeapon = NewWeapon;
-	CurrentWeapon->SetOwner(GetOwner());
-	if (CurrentWeapon)
-	{
-		if (CurrentWeapon->GetWeaponMesh1P())
-		{
-			CurrentWeapon->GetWeaponMesh1P()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-			
-			
-		}
-		if (CurrentWeapon->GetWeaponMesh3P())
-		{
-			CurrentWeapon->GetWeaponMesh3P()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		}
-	}
-	
-	if (OwnerChar && CurrentWeapon)
-	{
-		//fps
-		CurrentWeapon->GetWeaponMesh1P()->AttachToComponent(
-		OwnerChar->GetFPSSkeletalMesh(),
-		FAttachmentTransformRules::SnapToTargetIncludingScale,
-		AttachSocket1P
-	);
-		CurrentWeapon->GetWeaponMesh1P()->SetWorldScale3D(FVector(0.6f, 0.6f, 0.6f));
-     
-		//tps
-		CurrentWeapon->GetWeaponMesh3P()->AttachToComponent(
-			OwnerChar->GetMesh(), 
-			FAttachmentTransformRules::SnapToTargetIncludingScale,
-			AttachSocket3P
-		);
-     
-		UpdateWeaponVisibility(OwnerChar->GetCurrentViewMode());
+	return EWeaponType::Rifle;
+}
 
-		//binding
-		CurrentWeapon->OnWeaponEquipped.AddDynamic(this, &USTWeaponManagerComponent::OnWeaponEquipped);
-		CurrentWeapon->OnAmmoChanged.AddDynamic(this, &USTWeaponManagerComponent::OnWeaponAmmoChanged);
-	}
-	if (IsValid(OwnerChar))
+
+void USTWeaponManagerComponent::OnEquipMontageEnded(UAnimMontage* Montage, bool bInterrupted)
+{
+	if (bInterrupted)
 	{
-		OwnerChar->OnWeaponEquipped(CurrentWeapon->WeaponDataAsset->WeaponData.WeaponType);
+		return;
 	}
-	
-	
+
+	EquipWeapon(PendingWeaponClass);
+	PendingWeaponClass = nullptr;
+}
+
+FStItemPivotData* USTWeaponManagerComponent::GetWeaponPivotData(EWeaponType type)
+{
+	if (IsValid(SocketOffsetTable))
+	{
+		FString WeaponRow;
+		switch(type)
+		{
+		case EWeaponType::Rifle:
+			{
+				WeaponRow = TEXT("Rifle");
+				break;
+			}
+		case EWeaponType::Shotgun:
+			{
+				WeaponRow = TEXT("Shotgun");
+				break;
+			}
+		case EWeaponType::Sniper:
+			{
+				WeaponRow = TEXT("Sniper");
+				break;
+			}
+		default:
+			return nullptr;
+		}
+		return SocketOffsetTable->FindRow<FStItemPivotData>(*WeaponRow, TEXT(""));
+	}
+	return nullptr;
+}
+
+void USTWeaponManagerComponent::UpdateWeaponSocketOffset(EWeaponType type)
+{
+
+	FStItemPivotData* WeaponPivotData = GetWeaponPivotData(type);
+	if (WeaponPivotData != nullptr)
+	{
+		if (CurrentWeapon)
+		{
+			CurrentWeapon->GetWeaponMesh3P()->SetRelativeLocation(WeaponPivotData->PositionOffset);
+			CurrentWeapon->GetWeaponMesh3P()->SetRelativeRotation(WeaponPivotData->RotationOffset);
+
+			CurrentWeapon->GetWeaponMesh1P()->SetRelativeLocation(WeaponPivotData->FPSPositionOffset);
+			CurrentWeapon->GetWeaponMesh1P()->SetRelativeRotation(WeaponPivotData->FPSRotationOffset);
+		}
+	}
 
 }
 
+
+
+
+void USTWeaponManagerComponent::EquipWeapon(TSoftClassPtr<ASTWeaponBase> WeaponClass)
+{
+    if (WeaponClass.IsNull())
+    {
+        bIsWeaponChanged = false;
+        return;
+    }
+    
+    UClass* WeaponClassToSpawn = WeaponClass.LoadSynchronous();
+    
+    if (!WeaponClassToSpawn)
+    {
+        bIsWeaponChanged = false;
+        return;
+    }
+    
+    ASTWeaponBase* NewWeapon = GetWorld()->SpawnActor<ASTWeaponBase>(WeaponClassToSpawn);
+    if (!NewWeapon)
+    {
+        bIsWeaponChanged = false;
+        return;
+    }
+    
+    if (CurrentWeapon)
+    {
+        UnequipWeapon();
+    }
+    
+    CurrentWeapon = NewWeapon;
+    CurrentWeaponClass = WeaponClass;
+    CurrentWeapon->SetOwner(GetOwner());
+
+    // 메시 충돌 비활성화
+    if (CurrentWeapon->GetWeaponMesh1P())
+    {
+        CurrentWeapon->GetWeaponMesh1P()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+    if (CurrentWeapon->GetWeaponMesh3P())
+    {
+        CurrentWeapon->GetWeaponMesh3P()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+    }
+
+    // 캐릭터에 무기 부착 및 설정
+    if (OwnerChar && CurrentWeapon)
+    {
+        CurrentWeapon->GetWeaponMesh1P()->AttachToComponent(
+            OwnerChar->GetFPSSkeletalMesh(),
+            FAttachmentTransformRules::SnapToTargetIncludingScale,
+            AttachSocket1P
+        );
+        CurrentWeapon->GetWeaponMesh1P()->SetWorldScale3D(FVector(0.6f, 0.6f, 0.6f));
+
+        CurrentWeapon->GetWeaponMesh3P()->AttachToComponent(
+            OwnerChar->GetMesh(),
+            FAttachmentTransformRules::SnapToTargetIncludingScale,
+            AttachSocket3P
+        );
+        UpdateWeaponSocketOffset(CurrentWeapon->WeaponDataAsset->WeaponData.WeaponType);
+        UpdateWeaponVisibility(OwnerChar->GetCurrentViewMode());
+        
+        CurrentWeapon->OnWeaponEquipped.AddDynamic(this, &USTWeaponManagerComponent::OnWeaponEquipped);
+        CurrentWeapon->OnAmmoChanged.AddDynamic(this, &USTWeaponManagerComponent::OnWeaponAmmoChanged);
+    }
+    
+
+    bIsWeaponChanged = false;
+    if (EquipChangedDelegate.IsBound())
+    {
+        EquipChangedDelegate.Broadcast(CurrentWeaponClass);
+    }
+}
 void USTWeaponManagerComponent::UpdateWeaponVisibility(EViewMode NewMode) // Visible View Mode
 {
 	if (CurrentWeapon)
@@ -102,10 +214,27 @@ void USTWeaponManagerComponent::UpdateWeaponVisibility(EViewMode NewMode) // Vis
  }
 
 
+bool USTWeaponManagerComponent::CanFireWeapon()
+{
+	if (CurrentWeapon == nullptr)
+	{
+		return false;
+	}
+	if (CurrentWeapon->IsReloading())
+	{
+		return false;
+	}
+	if (bIsWeaponChanged)
+	{
+		return false;
+	}
+
+	return true;
+}
 
 void USTWeaponManagerComponent::StartFire()
 {
-	if (IsValid(CurrentWeapon))
+	if (CanFireWeapon())
 	{
 		CurrentWeapon->StartFire();
 	}

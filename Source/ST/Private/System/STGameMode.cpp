@@ -1,6 +1,4 @@
 ﻿#include "System/STGameMode.h"
-
-#include "ToolContextInterfaces.h"
 #include "Kismet/GameplayStatics.h"
 #include "System/STGameState.h"
 #include "Enemy/STEnemyBase.h"
@@ -184,11 +182,16 @@ void ASTGameMode::EndStage(const EStageResult Result)
 	{
 		STGameState->SetStageResult(Result);
 	}
-
+	
 	ASTStagePlayerController* STPlayerController = Cast<ASTStagePlayerController>(GetWorld()->GetFirstPlayerController());
 	if (ASTPlayerState* STPlayerState = STPlayerController->GetPlayerState<ASTPlayerState>())
 	{
-		STPlayerState->CalculateScore();
+		if (Result == EStageResult::Clear)	STPlayerState->CalculateScore(true);
+		else if (Result == EStageResult::Fail)	STPlayerState->CalculateScore(false);
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::EndStage() Can't Get ASTPlayerState"));
 	}
 
 	if (Result == EStageResult::Clear)
@@ -215,7 +218,8 @@ void ASTGameMode::ResetStage()
 	bStageCleared = false;
 
 	FString CurrentStageName = UGameplayStatics::GetCurrentLevelName(GetWorld());
-	StageTimeLimit = GetStageInfoFromDataTable(CurrentStageName);
+	FStageInfoRow* StageInfo = GetStageInfoFromDataTable(CurrentStageName);
+	StageTimeLimit = StageInfo->TimeLimit;
 
 	TArray<AActor*> EnemyActors;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASTEnemyBase::StaticClass(), EnemyActors);
@@ -229,6 +233,10 @@ void ASTGameMode::ResetStage()
 		STGameState->SetRemainingTime(StageTimeLimit);
 		STGameState->SetStageResult(EStageResult::None);
 		STGameState->SetBossPhase(1);
+		STGameState->SetStageGoalText(StageInfo->StageGoalText);
+		STGameState->SetStageProgressList(StageInfo->StageProgressList);
+		/*UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::ResetStage() StageProgressList[0] : %s"), *StageInfo->StageProgressList[0].ToString());
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::ResetStage() StageProgressList[1] : %s"), *StageInfo->StageProgressList[1].ToString());*/
 	}
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::ResetStage() End"));
@@ -281,26 +289,24 @@ void ASTGameMode::SetStagePhase(const EStagePhase NewPhase) const
 	}
 }
 
-int32 ASTGameMode::GetStageInfoFromDataTable(const FString& StageName) const
+FStageInfoRow* ASTGameMode::GetStageInfoFromDataTable(const FString& StageName) const
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::GetStageInfoFromDataTable(%s) Start"), *StageName);
 
 	if (!StageInfoTable)
 	{
 		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::GetStageInfoFromDataTable() No Stage Info Table"));
-		return 122;	// TODO: 수치변경?
+		return nullptr;
 	}
 	
-	if (const FStageInfoRow* Row = StageInfoTable->FindRow<FStageInfoRow>(FName(*StageName), TEXT("")))
+	if (FStageInfoRow* Row = StageInfoTable->FindRow<FStageInfoRow>(FName(*StageName), TEXT("")))
 	{
 		UE_LOG(LogSystem, Log, TEXT("ASTGameMode::GetStageInfoFromDataTable(%s) End"), *StageName);
-		return Row->TimeLimit;
+		return Row;
 	}
 	
 	UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::GetStageInfoFromDataTable(%s) Can not find row for Stage in StageInfoTable"), *StageName);
-	return 121;	// TODO: 수치변경?
-	
-	// TODO: 향후 스테이지 정보 많아지면 구조체로 확장해서 받아오기
+	return nullptr;
 }
 
 void ASTGameMode::BindStageClearZoneEnterEvent()

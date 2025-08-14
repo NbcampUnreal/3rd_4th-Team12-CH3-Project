@@ -31,6 +31,8 @@ public:
 	
 	void SetMaxHealth(float NewMaxHealth);
 
+	void SetCurrentHealth(float NewCurrentHealth);
+
 	void Initialize();
 
 	// Delegates

@@ -4,9 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "Item/STItemPivotData.h"
 #include "STWeaponManagerComponent.generated.h"
 
+
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquip, const FString&, WeaponName);
+
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnWeaponEquipChanged, const TSoftClassPtr<ASTWeaponBase>, EquippedWeapon);
 // 탄약 변경 이벤트
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnWeaponAmmoChange, int32, CurrentAmmo, int32, MaxAmmo);
 
@@ -21,28 +25,47 @@ class ST_API USTWeaponManagerComponent : public UActorComponent
 
 public:	
 	USTWeaponManagerComponent();
-	void EquipWeapon(TSubclassOf<ASTWeaponBase> WeaponClass);
+	void EquipWeapon( TSoftClassPtr<ASTWeaponBase> WeaponClass);
 	void UnequipWeapon();
-	
+	void RequestEquipWeapon(TSoftClassPtr<ASTWeaponBase> WeaponClass);
+	EWeaponType GetCurrentWeaponType();
 protected:
-	virtual void InitializeComponent() override;
 	virtual void BeginPlay() override;
+	
+	void OnEquipMontageEnded(UAnimMontage* Montage, bool bInterrupted);
+	
+	FStItemPivotData* GetWeaponPivotData(EWeaponType type);
+	
+	void UpdateWeaponSocketOffset(EWeaponType type);
+	
 	UFUNCTION()
 	void UpdateWeaponVisibility(EViewMode NewMode);
+	bool CanFireWeapon();
+
 private:
 	UPROPERTY()
 	TObjectPtr<ASTPlayerCharacter> OwnerChar;
+	
 	UPROPERTY(VisibleInstanceOnly)
 	TObjectPtr<ASTWeaponBase> CurrentWeapon;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "DefaultWeapon", meta = (AllowPrivateAccess = true))
-	TSubclassOf<ASTWeaponBase> DefaultWeapon;
+	TSoftClassPtr<ASTWeaponBase> CurrentWeaponClass;
 
+	TSoftClassPtr<ASTWeaponBase> PendingWeaponClass;
+	
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SocketOffset", meta = (AllowPrivateAccess = true))
+	TObjectPtr<UDataTable> SocketOffsetTable;
+	
 	UPROPERTY(EditDefaultsOnly, Category = "Socket")
 	FName AttachSocket1P = TEXT("WeaponSocket1P");
 
 	UPROPERTY(EditDefaultsOnly, Category = "Socket")
 	FName AttachSocket3P = TEXT("WeaponSocket3P");
+
+	bool bIsWeaponChanged =false;
+	
+	FOnMontageEnded MontageEndedDelegate;
+	
 
 
 #pragma region  Input
@@ -58,6 +81,7 @@ public:
 public:
 	FOnWeaponEquip EquipDelegate;
 	FOnWeaponAmmoChange AmmoChangeDelegate;
+	FOnWeaponEquipChanged EquipChangedDelegate;
 protected:
 	UFUNCTION()
 	void OnWeaponEquipped(const FString& WeaponName);

@@ -3,6 +3,7 @@
 #include "Enemy/STEnemyBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Player/STHealthComponent.h"
+#include "Player/STPlayerBaseData.h"
 #include "Player/STPlayerCharacter.h"
 #include "Player/STWeaponManagerComponent.h"
 #include "System/STGameInstance.h"
@@ -56,11 +57,21 @@ void ASTPlayerState::SetMaxHP(const float NewHP)
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetMaxHP(%.1f) End"), NewHP);
 }
 
+void ASTPlayerState::OnChangedCurrentWeapon(const TSoftClassPtr<ASTWeaponBase> NewWeapon)
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetCurrentAmmo(%.s) Start"), *NewWeapon->GetName());
+
+	PlayerStateInfo.PlayerWeaponData.WeaponClass = NewWeapon;
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetCurrentAmmo(%.s) End"), *NewWeapon->GetName());
+	
+}
+
 void ASTPlayerState::SetCurrentAmmo(const int32 NewCurrentAmmo)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetCurrentAmmo(%.d) Start"), NewCurrentAmmo);
 
-	PlayerStateInfo.CurrentAmmo = NewCurrentAmmo;
+	PlayerStateInfo.PlayerWeaponData.CurrentAmmo = NewCurrentAmmo;
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetCurrentAmmo(%.d) End"), NewCurrentAmmo);
 }
@@ -69,7 +80,7 @@ void ASTPlayerState::SubtractCurrentAmmo()
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SubtractCurrentAmmo() Start"));
 
-	--PlayerStateInfo.CurrentAmmo;
+	--PlayerStateInfo.PlayerWeaponData.CurrentAmmo;
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SubtractCurrentAmmo() End"));
 }
@@ -78,7 +89,7 @@ void ASTPlayerState::SetMaxAmmo(const int32 NewMaxAmmo)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetMaxAmmo(%d) Start"), NewMaxAmmo);
 
-	PlayerStateInfo.MaxAmmo = NewMaxAmmo;
+	PlayerStateInfo.PlayerWeaponData.MaxAmmo = NewMaxAmmo;
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetMaxAmmo(%d) End"), NewMaxAmmo);
 }
@@ -116,7 +127,7 @@ void ASTPlayerState::SetScore(const int32 NewScore)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::AddScore(%d) Start"), NewScore);
 
-	PlayerStateInfo.Score += NewScore;
+	PlayerStateInfo.Score = NewScore;
 	if (PlayerStateInfo.Score > PlayerStateInfo.HighScore)	// 최고기록 갱신시 같이 업데이트
 		SetHighScore(PlayerStateInfo.Score);
 	
@@ -136,7 +147,7 @@ void ASTPlayerState::SetCurrWeaponName(const FString& WeaponName)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetCurrWeaponName(%s) Start"), *WeaponName);
 
-	PlayerStateInfo.CurrWeaponName = WeaponName;
+	//PlayerStateInfo.PlayerWeaponData.WeaponClass->weapo = WeaponName;
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetCurrWeaponName(%s) End"), *WeaponName);
 }
@@ -185,6 +196,8 @@ void ASTPlayerState::BeginPlay()
 			if (USTWeaponManagerComponent* WeaponManagerComponent = STPlayerCharacter->FindComponentByClass<USTWeaponManagerComponent>())
 			{
 				WeaponManagerComponent->AmmoChangeDelegate.AddDynamic(this, &ASTPlayerState::OnAmmoChanged);
+				WeaponManagerComponent->EquipChangedDelegate.AddDynamic(this, &ASTPlayerState::OnChangedCurrentWeapon);
+				
 				// TODO: 장비 장착시 이름 가져오기 // WeaponManagerComponent->EquipDelegate.AddDynamic(this, &ASTPlayerState::OnEquipWeapon); 
 			}
 		}
@@ -208,10 +221,13 @@ void ASTPlayerState::OnDamageTaken(AActor* DamagedActor, float DamageAmount, boo
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnDamageTaken(%f / isCritical(%d) Start"), DamageAmount, bCritical);
 
-	AddTotalDamageReceived(DamageAmount);
+	AddScore(DamageAmount);					// JM : 바로 점수에 더해버리기
+	AddTotalDamageInflicted(DamageAmount);	// JM : 그럼 이걸 유지할 필요가..? 통계?
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnDamageTaken(%f / isCritical(%d) End"), DamageAmount, bCritical);
 }
+
+
 
 // Player 체력이 변할 때 호출
 void ASTPlayerState::OnHealthChanged(float CurrentHP, float MaxHP)
@@ -224,7 +240,6 @@ void ASTPlayerState::OnHealthChanged(float CurrentHP, float MaxHP)
 		AddTotalDamageReceived(DamageReceived);
 	}
 	
-	
 	SetCurrentHP(CurrentHP);
 	SetMaxHP(MaxHP);	// 굳이...?
 	
@@ -236,7 +251,7 @@ void ASTPlayerState::OnAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnAmmoChanged(%d / %d) Start"), CurrentAmmo, MaxAmmo);
 
-	int32 UsedAmmo = PlayerStateInfo.CurrentAmmo - CurrentAmmo;
+	int32 UsedAmmo = PlayerStateInfo.PlayerWeaponData.CurrentAmmo - CurrentAmmo;
 	AddTotalUsedAmmo(UsedAmmo);		// 보통 1발씩 증가
 	
 	SetCurrentAmmo(CurrentAmmo);
@@ -245,25 +260,64 @@ void ASTPlayerState::OnAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo)
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnAmmoChanged(%d / %d) End"), CurrentAmmo, MaxAmmo);
 }
 
-// GameMode::EndStage에서 직접 호출
-void ASTPlayerState::CalculateScore()
+
+
+// 매 초 마다 이벤트 수신(OnRemainingTimeUpdate)
+/*void ASTPlayerState::CalculateScore(int32 NewRemainingTime)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::CalculateScore() Start"));
 
-	int32 RemainingTime = 0;
-	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
+	
+
+	
+
+	int32 RemainingTime = NewRemainingTime;
+	/*if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
 	{
 		RemainingTime = STGameState->GetGameStateInfo().RemainingTime;
 	}
 	else
 	{
 		UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScore() Can't Load STGameState->GameStateInfo.RemainingTime"));
-	}
+	}#1#
 
-	int32 NewScore = (RemainingTime * PlayerStateInfo.KillCount * PlayerStateInfo.TotalDamageInflicted)
-							- (PlayerStateInfo.TotalDamageInflicted * PlayerStateInfo.TotalUsedAmmo * ScoreMultiplier);
+	const int32 Time = FMath::Clamp(RemainingTime, 0, RemainingTime);
+	const float Attack = PlayerStateInfo.TotalDamageInflicted;
+	const float Damage = PlayerStateInfo.TotalDamageReceived;
+	const int32 Ammo = PlayerStateInfo.TotalUsedAmmo;
 
-	SetScore(PlayerStateInfo.Score + NewScore);	// 최고기록 갱신시 내부에서 업데이트 함
+	int32 NewScore = static_cast<int32>((Time * 5) + (Attack * 1) - (Damage * 1) - (Ammo * 0.1f));
+	UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScore() NewScore(%d) = Score(%d) + Time(%d)*5 + Attack(%f)*0.1f - Damage(%f)*1 - Ammo(%d)*0.1"), NewScore, PlayerStateInfo.Score, Time, Attack, Damage, Ammo);
+	// 남은시간 초당 5점, 입힌 피해량 10당 1점, 받은 데미지 1당 -1점, 사용한 총알 수 10발당 -1점
+	NewScore = FMath::Clamp(NewScore, 0, NewScore);
+
+	SetScore(NewScore);	// 최고기록 갱신시 내부에서 업데이트 함
+	// SetScore(PlayerStateInfo.Score + NewScore);	// 최고기록 갱신시 내부에서 업데이트 함
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::CalculateScore() End"));
+}*/
+
+void ASTPlayerState::CalculateScore(bool bIsStageClear)
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::CalculateScoreAtGameOver() Start"));
+	
+	int RemainingTime = 0;
+	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
+	{
+		RemainingTime = STGameState->GetGameStateInfo().RemainingTime;
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScoreAtGameOver() Can't Load STGameState->GameStateInfo.RemainingTime"));
+	}
+
+	int32 NewScore = PlayerStateInfo.Score - PlayerStateInfo.TotalDamageReceived * 1 - PlayerStateInfo.TotalUsedAmmo * 0.1f;
+	UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScoreAtGameOver() %d = Score(%d) - %.1f - %f"), NewScore, PlayerStateInfo.Score, PlayerStateInfo.TotalDamageReceived, PlayerStateInfo.TotalUsedAmmo * 0.1f);
+	if (bIsStageClear)
+	{
+		NewScore += RemainingTime * 5; 
+	}
+	SetScore(FMath::Clamp(NewScore, 0, NewScore));
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::CalculateScoreAtGameOver() End"));
 }

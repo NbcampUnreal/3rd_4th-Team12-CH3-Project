@@ -15,7 +15,6 @@ USTHealthComponent::USTHealthComponent()
 
 void USTHealthComponent::Initialize()
 {
-	CurrentHealth = MaxHealth;
 	UpdateHealthStatus();
 }
 
@@ -40,6 +39,10 @@ void USTHealthComponent::SetMaxHealth(float NewMaxHealth)
 	MaxHealth = NewMaxHealth;
 }
 
+void USTHealthComponent::SetCurrentHealth(float NewCurrentHealth)
+{
+	CurrentHealth = NewCurrentHealth;
+}
 
 
 /* void USTHealthComponent::UpdateHealthStatus()
@@ -68,7 +71,6 @@ void USTHealthComponent::UpdateHealthStatus()
 	{
 		OnHealthChanged.Broadcast(CurrentHealth, MaxHealth);
 	}
-
 	const bool bNowDead = (CurrentHealth <= KINDA_SMALL_NUMBER);
 	if (bNowDead && !bIsDead)
 	{

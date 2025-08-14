@@ -18,6 +18,7 @@
 #include "Player/ST_PlayerAnimMontageConfig.h"
 #include "System/STGameMode.h"
 #include "System/STPlayerState.h"
+#include "Weapon/STWeaponBase.h"
 #include "Weapon/STWeaponType.h"
 
 #pragma region DefaultSetting
@@ -96,37 +97,30 @@ void ASTPlayerCharacter::BeginPlay()
 	}
 	
 	SetViewMode(true); //  TPS view
-	
-	// Health Component Setting
-	if (IsValid(HealthComponent))
+
+	if (IsValid(CachedPlayerState))
 	{
-		if (IsValid(CachedPlayerState))
+		if (IsValid(HealthComponent))
 		{
-			//CachedPlayerState->GetPlayerStateInfo();
+			HealthComponent->SetMaxHealth(CachedPlayerState->GetPlayerStateInfo().MaxHP);
+			HealthComponent->SetCurrentHealth(CachedPlayerState->GetPlayerStateInfo().CurrentHP);
+			HealthComponent->Initialize();
 		}
+		if (IsValid(MovementComponent))
 		{
-			if (IsValid(PlayerBaseStatData))
-			{
-				HealthComponent->SetMaxHealth(PlayerBaseStatData->BaseMaxHealth);
-			}
+			MovementComponent->SetWalkSpeed(CachedPlayerState->GetPlayerStateInfo().MoveSpeed);
+			MovementComponent->SetCrouchMultiplier(CachedPlayerState->GetPlayerStateInfo().CrouchMultiplier);
+			MovementComponent->SetSprintMultiplier(CachedPlayerState->GetPlayerStateInfo().SprintMultiplier);
+			MovementComponent->SetZoomMultiplier(CachedPlayerState->GetPlayerStateInfo().ZoomMultiplier);
+			MovementComponent->Initialize();
 		}
-		HealthComponent->OnCharacterDeath.AddDynamic(this, &ASTPlayerCharacter::HandleDeath);
-		HealthComponent->Initialize();
+		if (IsValid(WeaponManager))
+		{
+			TSoftClassPtr<ASTWeaponBase> SoftWeaponClass = CachedPlayerState->GetPlayerStateInfo().PlayerWeaponData.WeaponClass;
+			WeaponManager->EquipWeapon(SoftWeaponClass);
+		}
 	}
-	// Movement Component Setting
-	if (IsValid(MovementComponent))
-	{
-		//todo 이것도 playerstate에 
-		if (IsValid(PlayerBaseStatData))
-		{
-			MovementComponent->SetWalkSpeed(PlayerBaseStatData->BaseWalkSpeed);
-			MovementComponent->SetCrouchMultiplier(PlayerBaseStatData->CrouchMultiplier);
-			MovementComponent->SetSprintMultiplier(PlayerBaseStatData->SprintMultiplier);
-			MovementComponent->SetZoomMultiplier(PlayerBaseStatData->ZoomMultiplier);
-		}
-		MovementComponent->Initialize();
-	}
-	
+
 	
 }
 
@@ -182,7 +176,6 @@ void ASTPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	{
 		EnhancedInputComponent->BindAction(InputConfig->ReloadAction, ETriggerEvent::Completed, this, &ASTPlayerCharacter::ReloadAmmo);
 	}
-
 
 }
 #pragma endregion 
@@ -288,7 +281,7 @@ void ASTPlayerCharacter::Zoom(const FInputActionValue& Value)
 			}
 			else
 			{
-				WeaponManager->StartAiming();
+				WeaponManager->StopAiming();
 			}
 		}
 		if (FOnCharacterZooming.IsBound())
@@ -348,18 +341,6 @@ void ASTPlayerCharacter::HandleDeath()
 #pragma endregion
 
 #pragma region WeaponSystem
-void ASTPlayerCharacter::OnWeaponEquipped(EWeaponType NewWeapon)
-{
-	if (USTPlayerAnimInstance* AnimInstance = Cast<USTPlayerAnimInstance>(GetMesh()->GetAnimInstance()))
-	{
-		AnimInstance->SetWeaponType(NewWeapon);
-	}
-	if (USTPlayerAnimInstance* AnimInstance = Cast<USTPlayerAnimInstance>(FPSSkeletalMeshComponent->GetAnimInstance()))
-	{
-		AnimInstance->SetWeaponType(NewWeapon);
-	}
-	
-}
 
 void ASTPlayerCharacter::OnWeaponFired() 
 {

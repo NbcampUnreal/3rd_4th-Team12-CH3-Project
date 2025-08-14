@@ -5,6 +5,7 @@
 #include "GameFramework/PlayerState.h"
 #include "STPlayerState.generated.h"
 
+class USTPlayerBaseData;
 /**
  *  플레이어의 개별 정보 저장
  */
@@ -37,7 +38,8 @@ public:
 	void AddTotalDamageReceived( const float Amount );
 	void AddTotalDamageInflicted( const float Amount );
 	void AddTotalUsedAmmo( const int32 Amount );
-	void CalculateScore();
+	UFUNCTION()
+	void CalculateScore(bool bIsStageClear);
 
 
 protected:
@@ -48,9 +50,10 @@ protected:
 	void OnAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo);
 	UFUNCTION()
 	void OnDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical);
-	
+	UFUNCTION()
+	void OnChangedCurrentWeapon( const TSoftClassPtr<ASTWeaponBase> NewWeapon);
 	
 private:
 	FPlayerStateInfo PlayerStateInfo;
-	float ScoreMultiplier = 0.25f; 
+	float ScoreMultiplier = 0.01f; 
 };

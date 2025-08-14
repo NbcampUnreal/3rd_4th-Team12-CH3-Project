@@ -37,4 +37,6 @@ protected:
 	void SetRemainingEnemies(int32 NewRemainingEnemies);
 	void SetRemainingTime(int32 NewRemainingTime);
 	void SetBossPhase(int32 NewBossPhase);
+	void SetStageGoalText(const FText& NewStageGoalText);
+	void SetStageProgressList(const TArray<FText>& NewStageProgressList);
 };
