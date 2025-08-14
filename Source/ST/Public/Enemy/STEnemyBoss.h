@@ -58,6 +58,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category="Boss")
 	void PhaseChangingEndNotify();
 
+	virtual float TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+							AController* EventInstigator, AActor* DamageCauser) override;
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss Death")
 	USoundBase* DeathSound = nullptr;
