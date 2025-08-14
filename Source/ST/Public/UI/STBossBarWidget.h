@@ -24,4 +24,10 @@ public:
 protected:
 	UPROPERTY(meta = (BindWidget)) UTextBlock* Txt_BossName = nullptr;
 	UPROPERTY(meta = (BindWidget)) UProgressBar* PB_BossHealth = nullptr;
+
+private:
+	UPROPERTY(EditAnywhere, Category="BossBar|Color")
+	float CriticalThreshold = 0.15f;
+	
+	FLinearColor ComputeHPColor(float Ratio01) const;
 };
