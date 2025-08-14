@@ -7,6 +7,7 @@
 /**
  *	Enum 모음집
  */
+class ASTWeaponBase;
 
 UENUM( BlueprintType )
 enum class EStagePhase : uint8
@@ -47,6 +48,29 @@ enum class EStageType : uint8
 	Ending		UMETA( DisplayName = "Ending" ),
 };
 
+USTRUCT(BlueprintType)
+struct FWeaponSaveData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WeaponData" )
+	TSoftClassPtr<ASTWeaponBase> WeaponClass; // 현재 웨폰 정보 
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "" )
+	int32 CurrentAmmo; 
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	int32 MaxAmmo;
+
+
+	FWeaponSaveData()
+	{
+		WeaponClass = nullptr;
+		CurrentAmmo = 0;
+		MaxAmmo = 0;
+	}
+};
+
 USTRUCT( BlueprintType )
 struct FPlayerStateInfo		// TODO: 향후 PlayerState가 커지면, 레벨 이동간 유지해야할 정보만 따로 뺄 수도 있음
 {
@@ -54,28 +78,49 @@ struct FPlayerStateInfo		// TODO: 향후 PlayerState가 커지면, 레벨 이동
 
 	FPlayerStateInfo()
 		: SelectedCharacter(ECharacterType::None)
-		, CurrentHP(100.0f)
-		, MaxHP(100.0f)
-		, CurrentAmmo(0)
-		, MaxAmmo(0)
+		, CurrentHP(0.f)
+		, MaxHP(0.f)
+		, MoveSpeed(0)
+		, SprintMultiplier(0)
+		, CrouchMultiplier(0)
+		, ZoomMultiplier(0)
 		, KillCount(0)
 		, Score(0)
 		, HighScore(0)
-		, CurrWeaponName(TEXT("NONE"))
 		, TotalDamageReceived(0.0f)
 		, TotalDamageInflicted(0.0f)
 		, TotalUsedAmmo(0)
 	{}
+	
+	void Reset()
+	{
+		SelectedCharacter = ECharacterType::None;
+		CurrentHP = 0.f;
+		MaxHP = 0.f;
+		MoveSpeed = 0.f;
+		SprintMultiplier = 0;
+		CrouchMultiplier = 0;
+		ZoomMultiplier = 0;
+		PlayerWeaponData = FWeaponSaveData(); 
+		KillCount = 0;
+		Score = 0;
+		HighScore = 0;
+		TotalDamageReceived = 0.0f;
+		TotalDamageInflicted = 0.0f;
+		TotalUsedAmmo = 0;
+	}
 
 	ECharacterType SelectedCharacter;
 	float CurrentHP;
 	float MaxHP;
-	int32 CurrentAmmo;
-	int32 MaxAmmo;
+	float MoveSpeed;
+	float SprintMultiplier;
+	float CrouchMultiplier;
+	float ZoomMultiplier;
+	FWeaponSaveData PlayerWeaponData;
 	int32 KillCount;
 	int32 Score;
 	int32 HighScore;
-	FString CurrWeaponName;	// TODO: Enum으로 확장 필요하겠는데
 	float TotalDamageReceived;	// 받은 피해량
 	float TotalDamageInflicted;	// 가한 피해량
 	int32 TotalUsedAmmo;

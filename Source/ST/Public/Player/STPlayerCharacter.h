@@ -130,7 +130,6 @@ protected:
 
 public:
     USTWeaponManagerComponent* GetWeaponManagerComponent()const {return WeaponManager;}
-    void OnWeaponEquipped(EWeaponType NewWeapon);
     void OnWeaponFired();
     void PlayReloadAnimation();
 protected:
@@ -150,9 +149,6 @@ protected:
     
     UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config", meta = (AllowPrivateAccess = "true"))
     TObjectPtr<UST_PlayerAnimMontageConfig> MontageConfig;
-
-    UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Config", meta = (AllowPrivateAccess = "true"))
-    TObjectPtr<USTPlayerBaseData> PlayerBaseStatData;
 #pragma endregion
 
 #pragma region Delegate
