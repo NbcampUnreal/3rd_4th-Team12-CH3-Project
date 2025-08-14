@@ -10,6 +10,7 @@ class USphereComponent;
 class UStaticMeshComponent;
 class UProjectileMovementComponent;
 class UParticleSystem;
+class UAudioComponent;
 
 UCLASS()
 class ST_API ASTProjectile : public AActor
@@ -21,7 +22,17 @@ public:
 
 protected:
 	// ========== 컴포넌트 ==========
+	// 충돌 시 한 번 재생될 사운드
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	USoundBase* ImpactSound;
 
+	// 중력장 효과가 지속되는 동안 반복 재생될 사운드
+	UPROPERTY(EditDefaultsOnly, Category = "Sound")
+	USoundBase* VortexLoopSound;
+
+	UPROPERTY()
+	UAudioComponent* VortexAudioComponent;
+	
 	// 충돌을 감지하는 구체(Sphere) 컴포넌트
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	USphereComponent* CollisionComponent;

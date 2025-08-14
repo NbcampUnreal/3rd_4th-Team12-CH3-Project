@@ -21,6 +21,8 @@ public:
 	// 투사체를 총구보다 얼마나 앞에서 생성할지 정하는 거리 값 (cm 단위)
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Projectile")
 	float SpawnOffset = 35.0f;
+
+	
 protected:
 	// 부모 클래스의 'FireWeapon' 함수를 '투사체 발사 방식'으로 구현합니다.
 	virtual void FireWeapon() override;

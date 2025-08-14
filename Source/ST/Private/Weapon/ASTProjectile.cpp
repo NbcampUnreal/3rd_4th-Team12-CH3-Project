@@ -7,6 +7,7 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
+#include "Components/AudioComponent.h"
 #include "Kismet/KismetSystemLibrary.h" // SphereOverlapActors를 위해 추가
 #include "DrawDebugHelpers.h" // DrawDebugSphere를 위해 추가
 
@@ -91,6 +92,16 @@ void ASTProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
 		}
 
+		if (ImpactSound)
+		{
+			UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
+		}
+	   
+		// 2. 반복될 중력장 사운드를 생성하고, 나중에 멈출 수 있도록 변수에 저장합니다.
+		if (VortexLoopSound)
+		{
+			VortexAudioComponent = UGameplayStatics::SpawnSoundAtLocation(this, VortexLoopSound, GetActorLocation());
+		}
 		// 2. 상태 변경: 투사체의 움직임을 멈추고 그 자리에 고정시킵니다.
 		ProjectileMovementComponent->StopMovementImmediately();
 		CollisionComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision); // 다른 물체에 밀려나지 않도록 충돌을 끕니다.
@@ -145,6 +156,11 @@ void ASTProjectile::ApplyVortexForce()
 // =======================================================================
 void ASTProjectile::StopVortexEffect()
 {
+	//사운드 정지
+	if (VortexAudioComponent && VortexAudioComponent->IsPlaying())
+	{
+		VortexAudioComponent->Stop();
+	}
 	// 모든 타이머를 깨끗하게 정리하고, 이 투사체 액터를 월드에서 완전히 제거(파괴)합니다.
 	GetWorld()->GetTimerManager().ClearAllTimersForObject(this);
 	Destroy();
