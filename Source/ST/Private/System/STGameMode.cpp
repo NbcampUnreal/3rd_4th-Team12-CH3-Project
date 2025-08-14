@@ -182,11 +182,16 @@ void ASTGameMode::EndStage(const EStageResult Result)
 	{
 		STGameState->SetStageResult(Result);
 	}
-
+	
 	ASTStagePlayerController* STPlayerController = Cast<ASTStagePlayerController>(GetWorld()->GetFirstPlayerController());
 	if (ASTPlayerState* STPlayerState = STPlayerController->GetPlayerState<ASTPlayerState>())
 	{
-		STPlayerState->CalculateScore();
+		if (Result == EStageResult::Clear)	STPlayerState->CalculateScore(true);
+		else if (Result == EStageResult::Fail)	STPlayerState->CalculateScore(false);
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::EndStage() Can't Get ASTPlayerState"));
 	}
 
 	if (Result == EStageResult::Clear)

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataAsset.h"
+#include "Weapon/STWeaponBase.h"
 #include "STPlayerBaseData.generated.h"
 
 /**
@@ -17,8 +18,6 @@ public:
 	// Health
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category="Health")
 	float BaseMaxHealth;
-
-
 	//Move
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category="Movement")
 	float BaseWalkSpeed;
@@ -31,5 +30,10 @@ public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category="Movement")
 	float ZoomMultiplier;
+
+	//WeaponData
+	UPROPERTY(EditAnywhere, BlueprintReadOnly,Category="WeaponData")
+	TSoftClassPtr<ASTWeaponBase> BaseWeapon;
+	
 	
 };
