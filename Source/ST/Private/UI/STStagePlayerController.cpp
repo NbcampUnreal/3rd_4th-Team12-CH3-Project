@@ -696,6 +696,41 @@ void ASTStagePlayerController::ScheduleGameOver(float DelaySeconds)
 	GetWorldTimerManager().SetTimer(GameOverTimerHandle, D, FMath::Max(0.f, DelaySeconds), false);
 }
 
+void ASTStagePlayerController::ScheduleGameClear(float DelaySeconds)
+{
+	// 타이머가 돌고 있으면 무시
+	if (GetWorldTimerManager().IsTimerActive(GameClearTimerHandle))
+	{
+		return;
+	}
+	// 카메라 페이드 아웃 (화면 → 검정)
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->StartCameraFade(
+			0.f,                      // From
+			1.f,                      // To (검정)
+			FMath::Max(0.f, DelaySeconds),
+			FLinearColor::Black,
+			false,                    // bShouldFadeAudio
+			true                      // bHoldWhenFinished (검정 유지)
+		);
+	}
+
+	// 딜레이 후 실제로 UI 표시
+	FTimerDelegate D;
+	D.BindWeakLambda(this, [this]()
+	{
+		ShowGameClearResult();
+	});
+
+	GetWorldTimerManager().SetTimer(
+		GameClearTimerHandle,
+		D,
+		FMath::Max(0.f, DelaySeconds),
+		false
+	);
+}
+
 
 void ASTStagePlayerController::UpdateHealth(float CurrentHP, float MaxHP)
 {
@@ -863,6 +898,18 @@ void ASTStagePlayerController::ShowGameClearResult()
 		SetPause(true);
 		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
+
+		if (PlayerCameraManager)
+		{
+			PlayerCameraManager->StartCameraFade(
+				1.f,  // From (검정)
+				0.f,  // To (화면)
+				0.25f,
+				FLinearColor::Black,
+				false,
+				false
+			);
+		}
 	}
 	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::ShowGameClearResult() End"));
 }
@@ -946,9 +993,9 @@ void ASTStagePlayerController::HandleStageClear()
 	}
 	else if (NextStage == EStageType::Ending)
 	{
-		ShowGameClearResult();		// JM : 게임 클리어 UI 띄우기
 		StopLevelBGM();				// JM : 기존 레벨BP BGM 정지
 		PlayGameClearBGM_BP();		// JM : 게임 클리어시 BGM 재생
+		ScheduleGameClear(GameClearDelay); // 페이드 아웃 이후 클리어 UI 춫력
 	}
 	else
 	{
