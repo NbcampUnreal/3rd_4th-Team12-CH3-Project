@@ -8,6 +8,7 @@
 #include "Player/STMovementComponent.h"      
 #include "Player/STPlayerCharacter.h"        
 #include "Blueprint/UserWidget.h"
+#include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "System/STGameInstance.h"
 #include "System/STGameTypes.h"
@@ -21,6 +22,7 @@
 #include "System/STLog.h"
 #include "System/STPlayerState.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Engine/LevelScriptActor.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Player/STWeaponManagerComponent.h"
 
@@ -460,14 +462,20 @@ void ASTStagePlayerController::TogglePauseMenu()
 
 void ASTStagePlayerController::HandlePauseReturnToMain()
 {
-	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	// JM : 수정 / 레벨이동 로직 한 군데에서 관리
+	SetPause(false);
+	SetInputMode(FInputModeUIOnly());
+	bShowMouseCursor = true;
+	LoadLevelWithDataResetAndLoadingScreen(EStageType::MainMenu);
+	
+	/*if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
 	{
 		SetPause(false);
 		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
 		
 		GI->GoToMainMenu();
-	}
+	}*/
 }
 
 void ASTStagePlayerController::HandleQuitGame()
@@ -521,7 +529,7 @@ void ASTStagePlayerController::TriggerGameClearWithTempData()
 		TempHighScore = Info.HighScore;
 	}
 	
-	ShowGameClearResult(TempScore, TempHighScore);
+	ShowGameClearResult();
 }
 
 void ASTStagePlayerController::ScheduleGameOver(float DelaySeconds)
@@ -691,8 +699,9 @@ void ASTStagePlayerController::ShowGameOverResult(int32 Score, int32 KillCount, 
 	}
 }
 
-void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
+void ASTStagePlayerController::ShowGameClearResult()
 {
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::ShowGameClearResult() Start"));
 	if (!GameClearWidget && GameClearWidgetClass)
 	{
 		GameClearWidget = CreateWidget<USTGameClearWidget>(this, GameClearWidgetClass);
@@ -705,6 +714,18 @@ void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
 		}
 	}
 
+	int32 Score = 0, HighScore = 0;
+	if (const ASTPlayerState* STPlayerState = GetPlayerState<ASTPlayerState>())
+	{
+		const FPlayerStateInfo& PlayerStateInfo = STPlayerState->GetPlayerStateInfo();
+		Score = PlayerStateInfo.Score;
+		HighScore = PlayerStateInfo.HighScore;
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::ShowGameClearResult() Can't Get STPlayerState"));
+	}
+
 	if (GameClearWidget)
 	{
 		GameClearWidget->SetResultInfo(Score, HighScore);
@@ -712,6 +733,43 @@ void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
 		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
 	}
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::ShowGameClearResult() End"));
+}
+
+// JM: 레벨 블루프린트에서 재생 중인 BGM 정지
+void ASTStagePlayerController::StopLevelBGM()
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::StopLevelBGM() Start"));
+
+	ALevelScriptActor* LevelBPActor = GetWorld()->GetLevelScriptActor();
+	if (!LevelBPActor)
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::StopLevelBGM() LevelBPActor Not Found"));
+		return;
+	}
+	
+	TArray<UAudioComponent*> AudioComponents;
+	LevelBPActor->GetComponents<UAudioComponent>(AudioComponents);
+	
+	if (AudioComponents.Num() > 0)
+	{
+		UAudioComponent* BGMComp = AudioComponents[0];
+		if (BGMComp->IsPlaying())
+		{
+			BGMComp->Stop();
+			UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::StopLevelBGM() Stop Level BGM"));
+		}
+		else
+		{
+			UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::StopLevelBGM() BGMComponent is not playing"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::StopLevelBGM() BGMComponent not found"));
+	}
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::StopLevelBGM() End"));
 }
 
 
@@ -742,15 +800,24 @@ void ASTStagePlayerController::HandleStageClear()
 			NextStage = EStageType::Stage3;
 			LoadingScreenIndex = 3;
 			break;
-		// TODO: 보스스테이지 클리어시 처리
+		case EStageType::Stage3:
+			NextStage = EStageType::Ending;
+			LoadingScreenIndex = 4;		// TODO: 보여줄 로딩화면 처리 (아직 없긴함) - 엔딩시네마틱?
+			break;
 		default:	
 			break;
 	}
 
-	if (NextStage != EStageType::None)
+	if (NextStage == EStageType::Stage2 || NextStage == EStageType::Stage3)
 	{
-		STGameInstance->LastStage = NextStage;
-		LoadNextStage_BP(NextStage, LoadingScreenIndex);	// 다음 스테이지로 이동(BP Implement 이벤트)
+		/*STGameInstance->LastStage = NextStage*/;
+		LoadNextStage_BP(NextStage, LoadingScreenIndex);	// 다음 스테이지로 이동(BP Implement 이벤트) / 로딩화면 조절가능
+	}
+	else if (NextStage == EStageType::Ending)
+	{
+		ShowGameClearResult();		// JM : 게임 클리어 UI 띄우기
+		StopLevelBGM();				// JM : 기존 레벨BP BGM 정지
+		PlayGameClearBGM_BP();		// JM : 게임 클리어시 BGM 재생
 	}
 	else
 	{
@@ -796,34 +863,69 @@ void ASTStagePlayerController::HandleStageFailed()
 //Game Over 버튼
 void ASTStagePlayerController::HandleGameOverRetry()
 {
-	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	LoadLevelWithDataResetAndLoadingScreen(EStageType::Stage1);
+	/*if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
 	{
 		// GI->GoToLevel(EStageType::Stage1);
-		GI->GoToRetry();
-	}
+		// GI->GoToRetry();
+		
+		// JM 수정 / 로딩화면 컨트롤하기 위함 (Stage1 로딩화면 재생)
+		GI->ResetDataForRetry();		// 데이터 초기화
+		LoadNextStage_BP(EStageType::Stage1, 1);
+	}*/
 }
 
 void ASTStagePlayerController::HandleGameOverReturnToMain()
 {
-	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	LoadLevelWithDataResetAndLoadingScreen(EStageType::MainMenu);
+	/*if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
 	{
 		GI->GoToMainMenu();
-	}
+	}*/
 }
 
 //Game Clear 버튼
 void ASTStagePlayerController::HandleGameClearRetry()
 {
-	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	LoadLevelWithDataResetAndLoadingScreen(EStageType::Stage1);
+	/*if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
 	{
-		GI->GoToLevel(EStageType::Stage1);
-	}
+		// GI->GoToLevel(EStageType::Stage1);
+		GI->GoToRetry();	// JM : 초기화 되는 Retry는 이쪽으로
+	}*/
 }
 
 void ASTStagePlayerController::HandleGameClearReturnToMain()
 {
+	LoadLevelWithDataResetAndLoadingScreen(EStageType::MainMenu);
+	
+	/*
 	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
 	{
 		GI->GoToMainMenu();
+	}*/
+}
+
+// JM: 레벨이동 통합관리
+void ASTStagePlayerController::LoadLevelWithDataResetAndLoadingScreen(const EStageType& NextStage)
+{
+	UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::LoadLevelWithDataResetAndLoadingScreen(%s) Start"), *StaticEnum<EStageType>()->GetValueAsString(NextStage));
+	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	{
+		GI->ResetDataForRetry();
+		int LoadingScreenIndex = 0;
+		switch (NextStage)
+		{
+			case EStageType::MainMenu:
+				LoadingScreenIndex = 0;
+				break;
+			case EStageType::Stage1:
+				LoadingScreenIndex = 1;
+				break;
+			default:
+				UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::LoadLevelWithDataResetAndLoadingScreen(%s) Not this case Implemented"), *StaticEnum<EStageType>()->GetValueAsString(NextStage));
+		}
+		LoadNextStage_BP(NextStage, LoadingScreenIndex);
 	}
+	UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::LoadLevelWithDataResetAndLoadingScreen(%s) End"), *StaticEnum<EStageType>()->GetValueAsString(NextStage));
 }

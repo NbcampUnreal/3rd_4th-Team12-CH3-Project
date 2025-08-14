@@ -39,12 +39,9 @@ void ASTLobbyPlayerController::HandleCharacterSelected(const ECharacterType& Cha
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTLobbyPlayerController::HandleCharacterSelected(%s) Start"), *StaticEnum<ECharacterType>()->GetValueAsString(CharacterType));
 	
-	// TODO: 캐릭터 선택정보 저장하기
 	if (USTGameInstance* STGameInstance = GetGameInstance<USTGameInstance>())
 	{
 		STGameInstance->SelectedCharacter = CharacterType;
-		STGameInstance->LastStage = EStageType::Stage1;
-		// STGameInstance->StartStage1();
 	}
 	
 	StartStage1_BP();
