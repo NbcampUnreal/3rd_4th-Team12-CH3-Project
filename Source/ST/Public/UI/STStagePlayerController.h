@@ -74,6 +74,7 @@ public:
 	UFUNCTION()	void HandleGameOverReturnToMain();
 	UFUNCTION()	void HandleGameClearRetry();
 	UFUNCTION()	void HandleGameClearReturnToMain();
+	UFUNCTION()	void HandlePlayEndingRequested();
 	
 
 	// Game Over / Clear UI
@@ -184,6 +185,11 @@ private:
 	void ScheduleGameOver(float DelaySeconds);
 	FTimerHandle GameOverTimerHandle;
 	float GameOverDelay = 1.5f;
+
+	UFUNCTION()
+	void ScheduleGameClear(float DelaySeconds);
+	FTimerHandle GameClearTimerHandle;
+	float GameClearDelay = 1.5f;
 	
 	FDelegateHandle ActorSpawnedHandle;
 	
@@ -195,7 +201,6 @@ private:
 	
 	bool bPrevZoomState = false;
 	bool bGameOverShown = false;
-	bool bGameClearShown = false;
 
 	// 현재 장착 무기 이름 & 샷건 여부
 	UPROPERTY()

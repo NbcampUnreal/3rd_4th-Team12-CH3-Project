@@ -195,7 +195,8 @@ void ASTStagePlayerController::SetupInputComponent()
 
 	// 테스트용 키 (P)
 	InputComponent->BindKey(EKeys::P, IE_Pressed, this, &ASTStagePlayerController::TogglePauseMenu);
-
+	// ESC도 토글
+	InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASTStagePlayerController::TogglePauseMenu);
 	// Tab 키 입력 바인딩
 	InputComponent->BindKey(EKeys::Tab, IE_Pressed, this, &ASTStagePlayerController::ShowScoreboard);
 	InputComponent->BindKey(EKeys::Tab, IE_Released, this, &ASTStagePlayerController::HideScoreboard);
@@ -608,9 +609,14 @@ void ASTStagePlayerController::HideBossBar()
 
 void ASTStagePlayerController::TogglePauseMenu()
 {
+	if (GameOverWidget || GameClearWidget)
+	{
+		return;
+	}
+
 	if (IsPaused())
 	{
-		// 게임 재개
+		// === 게임 재개 ===
 		SetPause(false);
 
 		if (PauseMenuWidget)
@@ -623,7 +629,7 @@ void ASTStagePlayerController::TogglePauseMenu()
 	}
 	else
 	{
-		// 게임 일시정지
+		// === 게임 일시정지 ===
 		SetPause(true);
 
 		if (!PauseMenuWidget && PauseMenuWidgetClass)
@@ -640,9 +646,13 @@ void ASTStagePlayerController::TogglePauseMenu()
 		if (PauseMenuWidget)
 		{
 			PauseMenuWidget->SetVisibility(ESlateVisibility::Visible);
-		}
 
-		SetInputMode(FInputModeUIOnly());
+			// 입력 모드로 ESC가 컨트롤러에 도달하도록 설정
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(PauseMenuWidget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+		}
 		bShowMouseCursor = true;
 	}
 }
@@ -694,6 +704,41 @@ void ASTStagePlayerController::ScheduleGameOver(float DelaySeconds)
 	});
 
 	GetWorldTimerManager().SetTimer(GameOverTimerHandle, D, FMath::Max(0.f, DelaySeconds), false);
+}
+
+void ASTStagePlayerController::ScheduleGameClear(float DelaySeconds)
+{
+	// 타이머가 돌고 있으면 무시
+	if (GetWorldTimerManager().IsTimerActive(GameClearTimerHandle))
+	{
+		return;
+	}
+	// 카메라 페이드 아웃 (화면 → 검정)
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->StartCameraFade(
+			0.f,                      // From
+			1.f,                      // To (검정)
+			FMath::Max(0.f, DelaySeconds),
+			FLinearColor::Black,
+			false,                    // bShouldFadeAudio
+			true                      // bHoldWhenFinished (검정 유지)
+		);
+	}
+
+	// 딜레이 후 실제로 UI 표시
+	FTimerDelegate D;
+	D.BindWeakLambda(this, [this]()
+	{
+		ShowGameClearResult();
+	});
+
+	GetWorldTimerManager().SetTimer(
+		GameClearTimerHandle,
+		D,
+		FMath::Max(0.f, DelaySeconds),
+		false
+	);
 }
 
 
@@ -842,6 +887,7 @@ void ASTStagePlayerController::ShowGameClearResult()
 			
 			GameClearWidget->OnRetryRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameClearRetry);
 			GameClearWidget->OnReturnToMainRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameClearReturnToMain);
+			GameClearWidget->OnPlayEndingRequested.AddDynamic(this, &ASTStagePlayerController::HandlePlayEndingRequested);
 		}
 	}
 
@@ -863,6 +909,18 @@ void ASTStagePlayerController::ShowGameClearResult()
 		SetPause(true);
 		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
+
+		if (PlayerCameraManager)
+		{
+			PlayerCameraManager->StartCameraFade(
+				1.f,  // From (검정)
+				0.f,  // To (화면)
+				0.25f,
+				FLinearColor::Black,
+				false,
+				false
+			);
+		}
 	}
 	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::ShowGameClearResult() End"));
 }
@@ -946,9 +1004,9 @@ void ASTStagePlayerController::HandleStageClear()
 	}
 	else if (NextStage == EStageType::Ending)
 	{
-		ShowGameClearResult();		// JM : 게임 클리어 UI 띄우기
 		StopLevelBGM();				// JM : 기존 레벨BP BGM 정지
 		PlayGameClearBGM_BP();		// JM : 게임 클리어시 BGM 재생
+		ScheduleGameClear(GameClearDelay); // 페이드 아웃 이후 클리어 UI 춫력
 	}
 	else
 	{
@@ -1035,6 +1093,23 @@ void ASTStagePlayerController::HandleGameClearReturnToMain()
 	{
 		GI->GoToMainMenu();
 	}*/
+}
+
+void ASTStagePlayerController::HandlePlayEndingRequested()
+{
+	// 임시 로그 출력
+	UE_LOG(LogSystem, Log, TEXT("엔딩 영상을 출력합니다"));
+
+	// 화면에 임시 디버그 메시지도 표시
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,           
+			2.0f,          
+			FColor::Cyan,  
+			TEXT("엔딩 영상을 출력합니다")
+		);
+	}
 }
 
 // JM: 레벨이동 통합관리
