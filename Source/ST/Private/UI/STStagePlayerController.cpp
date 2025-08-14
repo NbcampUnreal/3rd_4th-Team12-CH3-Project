@@ -1,30 +1,38 @@
 #include "UI/STStagePlayerController.h"
+
 #include "UI/STStageWidget.h"
 #include "UI/STPauseMenuWidget.h"
 #include "UI/STScoreboardWidget.h"
 #include "UI/STGameOverWidget.h"
 #include "UI/STGameClearWidget.h"
-#include "UI/UWCrosshairWidget.h"            
-#include "Player/STMovementComponent.h"      
-#include "Player/STPlayerCharacter.h"        
+#include "UI/UWCrosshairWidget.h"
+#include "UI/STBossBarWidget.h"
+
+#include "Player/STPlayerCharacter.h"
+#include "Player/STMovementComponent.h"
+#include "Player/STHealthComponent.h"
+#include "Player/STWeaponManagerComponent.h"
+
+#include "Enemy/STEnemyBase.h"
+#include "Enemy/STEnemyBoss.h"
+#include "Enemy/STEnemyBossAIController.h"
+
+#include "System/STGameInstance.h"
+#include "System/STGameTypes.h"
+#include "System/STGameMode.h"
+#include "System/STGameState.h"
+#include "System/STPlayerState.h"
+#include "System/STLog.h"
+
 #include "Blueprint/UserWidget.h"
 #include "Components/AudioComponent.h"
 #include "Components/CapsuleComponent.h"
-#include "System/STGameInstance.h"
-#include "System/STGameTypes.h"
-#include "Enemy/STEnemyBase.h"
-#include "Kismet/GameplayStatics.h"
-#include "Kismet/KismetSystemLibrary.h"
-#include "Player/STHealthComponent.h"
-#include "Player/STPlayerCharacter.h"
-#include "System/STGameMode.h"
-#include "System/STGameState.h"
-#include "System/STLog.h"
-#include "System/STPlayerState.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/LevelScriptActor.h"
 #include "GameFramework/CharacterMovementComponent.h"
-#include "Player/STWeaponManagerComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "UObject/ConstructorHelpers.h"
 
 ASTStagePlayerController::ASTStagePlayerController()
 {
@@ -79,12 +87,25 @@ void ASTStagePlayerController::BeginPlay()
 	SetInputMode(FInputModeGameOnly());
 	bShowMouseCursor = false;
 	
-	// 실제 데이터 대신 임시 값으로 전달
-	UpdateEnemyStatus(0, 10); // 적 처치: 0 / 총 10명
-	AddDamageKillLog(TEXT("10의 피해를 받았습니다.")); // 로그 메시지
-
-	//게임 클리어 화면 테스트
-	//ShowGameClearResult(15000, 20000); // 점수: 15000, 최고기록: 20000
+	if (!CachedBossAI)
+	{
+		TArray<AActor*> FoundControllers;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASTEnemyBossAIController::StaticClass(), FoundControllers);
+		if (FoundControllers.Num() > 0)
+		{
+			CachedBossAI = Cast<ASTEnemyBossAIController>(FoundControllers[0]);
+			if (CachedBossAI)
+			{
+				// 중복 바인딩 방지
+				CachedBossAI->OnBossRecognizedPlayer.RemoveDynamic(this, &ASTStagePlayerController::HandleBossRecognizedPlayer);
+				CachedBossAI->OnBossRecognizedPlayer.AddDynamic(this, &ASTStagePlayerController::HandleBossRecognizedPlayer);
+			}
+		}
+		else
+		{
+			UE_LOG(LogSystem, Warning, TEXT("No ASTEnemyBossAIController found at BeginPlay."));
+		}
+	}
 
 
 	// JM : GameMode OnStageClear 이벤트 바인딩
@@ -150,13 +171,32 @@ void ASTStagePlayerController::BeginPlay()
 	RefreshMissionProgress(0);
 }
 
+void ASTStagePlayerController::GetPlayerResults(
+	int32& OutScore,
+	int32& OutKillCount,
+	int32& OutDamageDealt,
+	int32& OutDamageTaken,
+	int32& OutHighScore
+) const
+{
+	const ASTPlayerState* PS = GetPlayerState<ASTPlayerState>();
+	const FPlayerStateInfo& Info = PS->GetPlayerStateInfo();
+
+	OutScore       = Info.Score;
+	OutKillCount   = Info.KillCount;
+	OutDamageDealt = Info.TotalDamageInflicted;
+	OutDamageTaken = Info.TotalDamageReceived;
+	OutHighScore   = Info.HighScore;
+}
+
 void ASTStagePlayerController::SetupInputComponent()
 {	
 	Super::SetupInputComponent();
 
 	// 테스트용 키 (P)
 	InputComponent->BindKey(EKeys::P, IE_Pressed, this, &ASTStagePlayerController::TogglePauseMenu);
-
+	// ESC도 토글
+	InputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASTStagePlayerController::TogglePauseMenu);
 	// Tab 키 입력 바인딩
 	InputComponent->BindKey(EKeys::Tab, IE_Pressed, this, &ASTStagePlayerController::ShowScoreboard);
 	InputComponent->BindKey(EKeys::Tab, IE_Released, this, &ASTStagePlayerController::HideScoreboard);
@@ -301,12 +341,54 @@ void ASTStagePlayerController::HandleEnemyDamageTaken(AActor* DamagedActor, floa
 	{
 		WorldLoc += FVector(0,0,100.f);
 	}
+
+	WorldLoc = GetShotgunScreenRandomLoc(WorldLoc);
 	
 	const int32 Shown = FMath::Max(1, FMath::RoundToInt(DamageAmount));
 	if (StageWidget)
 	{
 		StageWidget->ShowDamageTextAtEx(WorldLoc, Shown, bCritical);
 	}
+}
+
+FVector ASTStagePlayerController::GetShotgunScreenRandomLoc(const FVector& BaseWorldLoc) const
+{
+	if (!bIsShotgunWeapon || !PlayerCameraManager)
+	{
+		return BaseWorldLoc;
+	}
+
+	// 화면 크기
+	int32 SizeX = 0, SizeY = 0;
+	this->GetViewportSize(SizeX, SizeY);
+	if (SizeX <= 0 || SizeY <= 0)
+	{
+		return BaseWorldLoc;
+	}
+
+	// 카메라→표시기준점 거리
+	const FVector CamLoc = PlayerCameraManager->GetCameraLocation();
+	const float   Depth  = (BaseWorldLoc - CamLoc).Size();
+
+	// 화면 중앙 좌표
+	const float CX = SizeX * 0.5f;
+	const float CY = SizeY * 0.5f;
+
+	// 중앙 기준 원판 내 랜덤 오프셋(px)
+	const float r     = DamageTextScreenRadiusPx; // 예: 60.f
+	const float angle = FMath::FRandRange(0.f, 2.f * PI);
+	const float rad   = FMath::FRandRange(0.f, r);
+	const float dx    = FMath::Cos(angle) * rad;
+	const float dy    = FMath::Sin(angle) * rad;
+
+	// 스크린 → 월드 역투영
+	FVector Origin, Dir;
+	if (this->DeprojectScreenPositionToWorld(CX + dx, CY + dy, Origin, Dir))
+	{
+		return Origin + Dir * Depth;
+	}
+
+	return BaseWorldLoc;
 }
 
 void ASTStagePlayerController::ShowDamageNumberAtActor(AActor* Target, int32 Damage, bool bCritical, FName SocketName)
@@ -338,6 +420,8 @@ void ASTStagePlayerController::ShowDamageNumberAtActor(AActor* Target, int32 Dam
 	{
 		WorldLoc += FVector(0, 0, 100.f);
 	}
+	
+	WorldLoc = GetShotgunScreenRandomLoc(WorldLoc);
 	
 	StageWidget->ShowDamageTextAtEx(WorldLoc, Damage, bCritical);
 }
@@ -419,11 +503,120 @@ void ASTStagePlayerController::HideScoreboard()
 	}
 }
 
+void ASTStagePlayerController::ShowBossBar(AActor* BossActor)
+{
+	ASTEnemyBoss* Boss = Cast<ASTEnemyBoss>(BossActor);
+	if (!Boss)
+	{
+		return;
+	}
+
+	if (!BossBarWidgetClass)
+	{
+		UE_LOG(LogSystem, Warning, TEXT("BossBarWidgetClass not set. Assign BP_BossBarWidget on your PlayerController BP."));
+		return;
+	}
+
+	// 기존 것 정리
+	HideBossBar();
+
+	CurrentBoss = Boss;
+
+	// 위젯 생성 & 즉시 표시
+	if (!BossBarWidget)
+	{
+		BossBarWidget = CreateWidget<USTBossBarWidget>(this, BossBarWidgetClass);
+		if (BossBarWidget)
+		{
+			BossBarWidget->AddToViewport(80);
+
+			// 호출 즉시 보이도록
+			BossBarWidget->SetVisibility(ESlateVisibility::Visible);
+
+			// 첫 프레임은 꽉 찬 상태로 보이게 (위젯의 bFirstDisplayFull 로직과 합쳐져 안전)
+			BossBarWidget->UpdateBossHP(1.f, 1.f);
+		}
+	}
+	else
+	{
+		BossBarWidget->SetVisibility(ESlateVisibility::Visible);
+		BossBarWidget->UpdateBossHP(1.f, 1.f);
+	}
+
+	// 델리게이트 바인딩(중복 방지 후)
+	Boss->OnEnemyHealthChanged.RemoveDynamic(this, &ASTStagePlayerController::OnBossHealthChanged);
+	Boss->OnEnemyHealthChanged.AddDynamic(this, &ASTStagePlayerController::OnBossHealthChanged);
+
+	Boss->OnDied.RemoveDynamic(this, &ASTStagePlayerController::OnBossDied);
+	Boss->OnDied.AddDynamic(this, &ASTStagePlayerController::OnBossDied);
+}
+
+void ASTStagePlayerController::HandleBossRecognizedPlayer()
+{
+	if (bBossUIActivated || !CachedBossAI)
+	{
+		return;
+	}
+
+	APawn* BossPawn = CachedBossAI->GetPawn();
+	if (!BossPawn)
+	{
+		UE_LOG(LogSystem, Warning, TEXT("HandleBossRecognizedPlayer: Boss Pawn is null."));
+		return;
+	}
+
+	bBossUIActivated = true;
+	ShowBossBar(BossPawn);
+}
+
+void ASTStagePlayerController::OnBossHealthChanged(float Current, float Max, float Percent)
+{
+	if (!BossBarWidget)
+	{
+		return;
+	}
+
+	// 갱신
+	BossBarWidget->UpdateBossHP(Current, Max);
+
+	// 첫 수신 시 표시
+	if (BossBarWidget->GetVisibility() != ESlateVisibility::Visible)
+	{
+		BossBarWidget->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
+void ASTStagePlayerController::OnBossDied(AActor*)
+{
+	HideBossBar();
+}
+
+void ASTStagePlayerController::HideBossBar()
+{
+	// 델리게이트 언바인딩
+	if (CurrentBoss)
+	{
+		CurrentBoss->OnEnemyHealthChanged.RemoveDynamic(this, &ASTStagePlayerController::OnBossHealthChanged);
+		CurrentBoss->OnDied.RemoveDynamic(this, &ASTStagePlayerController::OnBossDied);
+		CurrentBoss = nullptr;
+	}
+	
+	if (BossBarWidget && BossBarWidget->IsInViewport())
+	{
+		BossBarWidget->RemoveFromParent();
+	}
+}
+
 void ASTStagePlayerController::TogglePauseMenu()
 {
+	if (GameOverWidget || GameClearWidget)
+	{
+		return;
+	}
+
 	if (IsPaused())
 	{
-		// 게임 재개
+		// === 게임 재개 ===
 		SetPause(false);
 
 		if (PauseMenuWidget)
@@ -436,7 +629,7 @@ void ASTStagePlayerController::TogglePauseMenu()
 	}
 	else
 	{
-		// 게임 일시정지
+		// === 게임 일시정지 ===
 		SetPause(true);
 
 		if (!PauseMenuWidget && PauseMenuWidgetClass)
@@ -453,9 +646,13 @@ void ASTStagePlayerController::TogglePauseMenu()
 		if (PauseMenuWidget)
 		{
 			PauseMenuWidget->SetVisibility(ESlateVisibility::Visible);
-		}
 
-		SetInputMode(FInputModeUIOnly());
+			// 입력 모드로 ESC가 컨트롤러에 도달하도록 설정
+			FInputModeGameAndUI InputMode;
+			InputMode.SetWidgetToFocus(PauseMenuWidget->TakeWidget());
+			InputMode.SetLockMouseToViewportBehavior(EMouseLockMode::DoNotLock);
+			SetInputMode(InputMode);
+		}
 		bShowMouseCursor = true;
 	}
 }
@@ -486,84 +683,59 @@ void ASTStagePlayerController::HandleQuitGame()
 	}
 }
 
-void ASTStagePlayerController::TriggerGameOverWithTempData()
-{
-	// 임시값
-	int32 TempScore       = 12450;
-	int32 TempKillCount   = 9;
-	int32 TempDamageDealt = 30500;
-	int32 TempDamageTaken = 11200;
-
-	// PlayerState 값이 있으면 덮어쓰기
-	if (ASTPlayerState* PS = GetPlayerState<ASTPlayerState>())
-	{
-		const FPlayerStateInfo& Info = PS->GetPlayerStateInfo();
-
-		// 필요 시 가져와서 임시값 대체
-		TempScore       = Info.Score;
-		TempKillCount   = Info.KillCount;
-		TempDamageDealt = Info.TotalDamageInflicted;
-		TempDamageTaken = Info.TotalDamageReceived;
-	}
-	
-	ShowGameOverResult(TempScore, TempKillCount, TempDamageDealt, TempDamageTaken, PendingGameOverReason);
-}
-
-void ASTStagePlayerController::TriggerGameClearWithTempData()
-{
-	if (bGameClearShown)
-	{
-		return;
-	}
-	bGameClearShown = true;
-	
-	// 기본 임시값
-	int32 TempScore     = 15000;
-	int32 TempHighScore = 20000;
-
-	// PlayerState 있으면 일부 값 대체
-	if (ASTPlayerState* PS = GetPlayerState<ASTPlayerState>())
-	{
-		const FPlayerStateInfo& Info = PS->GetPlayerStateInfo();
-		TempScore     = Info.Score;
-		TempHighScore = Info.HighScore;
-	}
-	
-	ShowGameClearResult();
-}
 
 void ASTStagePlayerController::ScheduleGameOver(float DelaySeconds)
 {
-	if (bGameOverShown)
-	{
-		return;
-	}
-
-	// 중복 타이머 방지
-	if (GetWorldTimerManager().IsTimerActive(GameOverTimerHandle))
-	{
-		return;
-	}
-	
+	if (bGameOverShown) { return; }
+	if (GetWorldTimerManager().IsTimerActive(GameOverTimerHandle)) { return; }
 	bGameOverShown = true;
 
-	// 카메라 페이드
+	if (PlayerCameraManager)
+	{
+		PlayerCameraManager->StartCameraFade(0.f, 1.f, FMath::Max(0.f, DelaySeconds), FLinearColor::Black, false, true);
+	}
+
+	FTimerDelegate D;
+	D.BindWeakLambda(this, [this]()
+	{
+		int32 Score, Kills, DmgDealt, DmgTaken, HighScore;
+		GetPlayerResults(Score, Kills, DmgDealt, DmgTaken, HighScore);
+		ShowGameOverResult(Score, Kills, DmgDealt, DmgTaken, PendingGameOverReason);
+	});
+
+	GetWorldTimerManager().SetTimer(GameOverTimerHandle, D, FMath::Max(0.f, DelaySeconds), false);
+}
+
+void ASTStagePlayerController::ScheduleGameClear(float DelaySeconds)
+{
+	// 타이머가 돌고 있으면 무시
+	if (GetWorldTimerManager().IsTimerActive(GameClearTimerHandle))
+	{
+		return;
+	}
+	// 카메라 페이드 아웃 (화면 → 검정)
 	if (PlayerCameraManager)
 	{
 		PlayerCameraManager->StartCameraFade(
-			0.f,
-			1.f,
+			0.f,                      // From
+			1.f,                      // To (검정)
 			FMath::Max(0.f, DelaySeconds),
 			FLinearColor::Black,
-			false,
-			true
+			false,                    // bShouldFadeAudio
+			true                      // bHoldWhenFinished (검정 유지)
 		);
 	}
 
+	// 딜레이 후 실제로 UI 표시
+	FTimerDelegate D;
+	D.BindWeakLambda(this, [this]()
+	{
+		ShowGameClearResult();
+	});
+
 	GetWorldTimerManager().SetTimer(
-		GameOverTimerHandle,
-		this,
-		&ASTStagePlayerController::TriggerGameOverWithTempData,
+		GameClearTimerHandle,
+		D,
 		FMath::Max(0.f, DelaySeconds),
 		false
 	);
@@ -605,6 +777,10 @@ void ASTStagePlayerController::UpdateHealth(float CurrentHP, float MaxHP)
 
 void ASTStagePlayerController::UpdateWeapon(const FString& WeaponName)
 {
+	CurrentWeaponName = WeaponName;
+
+	bIsShotgunWeapon = WeaponName.Equals(TEXT("Shotgun"), ESearchCase::IgnoreCase);
+	
 	if (StageWidget)
 	{
 		StageWidget->UpdateWeapon(WeaponName);
@@ -711,6 +887,7 @@ void ASTStagePlayerController::ShowGameClearResult()
 			
 			GameClearWidget->OnRetryRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameClearRetry);
 			GameClearWidget->OnReturnToMainRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameClearReturnToMain);
+			GameClearWidget->OnPlayEndingRequested.AddDynamic(this, &ASTStagePlayerController::HandlePlayEndingRequested);
 		}
 	}
 
@@ -732,6 +909,18 @@ void ASTStagePlayerController::ShowGameClearResult()
 		SetPause(true);
 		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
+
+		if (PlayerCameraManager)
+		{
+			PlayerCameraManager->StartCameraFade(
+				1.f,  // From (검정)
+				0.f,  // To (화면)
+				0.25f,
+				FLinearColor::Black,
+				false,
+				false
+			);
+		}
 	}
 	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::ShowGameClearResult() End"));
 }
@@ -862,11 +1051,8 @@ void ASTStagePlayerController::HandleStageClear()
 	}
 	else if (NextStage == EStageType::Ending)
 	{
-		ShowGameClearResult();		// JM : 게임 클리어 UI 띄우기
 		PlayAnotherBGM(EBGMType::ClearBGM);	// JM: 클리어 브금으로 변경
-
-		/*StopLevelBGM();				// JM : 기존 레벨BP BGM 정지
-		PlayGameClearBGM_BP();		// JM : 게임 클리어시 BGM 재생*/
+		ScheduleGameClear(GameClearDelay); // 페이드 아웃 이후 클리어 UI 춫력
 	}
 	else
 	{
@@ -953,6 +1139,23 @@ void ASTStagePlayerController::HandleGameClearReturnToMain()
 	{
 		GI->GoToMainMenu();
 	}*/
+}
+
+void ASTStagePlayerController::HandlePlayEndingRequested()
+{
+	// 임시 로그 출력
+	UE_LOG(LogSystem, Log, TEXT("엔딩 영상을 출력합니다"));
+
+	// 화면에 임시 디버그 메시지도 표시
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,           
+			2.0f,          
+			FColor::Cyan,  
+			TEXT("엔딩 영상을 출력합니다")
+		);
+	}
 }
 
 // JM: 레벨이동 통합관리
