@@ -66,7 +66,13 @@ public:
 
 	UFUNCTION( BlueprintCallable, Category="Save" )
 	const FPlayerStateInfo& GetPlayerStateInfo() const;
+	
+	UFUNCTION( BlueprintCallable, Category="Retry" )
+	void ResetDataForRetry();
 
+	UFUNCTION( BlueprintCallable, Category="Retry" )
+	void GoToRetry();
+	
 	// TODO: 게임 저장/불러오기(아카이빙) 기능 구현
 	
 private:

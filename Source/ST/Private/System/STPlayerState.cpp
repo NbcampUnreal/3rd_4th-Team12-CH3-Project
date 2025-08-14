@@ -127,7 +127,7 @@ void ASTPlayerState::SetScore(const int32 NewScore)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::AddScore(%d) Start"), NewScore);
 
-	PlayerStateInfo.Score += NewScore;
+	PlayerStateInfo.Score = NewScore;
 	if (PlayerStateInfo.Score > PlayerStateInfo.HighScore)	// 최고기록 갱신시 같이 업데이트
 		SetHighScore(PlayerStateInfo.Score);
 	
@@ -221,7 +221,8 @@ void ASTPlayerState::OnDamageTaken(AActor* DamagedActor, float DamageAmount, boo
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnDamageTaken(%f / isCritical(%d) Start"), DamageAmount, bCritical);
 
-	AddTotalDamageReceived(DamageAmount);
+	AddScore(DamageAmount);					// JM : 바로 점수에 더해버리기
+	AddTotalDamageInflicted(DamageAmount);	// JM : 그럼 이걸 유지할 필요가..? 통계?
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnDamageTaken(%f / isCritical(%d) End"), DamageAmount, bCritical);
 }
@@ -238,7 +239,6 @@ void ASTPlayerState::OnHealthChanged(float CurrentHP, float MaxHP)
 	{
 		AddTotalDamageReceived(DamageReceived);
 	}
-	
 	
 	SetCurrentHP(CurrentHP);
 	SetMaxHP(MaxHP);	// 굳이...?
@@ -260,26 +260,64 @@ void ASTPlayerState::OnAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo)
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnAmmoChanged(%d / %d) End"), CurrentAmmo, MaxAmmo);
 }
 
-// GameMode::EndStage에서 직접 호출
-void ASTPlayerState::CalculateScore()
+
+
+// 매 초 마다 이벤트 수신(OnRemainingTimeUpdate)
+/*void ASTPlayerState::CalculateScore(int32 NewRemainingTime)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::CalculateScore() Start"));
 
-	int32 RemainingTime = 0;
-	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
+	
+
+	
+
+	int32 RemainingTime = NewRemainingTime;
+	/*if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
 	{
 		RemainingTime = STGameState->GetGameStateInfo().RemainingTime;
 	}
 	else
 	{
 		UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScore() Can't Load STGameState->GameStateInfo.RemainingTime"));
-	}
+	}#1#
 
-	int32 NewScore = RemainingTime;
-		/*(RemainingTime * PlayerStateInfo.KillCount * PlayerStateInfo.TotalDamageInflicted)
-							- (PlayerStateInfo.TotalDamageInflicted * PlayerStateInfo.TotalUsedAmmo * ScoreMultiplier);*/
+	const int32 Time = FMath::Clamp(RemainingTime, 0, RemainingTime);
+	const float Attack = PlayerStateInfo.TotalDamageInflicted;
+	const float Damage = PlayerStateInfo.TotalDamageReceived;
+	const int32 Ammo = PlayerStateInfo.TotalUsedAmmo;
 
-	SetScore(PlayerStateInfo.Score + NewScore);	// 최고기록 갱신시 내부에서 업데이트 함
+	int32 NewScore = static_cast<int32>((Time * 5) + (Attack * 1) - (Damage * 1) - (Ammo * 0.1f));
+	UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScore() NewScore(%d) = Score(%d) + Time(%d)*5 + Attack(%f)*0.1f - Damage(%f)*1 - Ammo(%d)*0.1"), NewScore, PlayerStateInfo.Score, Time, Attack, Damage, Ammo);
+	// 남은시간 초당 5점, 입힌 피해량 10당 1점, 받은 데미지 1당 -1점, 사용한 총알 수 10발당 -1점
+	NewScore = FMath::Clamp(NewScore, 0, NewScore);
+
+	SetScore(NewScore);	// 최고기록 갱신시 내부에서 업데이트 함
+	// SetScore(PlayerStateInfo.Score + NewScore);	// 최고기록 갱신시 내부에서 업데이트 함
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::CalculateScore() End"));
+}*/
+
+void ASTPlayerState::CalculateScore(bool bIsStageClear)
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::CalculateScoreAtGameOver() Start"));
+	
+	int RemainingTime = 0;
+	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
+	{
+		RemainingTime = STGameState->GetGameStateInfo().RemainingTime;
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScoreAtGameOver() Can't Load STGameState->GameStateInfo.RemainingTime"));
+	}
+
+	int32 NewScore = PlayerStateInfo.Score - PlayerStateInfo.TotalDamageReceived * 1 - PlayerStateInfo.TotalUsedAmmo * 0.1f;
+	UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScoreAtGameOver() %d = Score(%d) - %.1f - %f"), NewScore, PlayerStateInfo.Score, PlayerStateInfo.TotalDamageReceived, PlayerStateInfo.TotalUsedAmmo * 0.1f);
+	if (bIsStageClear)
+	{
+		NewScore += RemainingTime * 5; 
+	}
+	SetScore(FMath::Clamp(NewScore, 0, NewScore));
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::CalculateScoreAtGameOver() End"));
 }

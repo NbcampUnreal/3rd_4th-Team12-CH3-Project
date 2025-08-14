@@ -182,11 +182,16 @@ void ASTGameMode::EndStage(const EStageResult Result)
 	{
 		STGameState->SetStageResult(Result);
 	}
-
+	
 	ASTStagePlayerController* STPlayerController = Cast<ASTStagePlayerController>(GetWorld()->GetFirstPlayerController());
 	if (ASTPlayerState* STPlayerState = STPlayerController->GetPlayerState<ASTPlayerState>())
 	{
-		STPlayerState->CalculateScore();
+		if (Result == EStageResult::Clear)	STPlayerState->CalculateScore(true);
+		else if (Result == EStageResult::Fail)	STPlayerState->CalculateScore(false);
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::EndStage() Can't Get ASTPlayerState"));
 	}
 
 	if (Result == EStageResult::Clear)
@@ -229,6 +234,9 @@ void ASTGameMode::ResetStage()
 		STGameState->SetStageResult(EStageResult::None);
 		STGameState->SetBossPhase(1);
 		STGameState->SetStageGoalText(StageInfo->StageGoalText);
+		STGameState->SetStageProgressList(StageInfo->StageProgressList);
+		/*UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::ResetStage() StageProgressList[0] : %s"), *StageInfo->StageProgressList[0].ToString());
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::ResetStage() StageProgressList[1] : %s"), *StageInfo->StageProgressList[1].ToString());*/
 	}
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::ResetStage() End"));
