@@ -47,11 +47,6 @@ void ASTEnemyMelee::Attack()
 	}, AttackCooldown, false);
 }
 
-void ASTEnemyMelee::SetCurrentTarget(AActor* Target)
-{
-	CurrentTarget = Target;
-}
-
 void ASTEnemyMelee::AttackNotify()
 {
 	if (AttackSound)

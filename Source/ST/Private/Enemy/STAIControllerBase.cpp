@@ -137,10 +137,10 @@ void ASTAIControllerBase::Tick(float DeltaSeconds)
         BlackboardComp->SetValueAsBool(TEXT("IsInvestigating"), true);
     }
 
-#if WITH_EDITOR
-    FString GaugeInfo = FString::Printf(TEXT("Gauge: %.0f / %.0f"), RecognitionGauge, RecognitionGaugeMax);
-    DrawDebugString(GetWorld(), Enemy->GetActorLocation() + FVector(0,0,120), GaugeInfo, nullptr, FColor::Orange, 0.f, true);
-#endif
+// #if WITH_EDITOR
+//     FString GaugeInfo = FString::Printf(TEXT("Gauge: %.0f / %.0f"), RecognitionGauge, RecognitionGaugeMax);
+//     DrawDebugString(GetWorld(), Enemy->GetActorLocation() + FVector(0,0,120), GaugeInfo, nullptr, FColor::Orange, 0.f, true);
+// #endif
 }
 
 void ASTAIControllerBase::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
@@ -166,6 +166,6 @@ float ASTAIControllerBase::GetRecognitionGaugeGainRate(float Distance) const
 {
 	// 거리 기반 게이지 증가율 계산 (가까울수록 게이지가 빨리 참)
 	// InputRange(최대 시야 거리 : 2000, 가까운 거리 : 300)
-	// OutputRange(GainRate의 값이 Distance에 따라 20~110 으로 변화)
-    return FMath::GetMappedRangeValueClamped(FVector2D(2000.f, 300.f), FVector2D(20.f, 120.f), Distance);
+	// OutputRange(GainRate의 값이 Distance에 따라 60~180 으로 변화)
+    return FMath::GetMappedRangeValueClamped(FVector2D(2000.f, 300.f), FVector2D(60.f, 180.f), Distance);
 }

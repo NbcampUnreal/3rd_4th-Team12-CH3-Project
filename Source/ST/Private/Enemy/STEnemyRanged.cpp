@@ -78,11 +78,6 @@ void ASTEnemyRanged::FireProjectile()
 	}
 }
 
-void ASTEnemyRanged::SetCurrentTarget(AActor* Target)
-{
-	CurrentTarget = Target;
-}
-
 void ASTEnemyRanged::AttackNotify()
 {
 	FVector MyLocation = GetActorLocation();
