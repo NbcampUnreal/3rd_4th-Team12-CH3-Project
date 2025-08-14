@@ -48,6 +48,12 @@ enum class EStageType : uint8
 	Ending		UMETA( DisplayName = "Ending" ),
 };
 
+UENUM( BlueprintType )
+enum class EBGMType : uint8
+{
+	ClearBGM		UMETA( DisplayName = "ClearBGM" )
+};
+
 USTRUCT(BlueprintType)
 struct FWeaponSaveData
 {

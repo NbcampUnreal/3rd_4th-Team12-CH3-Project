@@ -736,6 +736,53 @@ void ASTStagePlayerController::ShowGameClearResult()
 	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::ShowGameClearResult() End"));
 }
 
+void ASTStagePlayerController::PlayAnotherBGM(const EBGMType& BGMType)
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::PlayAnotherBGM() Start"));
+
+	ALevelScriptActor* LevelBPActor = GetWorld()->GetLevelScriptActor();
+	if (!LevelBPActor)
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::PlayAnotherBGM() LevelBPActor Not Found"));
+		return;
+	}
+	
+	TArray<UAudioComponent*> AudioComponents;
+	LevelBPActor->GetComponents<UAudioComponent>(AudioComponents);
+	
+	if (AudioComponents.Num() > 0)
+	{
+		UAudioComponent* BGMComp = AudioComponents[0];
+		if (BGMComp->IsPlaying())
+		{
+			BGMComp->Stop();
+			UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::PlayAnotherBGM() Stop Level BGM"));
+		}
+		else
+		{
+			UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::PlayAnotherBGM() BGMComponent is not playing"));
+		}
+
+		switch (BGMType)
+		{
+			case EBGMType::ClearBGM:
+				BGMComp->SetSound(ClearBGM);
+				break;
+			default:
+				UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::PlayAnotherBGM() no Matching BGMType"));
+				break;
+		}
+		BGMComp->Play();
+		
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::PlayAnotherBGM() BGMComponent not found"));
+	}
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::PlayAnotherBGM() End"));
+}
+
 // JM: 레벨 블루프린트에서 재생 중인 BGM 정지
 void ASTStagePlayerController::StopLevelBGM()
 {
@@ -816,8 +863,10 @@ void ASTStagePlayerController::HandleStageClear()
 	else if (NextStage == EStageType::Ending)
 	{
 		ShowGameClearResult();		// JM : 게임 클리어 UI 띄우기
-		StopLevelBGM();				// JM : 기존 레벨BP BGM 정지
-		PlayGameClearBGM_BP();		// JM : 게임 클리어시 BGM 재생
+		PlayAnotherBGM(EBGMType::ClearBGM);	// JM: 클리어 브금으로 변경
+
+		/*StopLevelBGM();				// JM : 기존 레벨BP BGM 정지
+		PlayGameClearBGM_BP();		// JM : 게임 클리어시 BGM 재생*/
 	}
 	else
 	{
@@ -897,7 +946,7 @@ void ASTStagePlayerController::HandleGameClearRetry()
 
 void ASTStagePlayerController::HandleGameClearReturnToMain()
 {
-	LoadLevelWithDataResetAndLoadingScreen(EStageType::MainMenu);
+	LoadLevelWithDataResetAndLoadingScreen(EStageType::Ending);
 	
 	/*
 	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
@@ -910,6 +959,8 @@ void ASTStagePlayerController::HandleGameClearReturnToMain()
 void ASTStagePlayerController::LoadLevelWithDataResetAndLoadingScreen(const EStageType& NextStage)
 {
 	UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::LoadLevelWithDataResetAndLoadingScreen(%s) Start"), *StaticEnum<EStageType>()->GetValueAsString(NextStage));
+
+	EStageType GoToStage = NextStage;
 	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
 	{
 		GI->ResetDataForRetry();
@@ -922,10 +973,14 @@ void ASTStagePlayerController::LoadLevelWithDataResetAndLoadingScreen(const ESta
 			case EStageType::Stage1:
 				LoadingScreenIndex = 1;
 				break;
+			case EStageType::Ending:
+				LoadingScreenIndex = 4;
+				GoToStage = EStageType::MainMenu;
+				break;
 			default:
 				UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::LoadLevelWithDataResetAndLoadingScreen(%s) Not this case Implemented"), *StaticEnum<EStageType>()->GetValueAsString(NextStage));
 		}
-		LoadNextStage_BP(NextStage, LoadingScreenIndex);
+		LoadNextStage_BP(GoToStage, LoadingScreenIndex);
 	}
 	UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::LoadLevelWithDataResetAndLoadingScreen(%s) End"), *StaticEnum<EStageType>()->GetValueAsString(NextStage));
 }
