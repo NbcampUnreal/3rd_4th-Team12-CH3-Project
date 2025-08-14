@@ -59,7 +59,7 @@ public:
 	
 	// Game Over / Clear UI
 	UFUNCTION()
-	void ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken);
+	void ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken, const FText& ReasonText);
 	UFUNCTION()
 	void ShowGameClearResult(int32 Score, int32 HighScore);
 
@@ -114,12 +114,19 @@ protected:
 private:
 	int32 KilledEnemyCount = 0;
 	int32 TotalEnemyCount  = 0;
+	FText PendingGameOverReason = NSLOCTEXT("GameOver", "DefaultReason", "게임 오버");
 	
 	UFUNCTION()
 	void RefreshMissionProgress(int32 ProgressIndex);
 	
 	UFUNCTION()
 	void HandleEnemyDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical);
+
+	UFUNCTION()
+	void HandlePlayerHealed(float HealAmount);
+
+	UFUNCTION()
+	void HandlePlayerDamaged(float DamageAmount);
 	
 	UFUNCTION()
 	void ShowDamageNumberAtActor(AActor* Target, int32 Damage, bool bCritical, FName SocketName = TEXT("HealthBar"));

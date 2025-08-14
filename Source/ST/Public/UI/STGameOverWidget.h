@@ -15,7 +15,7 @@ class ST_API USTGameOverWidget : public UUserWidget
 public:
 	// 게임 결과를 전달받아 텍스트를 업데이트하는 함수
 	UFUNCTION(BlueprintCallable)
-	void SetResultInfo(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken);
+	void SetResultInfo(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken, const FText& ReasonText);
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRetryRequested);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReturnToMainRequested);
@@ -40,6 +40,9 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	UTextBlock* Txt_DamageTaken;
+
+	UPROPERTY(meta = (BindWidget))
+	UTextBlock* Txt_GameOverReason;
 
 	UPROPERTY(meta = (BindWidget))
 	UButton* Btn_Retry;
