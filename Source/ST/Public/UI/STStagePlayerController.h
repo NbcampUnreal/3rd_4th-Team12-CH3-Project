@@ -57,11 +57,15 @@ public:
 	UFUNCTION()	void HandleGameClearRetry();
 	UFUNCTION()	void HandleGameClearReturnToMain();
 	
+
 	// Game Over / Clear UI
 	UFUNCTION()
 	void ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken, const FText& ReasonText);
 	UFUNCTION()
-	void ShowGameClearResult(int32 Score, int32 HighScore);
+	void ShowGameClearResult();
+	UFUNCTION( BlueprintImplementableEvent )
+	void PlayGameClearBGM_BP();		// JM : 스테이지 클리어 BGM 재생
+	void StopLevelBGM();			// JM : 이전 레벨 BGM 정지
 
 	// 로딩 화면
 	UFUNCTION( BlueprintImplementableEvent )
@@ -135,6 +139,9 @@ private:
 	void TriggerGameOverWithTempData();
 	UFUNCTION()
 	void TriggerGameClearWithTempData();
+
+	// JM: 레벨이동 담당 함수(로딩 화면 + 데이터 초기화)
+	void LoadLevelWithDataResetAndLoadingScreen(const EStageType& NextStage);
 
 	// 게임 오버 화면 딜레이
 	UFUNCTION()
