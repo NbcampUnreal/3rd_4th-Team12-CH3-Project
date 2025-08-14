@@ -5,6 +5,7 @@
 #include "GameFramework/PlayerState.h"
 #include "STPlayerState.generated.h"
 
+class USTPlayerBaseData;
 /**
  *  플레이어의 개별 정보 저장
  */
@@ -48,7 +49,8 @@ protected:
 	void OnAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo);
 	UFUNCTION()
 	void OnDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical);
-	
+	UFUNCTION()
+	void OnChangedCurrentWeapon( const TSoftClassPtr<ASTWeaponBase> NewWeapon);
 	
 private:
 	FPlayerStateInfo PlayerStateInfo;

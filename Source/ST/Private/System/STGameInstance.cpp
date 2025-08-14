@@ -1,5 +1,6 @@
 ﻿#include "System/STGameInstance.h"
 #include "Kismet/GameplayStatics.h"
+#include "Player/STPlayerBaseData.h"
 #include "System/STLog.h"
 
 /************** public functions **************/
@@ -10,6 +11,12 @@ USTGameInstance::USTGameInstance()
 	ResetGameData();
 	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::Constructor() End"));
+}
+
+void USTGameInstance::Init() //  생성자에서는 BP가 NULL로 되어서 문제 발생 
+{
+	Super::Init();
+	ResetPlayerStateInfo();
 }
 
 /*void USTGameInstance::Init()
@@ -35,7 +42,6 @@ USTGameInstance::USTGameInstance()
 void USTGameInstance::StartNewGame()
 {
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::StartNewGame() Start"));
-	
 	ResetGameData();
 	GoToLevel(EStageType::Lobby);	// 새 게임은 항상 로비에서 캐릭터를 선택하면서 시작함
 	
@@ -84,7 +90,6 @@ void USTGameInstance::GoToLevel(EStageType StageType)
 void USTGameInstance::GoToMainMenu()
 {
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToMainMenu() Start"));
-
 	GoToLevel(EStageType::MainMenu);
 	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToMainMenu() End"));
@@ -153,6 +158,24 @@ void USTGameInstance::ResetGameData()
 	// TODO: 일일히 변수 하나씩 하지말고 struct로 확장필요
 	LastStage = EStageType::None;
 	SelectedCharacter = ECharacterType::None;
-	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetGameData() End"));
+}
+
+void USTGameInstance::ResetPlayerStateInfo() // player 정보 초기화 
+{
+	if (IsValid(PlayerDefaultDataAsset))
+	{
+		//hp
+		PlayerStateInfo.MaxHP = PlayerDefaultDataAsset->BaseMaxHealth;
+		PlayerStateInfo.CurrentHP = PlayerDefaultDataAsset->BaseMaxHealth;
+		//movement
+		PlayerStateInfo.MoveSpeed = PlayerDefaultDataAsset->BaseWalkSpeed;
+		PlayerStateInfo.CrouchMultiplier = PlayerDefaultDataAsset->CrouchMultiplier;
+		PlayerStateInfo.SprintMultiplier = PlayerDefaultDataAsset->SprintMultiplier;
+		PlayerStateInfo.ZoomMultiplier = PlayerDefaultDataAsset->ZoomMultiplier;
+		//weapon
+		PlayerStateInfo.PlayerWeaponData.WeaponClass = PlayerDefaultDataAsset->BaseWeapon;
+		
+	}
+	
 }

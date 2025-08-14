@@ -13,11 +13,7 @@ void ASTWeaponItem::UseItem(ASTPlayerCharacter* InInstigator)
 
 	if (!WeaponClass.IsNull())
 	{
-		UClass* WeaponClassToSpawn = WeaponClass.LoadSynchronous();
-		if (WeaponClassToSpawn)
-		{
-			InInstigator->GetWeaponManagerComponent()->RequestEquipWeapon(WeaponClassToSpawn);
-		}
+		InInstigator->GetWeaponManagerComponent()->RequestEquipWeapon(WeaponClass);
 	}
 	DestroyedItem();
 }

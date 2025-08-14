@@ -5,6 +5,7 @@
 #include "STGameTypes.h"
 #include "STGameInstance.generated.h"
 
+class USTPlayerBaseData;
 /**
  *	싱글톤, 게임 종료시까지 유지됨
  *	모든 레벨 이동은 GameInstance의 GoToLevel(LevelName)을 사용하기
@@ -16,6 +17,8 @@ class ST_API USTGameInstance : public UGameInstance
 
 public:
 	USTGameInstance();
+
+	virtual void Init() override;
 
 	/*virtual void Init() override;*/
 
@@ -38,7 +41,9 @@ public:
 
 	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category="PlayerMeshs" )
 	USkeletalMesh* AvaRainesCharacterMesh;		// Blueprint에서 할당
-	
+
+	UPROPERTY( EditDefaultsOnly, BlueprintReadOnly, Category="PlayerDefaultDataAsset")
+	TObjectPtr<USTPlayerBaseData> PlayerDefaultDataAsset; // 캐릭터 기본 데이터 
 	
 	/* member functions */
 	UFUNCTION( BlueprintCallable, Category="Level" )
@@ -67,4 +72,6 @@ public:
 private:
 	EStageType GetNextStageType(EStageType CurrentStage) const;
 	void ResetGameData();
+
+	void ResetPlayerStateInfo();
 };

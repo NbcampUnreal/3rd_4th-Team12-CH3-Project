@@ -15,7 +15,6 @@ class ST_API USTMovementComponent : public UActorComponent
 	GENERATED_BODY()
 
 public:
-	
 	USTMovementComponent();
 
 	void Initialize();
