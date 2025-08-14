@@ -299,12 +299,54 @@ void ASTStagePlayerController::HandleEnemyDamageTaken(AActor* DamagedActor, floa
 	{
 		WorldLoc += FVector(0,0,100.f);
 	}
+
+	WorldLoc = GetShotgunScreenRandomLoc(WorldLoc);
 	
 	const int32 Shown = FMath::Max(1, FMath::RoundToInt(DamageAmount));
 	if (StageWidget)
 	{
 		StageWidget->ShowDamageTextAtEx(WorldLoc, Shown, bCritical);
 	}
+}
+
+FVector ASTStagePlayerController::GetShotgunScreenRandomLoc(const FVector& BaseWorldLoc) const
+{
+	if (!bIsShotgunWeapon || !PlayerCameraManager)
+	{
+		return BaseWorldLoc;
+	}
+
+	// 화면 크기
+	int32 SizeX = 0, SizeY = 0;
+	this->GetViewportSize(SizeX, SizeY);
+	if (SizeX <= 0 || SizeY <= 0)
+	{
+		return BaseWorldLoc;
+	}
+
+	// 카메라→표시기준점 거리
+	const FVector CamLoc = PlayerCameraManager->GetCameraLocation();
+	const float   Depth  = (BaseWorldLoc - CamLoc).Size();
+
+	// 화면 중앙 좌표
+	const float CX = SizeX * 0.5f;
+	const float CY = SizeY * 0.5f;
+
+	// 중앙 기준 원판 내 랜덤 오프셋(px)
+	const float r     = DamageTextScreenRadiusPx; // 예: 60.f
+	const float angle = FMath::FRandRange(0.f, 2.f * PI);
+	const float rad   = FMath::FRandRange(0.f, r);
+	const float dx    = FMath::Cos(angle) * rad;
+	const float dy    = FMath::Sin(angle) * rad;
+
+	// 스크린 → 월드 역투영
+	FVector Origin, Dir;
+	if (this->DeprojectScreenPositionToWorld(CX + dx, CY + dy, Origin, Dir))
+	{
+		return Origin + Dir * Depth;
+	}
+
+	return BaseWorldLoc;
 }
 
 void ASTStagePlayerController::ShowDamageNumberAtActor(AActor* Target, int32 Damage, bool bCritical, FName SocketName)
@@ -336,6 +378,8 @@ void ASTStagePlayerController::ShowDamageNumberAtActor(AActor* Target, int32 Dam
 	{
 		WorldLoc += FVector(0, 0, 100.f);
 	}
+	
+	WorldLoc = GetShotgunScreenRandomLoc(WorldLoc);
 	
 	StageWidget->ShowDamageTextAtEx(WorldLoc, Damage, bCritical);
 }
@@ -597,6 +641,10 @@ void ASTStagePlayerController::UpdateHealth(float CurrentHP, float MaxHP)
 
 void ASTStagePlayerController::UpdateWeapon(const FString& WeaponName)
 {
+	CurrentWeaponName = WeaponName;
+
+	bIsShotgunWeapon = WeaponName.Equals(TEXT("Shotgun"), ESearchCase::IgnoreCase);
+	
 	if (StageWidget)
 	{
 		StageWidget->UpdateWeapon(WeaponName);

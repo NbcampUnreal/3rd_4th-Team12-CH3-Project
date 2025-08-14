@@ -153,4 +153,16 @@ private:
 	bool bPrevZoomState = false;
 	bool bGameOverShown = false;
 	bool bGameClearShown = false;
+
+	// 현재 장착 무기 이름 & 샷건 여부
+	UPROPERTY()
+	FString CurrentWeaponName;
+
+	bool bIsShotgunWeapon = false;
+
+	// 샷건 전용 데미지 텍스트 랜덤 오프셋 반경
+	float DamageTextScreenRadiusPx = 60.f;
+
+	// 샷건일 때 월드 위치를 화면 중앙 기준으로 살짝 랜덤 오프셋
+	FVector GetShotgunScreenRandomLoc(const FVector& BaseWorldLoc) const;
 };
