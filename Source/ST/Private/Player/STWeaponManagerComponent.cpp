@@ -194,14 +194,26 @@ void USTWeaponManagerComponent::EquipWeapon(TSoftClassPtr<ASTWeaponBase> WeaponC
         
         CurrentWeapon->OnWeaponEquipped.AddDynamic(this, &USTWeaponManagerComponent::OnWeaponEquipped);
         CurrentWeapon->OnAmmoChanged.AddDynamic(this, &USTWeaponManagerComponent::OnWeaponAmmoChanged);
+
+    	bIsWeaponChanged = false;
+    	if (EquipChangedDelegate.IsBound())
+    	{
+    		EquipChangedDelegate.Broadcast(CurrentWeaponClass);
+    	}
+    	EWeaponType WeaponType = CurrentWeapon->WeaponDataAsset->WeaponData.WeaponType;
+
+    	FString WeaponTypeName = StaticEnum<EWeaponType>()
+			->GetNameStringByValue(static_cast<int64>(WeaponType));
+
+    	OnWeaponEquipped(WeaponTypeName);
+    	OnWeaponAmmoChanged(
+			CurrentWeapon->WeaponDataAsset->WeaponData.MagazineSize,
+			CurrentWeapon->WeaponDataAsset->WeaponData.MagazineSize
+		);
     }
     
 
-    bIsWeaponChanged = false;
-    if (EquipChangedDelegate.IsBound())
-    {
-        EquipChangedDelegate.Broadcast(CurrentWeaponClass);
-    }
+
 }
 void USTWeaponManagerComponent::UpdateWeaponVisibility(EViewMode NewMode) // Visible View Mode
 {
@@ -267,8 +279,9 @@ void USTWeaponManagerComponent::StopAiming()
 
 void USTWeaponManagerComponent::ReloadAmmo()
 {
-	if (IsValid(CurrentWeapon) && !CurrentWeapon->IsReloading())
+	if (IsValid(CurrentWeapon) && !CurrentWeapon->IsReloading()&&(CurrentWeapon->GetCurrentAmmo() != CurrentWeapon->WeaponDataAsset->WeaponData.MagazineSize))
 	{
+		StopFire();
 		OwnerChar->PlayReloadAnimation();
 		CurrentWeapon->StartReload();
 		
