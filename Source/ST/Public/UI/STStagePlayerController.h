@@ -13,6 +13,8 @@ class USTGameClearWidget;
 class UUserWidget;
 class UUWCrosshairWidget;
 class USTMovementComponent;
+class USTBossBarWidget;
+class ASTEnemyBoss;
 
 UCLASS()
 class ST_API ASTStagePlayerController : public APlayerController
@@ -45,6 +47,12 @@ public:
 	// 일시정지 메뉴
 	void TogglePauseMenu();
 
+	// 보스 체력바
+	UFUNCTION(BlueprintCallable, Category="UI|Boss")
+	void ShowBossBar(AActor* BossActor);
+	UFUNCTION(BlueprintCallable, Category="UI|Boss")
+	void HideBossBar();
+
 	// 메뉴 스테이지 전환
 	UFUNCTION()	void HandlePauseReturnToMain();
 	UFUNCTION()	void HandleQuitGame();
@@ -70,7 +78,7 @@ public:
 	// 로딩 화면
 	UFUNCTION( BlueprintImplementableEvent )
 	void LoadNextStage_BP(EStageType NextStage, int32 LoadingScreenIndex);
-
+	
 	
 protected:
 	
@@ -94,6 +102,13 @@ protected:
 	// 점수판 위젯 인스턴스
 	UPROPERTY()
 	USTScoreboardWidget* ScoreboardWidget;
+
+	// Enemy 델리게이트 수신
+	UFUNCTION()
+	void OnBossHealthChanged(float Current, float Max, float Percent);
+
+	UFUNCTION()
+	void OnBossDied(AActor* DeadEnemy);
 
 	// 게임 오버 UI 클래스
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
@@ -119,6 +134,13 @@ private:
 	int32 KilledEnemyCount = 0;
 	int32 TotalEnemyCount  = 0;
 	FText PendingGameOverReason = NSLOCTEXT("GameOver", "DefaultReason", "게임 오버");
+	void GetPlayerResults(
+	int32& OutScore,
+	int32& OutKillCount,
+	int32& OutDamageDealt,
+	int32& OutDamageTaken,
+	int32& OutHighScore
+	) const;
 	
 	UFUNCTION()
 	void RefreshMissionProgress(int32 ProgressIndex);
@@ -134,12 +156,16 @@ private:
 	
 	UFUNCTION()
 	void ShowDamageNumberAtActor(AActor* Target, int32 Damage, bool bCritical, FName SocketName = TEXT("HealthBar"));
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="UI|Boss", meta=(AllowPrivateAccess="true"))
+	TSubclassOf<USTBossBarWidget> BossBarWidgetClass;
 
-	UFUNCTION()
-	void TriggerGameOverWithTempData();
-	UFUNCTION()
-	void TriggerGameClearWithTempData();
+	UPROPERTY()
+	USTBossBarWidget* BossBarWidget = nullptr;
 
+	UPROPERTY()
+	ASTEnemyBoss* CurrentBoss = nullptr;
+	
 	// JM: 레벨이동 담당 함수(로딩 화면 + 데이터 초기화)
 	void LoadLevelWithDataResetAndLoadingScreen(const EStageType& NextStage);
 
