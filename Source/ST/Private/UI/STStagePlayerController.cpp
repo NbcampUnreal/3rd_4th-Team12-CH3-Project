@@ -887,6 +887,7 @@ void ASTStagePlayerController::ShowGameClearResult()
 			
 			GameClearWidget->OnRetryRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameClearRetry);
 			GameClearWidget->OnReturnToMainRequested.AddDynamic(this, &ASTStagePlayerController::HandleGameClearReturnToMain);
+			GameClearWidget->OnPlayEndingRequested.AddDynamic(this, &ASTStagePlayerController::HandlePlayEndingRequested);
 		}
 	}
 
@@ -1092,6 +1093,23 @@ void ASTStagePlayerController::HandleGameClearReturnToMain()
 	{
 		GI->GoToMainMenu();
 	}*/
+}
+
+void ASTStagePlayerController::HandlePlayEndingRequested()
+{
+	// 임시 로그 출력
+	UE_LOG(LogSystem, Log, TEXT("엔딩 영상을 출력합니다"));
+
+	// 화면에 임시 디버그 메시지도 표시
+	if (GEngine)
+	{
+		GEngine->AddOnScreenDebugMessage(
+			-1,           
+			2.0f,          
+			FColor::Cyan,  
+			TEXT("엔딩 영상을 출력합니다")
+		);
+	}
 }
 
 // JM: 레벨이동 통합관리

@@ -74,6 +74,7 @@ public:
 	UFUNCTION()	void HandleGameOverReturnToMain();
 	UFUNCTION()	void HandleGameClearRetry();
 	UFUNCTION()	void HandleGameClearReturnToMain();
+	UFUNCTION()	void HandlePlayEndingRequested();
 	
 
 	// Game Over / Clear UI
