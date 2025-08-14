@@ -3,6 +3,7 @@
 #include "Enemy/STEnemyBase.h"
 #include "Kismet/GameplayStatics.h"
 #include "Player/STHealthComponent.h"
+#include "Player/STPlayerBaseData.h"
 #include "Player/STPlayerCharacter.h"
 #include "Player/STWeaponManagerComponent.h"
 #include "System/STGameInstance.h"
@@ -56,11 +57,21 @@ void ASTPlayerState::SetMaxHP(const float NewHP)
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetMaxHP(%.1f) End"), NewHP);
 }
 
+void ASTPlayerState::OnChangedCurrentWeapon(const TSoftClassPtr<ASTWeaponBase> NewWeapon)
+{
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetCurrentAmmo(%.s) Start"), *NewWeapon->GetName());
+
+	PlayerStateInfo.PlayerWeaponData.WeaponClass = NewWeapon;
+	
+	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetCurrentAmmo(%.s) End"), *NewWeapon->GetName());
+	
+}
+
 void ASTPlayerState::SetCurrentAmmo(const int32 NewCurrentAmmo)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetCurrentAmmo(%.d) Start"), NewCurrentAmmo);
 
-	PlayerStateInfo.CurrentAmmo = NewCurrentAmmo;
+	PlayerStateInfo.PlayerWeaponData.CurrentAmmo = NewCurrentAmmo;
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetCurrentAmmo(%.d) End"), NewCurrentAmmo);
 }
@@ -69,7 +80,7 @@ void ASTPlayerState::SubtractCurrentAmmo()
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SubtractCurrentAmmo() Start"));
 
-	--PlayerStateInfo.CurrentAmmo;
+	--PlayerStateInfo.PlayerWeaponData.CurrentAmmo;
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SubtractCurrentAmmo() End"));
 }
@@ -78,7 +89,7 @@ void ASTPlayerState::SetMaxAmmo(const int32 NewMaxAmmo)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetMaxAmmo(%d) Start"), NewMaxAmmo);
 
-	PlayerStateInfo.MaxAmmo = NewMaxAmmo;
+	PlayerStateInfo.PlayerWeaponData.MaxAmmo = NewMaxAmmo;
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetMaxAmmo(%d) End"), NewMaxAmmo);
 }
@@ -136,7 +147,7 @@ void ASTPlayerState::SetCurrWeaponName(const FString& WeaponName)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetCurrWeaponName(%s) Start"), *WeaponName);
 
-	PlayerStateInfo.CurrWeaponName = WeaponName;
+	//PlayerStateInfo.PlayerWeaponData.WeaponClass->weapo = WeaponName;
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::SetCurrWeaponName(%s) End"), *WeaponName);
 }
@@ -185,6 +196,8 @@ void ASTPlayerState::BeginPlay()
 			if (USTWeaponManagerComponent* WeaponManagerComponent = STPlayerCharacter->FindComponentByClass<USTWeaponManagerComponent>())
 			{
 				WeaponManagerComponent->AmmoChangeDelegate.AddDynamic(this, &ASTPlayerState::OnAmmoChanged);
+				WeaponManagerComponent->EquipChangedDelegate.AddDynamic(this, &ASTPlayerState::OnChangedCurrentWeapon);
+				
 				// TODO: 장비 장착시 이름 가져오기 // WeaponManagerComponent->EquipDelegate.AddDynamic(this, &ASTPlayerState::OnEquipWeapon); 
 			}
 		}
@@ -214,6 +227,8 @@ void ASTPlayerState::OnDamageTaken(AActor* DamagedActor, float DamageAmount, boo
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnDamageTaken(%f / isCritical(%d) End"), DamageAmount, bCritical);
 }
 
+
+
 // Player 체력이 변할 때 호출
 void ASTPlayerState::OnHealthChanged(float CurrentHP, float MaxHP)
 {
@@ -236,7 +251,7 @@ void ASTPlayerState::OnAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnAmmoChanged(%d / %d) Start"), CurrentAmmo, MaxAmmo);
 
-	int32 UsedAmmo = CurrentAmmo - PlayerStateInfo.CurrentAmmo;
+	int32 UsedAmmo = PlayerStateInfo.PlayerWeaponData.CurrentAmmo - CurrentAmmo;
 	AddTotalUsedAmmo(UsedAmmo);		// 보통 1발씩 증가
 	
 	SetCurrentAmmo(CurrentAmmo);

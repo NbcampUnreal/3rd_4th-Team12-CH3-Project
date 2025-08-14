@@ -82,7 +82,11 @@ protected:
 #pragma endregion
 
 #pragma region Weapons Properties
+protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
 	EWeaponType WeaponType;
+
+	void UpdateWeaponProperties();
+	
 #pragma endregion 
 };
