@@ -26,6 +26,7 @@ void ASTEnemyBase::BeginPlay()
 	{
 		StateComponent->OnStateChanged.AddDynamic(this, &ASTEnemyBase::OnStateChanged_UpdateSpeed);
 	}
+	NotifyHealthChanged();
 }
 
 float ASTEnemyBase::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, AController* EventInstigator,
@@ -76,25 +77,40 @@ void ASTEnemyBase::ProcessDamage(float RawDamage, FName HitBone, FVector HitLoca
 	
 	// 약점 배율 + 적 방어력 계산 후 실제 데미지 적용
 	float TrueDamage=FMath::Max(0.0f, RawDamage*Multiplier-Defense);
+	float PreviousHealth = Health;
 	Health=FMath::Max(0.0f, Health-TrueDamage);
-
+	
 	// SH 치명타 확인 후 UI로 전달
 	const bool bCritical = WeakPointMultipliers.Contains(HitBone) && Multiplier > 1.0f;
 	OnDamageTaken.Broadcast(this, TrueDamage, bCritical);
+
+	// 체력이 실제로 변했을 때 델리게이트 호출
+	if (!FMath::IsNearlyEqual(PreviousHealth, Health))
+	{
+		NotifyHealthChanged();
+	}
 
 	if (Health<=0 && !StateComponent->IsInState(EEnemyState::Dead))
 	{
 		Die();
 	}
-	if (GEngine)
-	{
-		GEngine->AddOnScreenDebugMessage(
-			-1,
-			6.0f,
-			FColor::Green,
-			*FString::Printf(TEXT("Damage: %0.f, Health: %0.f"), TrueDamage, Health)
-			);
-	}
+	// if (GEngine)
+	// {
+	// 	GEngine->AddOnScreenDebugMessage(
+	// 		-1,
+	// 		6.0f,
+	// 		FColor::Green,
+	// 		*FString::Printf(TEXT("Damage: %0.f, Health: %0.f"), TrueDamage, Health)
+	// 		);
+	// }
+}
+
+void ASTEnemyBase::NotifyHealthChanged()
+{
+	float HealthPercentage = GetHealthPercentage();
+    
+	// 델리게이트 호출 - UI와 보스 페이즈에서 받을 수 있음
+	OnEnemyHealthChanged.Broadcast(Health, MaxHealth, HealthPercentage);
 }
 
 void ASTEnemyBase::Die()
@@ -108,6 +124,9 @@ void ASTEnemyBase::Die()
 
 	// SH 킬 정보를 UI로 전달
 	OnDied.Broadcast(this);
+
+	Health = 0.0f;
+	NotifyHealthChanged();
 	
 	// 게임 모드에 OnEnemyKilled 호출
 	if (UWorld* World = GetWorld())
