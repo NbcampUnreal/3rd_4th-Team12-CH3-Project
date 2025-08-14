@@ -115,8 +115,8 @@ void USTGameInstance::ResetDataForRetry()
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetPlayerStateInfo() Start"));
 	
 	int32 HighScore = PlayerStateInfo.HighScore;
+	PlayerStateInfo = FPlayerStateInfo();
 	ResetPlayerStateInfo();
-  PlayerStateInfo = FPlayerStateInfo();
 	PlayerStateInfo.HighScore = HighScore;
 
 	LastStage = EStageType::Stage1;

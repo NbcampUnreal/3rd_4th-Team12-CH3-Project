@@ -78,12 +78,12 @@ struct FPlayerStateInfo		// TODO: 향후 PlayerState가 커지면, 레벨 이동
 
 	FPlayerStateInfo()
 		: SelectedCharacter(ECharacterType::None)
-		, CurrentHP(0.f)
-		, MaxHP(0.f)
-		, MoveSpeed(0)
-		, SprintMultiplier(0)
-		, CrouchMultiplier(0)
-		, ZoomMultiplier(0)
+		, CurrentHP(100.f)
+		, MaxHP(100.f)
+		, MoveSpeed(500.f)
+		, SprintMultiplier(1.5f)
+		, CrouchMultiplier(0.5f)
+		, ZoomMultiplier(0.8f)
 		, KillCount(0)
 		, Score(0)
 		, HighScore(0)
@@ -91,24 +91,6 @@ struct FPlayerStateInfo		// TODO: 향후 PlayerState가 커지면, 레벨 이동
 		, TotalDamageInflicted(0.0f)
 		, TotalUsedAmmo(0)
 	{}
-	
-	void Reset()
-	{
-		SelectedCharacter = ECharacterType::None;
-		CurrentHP = 0.f;
-		MaxHP = 0.f;
-		MoveSpeed = 0.f;
-		SprintMultiplier = 0;
-		CrouchMultiplier = 0;
-		ZoomMultiplier = 0;
-		PlayerWeaponData = FWeaponSaveData(); 
-		KillCount = 0;
-		Score = 0;
-		HighScore = 0;
-		TotalDamageReceived = 0.0f;
-		TotalDamageInflicted = 0.0f;
-		TotalUsedAmmo = 0;
-	}
 
 	ECharacterType SelectedCharacter;
 	float CurrentHP;
