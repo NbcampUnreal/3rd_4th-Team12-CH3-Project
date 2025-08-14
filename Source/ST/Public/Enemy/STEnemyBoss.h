@@ -30,6 +30,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category="Boss|Skill")
 	USTEnemySkillComponent* SkillComponent;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss|Phase Meshes")
+	TMap<EBossPhase, USkeletalMesh*> PhaseMeshes;
+
 	// 페이즈 당 가능한 스킬
 	TMap<EBossPhase, TArray<EEnemySkillID>> PhaseSkills;
 

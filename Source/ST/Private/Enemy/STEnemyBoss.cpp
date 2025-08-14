@@ -22,6 +22,14 @@ void ASTEnemyBoss::BeginPlay()
     OnEnemyHealthChanged.AddDynamic(this, &ASTEnemyBoss::CheckPhase);
 
     InitializePhaseSkills();
+
+	if (GetMesh() && GetMesh()->GetSkeletalMeshAsset())
+	{
+		if (!PhaseMeshes.Contains(EBossPhase::Phase1))
+		{
+			PhaseMeshes.Add(EBossPhase::Phase1, GetMesh()->GetSkeletalMeshAsset());
+		}
+	}
 }
 
 void ASTEnemyBoss::InitializePhaseSkills()
@@ -146,9 +154,9 @@ void ASTEnemyBoss::PhaseChangingNotify()
     {
         if (!GetMesh()) return;
         
-        // 메쉬를 Crunch_Titanium으로 변경 (이거 일단 임시로 이렇게 해놓고 나중에 변경예정)
-        USkeletalMesh* NewMesh = LoadObject<USkeletalMesh>(nullptr, TEXT("/Game/ParagonCrunch/Characters/Heroes/Crunch/Skins/Teir_1/Titanium/Meshes/Crunch_Titanium"));
-        if (NewMesh)
+        // 메쉬를 보스 2페이즈로 변경
+    	USkeletalMesh* NewMesh = PhaseMeshes.FindRef(CurrentPhase);
+    	if (NewMesh)
         {
             // 기존 애니메이션 인스턴스 백업
             UClass* CurrentAnimClass = GetMesh()->GetAnimClass();
