@@ -31,4 +31,6 @@ protected:
 	UFUNCTION() void OnReturnToMainClicked();
 	UFUNCTION() void OnResumeClicked();
 	UFUNCTION() void OnQuitClicked();
+
+	virtual FReply NativeOnKeyDown(const FGeometry& InGeometry, const FKeyEvent& InKeyEvent) override;
 };

@@ -13,6 +13,9 @@ class USTGameClearWidget;
 class UUserWidget;
 class UUWCrosshairWidget;
 class USTMovementComponent;
+class USTBossBarWidget;
+class ASTEnemyBoss;
+class ASTEnemyBossAIController;
 
 UCLASS()
 class ST_API ASTStagePlayerController : public APlayerController
@@ -45,6 +48,21 @@ public:
 	// 일시정지 메뉴
 	void TogglePauseMenu();
 
+	// 보스 체력바
+	UFUNCTION(BlueprintCallable, Category="UI|Boss")
+	void ShowBossBar(AActor* BossActor);
+	UFUNCTION(BlueprintCallable, Category="UI|Boss")
+	void HideBossBar();
+	
+	// 보스 조우(플레이어 인식) 델리게이트 수신
+	UFUNCTION()
+	void HandleBossRecognizedPlayer();
+
+	// 바인딩 대상 캐시(보스 1명 전제)
+	UPROPERTY()
+	ASTEnemyBossAIController* CachedBossAI = nullptr;
+	bool bBossUIActivated = false;
+
 	// 메뉴 스테이지 전환
 	UFUNCTION()	void HandlePauseReturnToMain();
 	UFUNCTION()	void HandleQuitGame();
@@ -56,6 +74,7 @@ public:
 	UFUNCTION()	void HandleGameOverReturnToMain();
 	UFUNCTION()	void HandleGameClearRetry();
 	UFUNCTION()	void HandleGameClearReturnToMain();
+	UFUNCTION()	void HandlePlayEndingRequested();
 	
 
 	// Game Over / Clear UI
@@ -70,7 +89,7 @@ public:
 	// 로딩 화면
 	UFUNCTION( BlueprintImplementableEvent )
 	void LoadNextStage_BP(EStageType NextStage, int32 LoadingScreenIndex);
-
+	
 	
 protected:
 	
@@ -94,6 +113,13 @@ protected:
 	// 점수판 위젯 인스턴스
 	UPROPERTY()
 	USTScoreboardWidget* ScoreboardWidget;
+
+	// Enemy 델리게이트 수신
+	UFUNCTION()
+	void OnBossHealthChanged(float Current, float Max, float Percent);
+
+	UFUNCTION()
+	void OnBossDied(AActor* DeadEnemy);
 
 	// 게임 오버 UI 클래스
 	UPROPERTY(EditDefaultsOnly, Category = "UI")
@@ -119,6 +145,13 @@ private:
 	int32 KilledEnemyCount = 0;
 	int32 TotalEnemyCount  = 0;
 	FText PendingGameOverReason = NSLOCTEXT("GameOver", "DefaultReason", "게임 오버");
+	void GetPlayerResults(
+	int32& OutScore,
+	int32& OutKillCount,
+	int32& OutDamageDealt,
+	int32& OutDamageTaken,
+	int32& OutHighScore
+	) const;
 	
 	UFUNCTION()
 	void RefreshMissionProgress(int32 ProgressIndex);
@@ -134,12 +167,16 @@ private:
 	
 	UFUNCTION()
 	void ShowDamageNumberAtActor(AActor* Target, int32 Damage, bool bCritical, FName SocketName = TEXT("HealthBar"));
+	
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="UI|Boss", meta=(AllowPrivateAccess="true"))
+	TSubclassOf<USTBossBarWidget> BossBarWidgetClass;
 
-	UFUNCTION()
-	void TriggerGameOverWithTempData();
-	UFUNCTION()
-	void TriggerGameClearWithTempData();
+	UPROPERTY()
+	USTBossBarWidget* BossBarWidget = nullptr;
 
+	UPROPERTY()
+	ASTEnemyBoss* CurrentBoss = nullptr;
+	
 	// JM: 레벨이동 담당 함수(로딩 화면 + 데이터 초기화)
 	void LoadLevelWithDataResetAndLoadingScreen(const EStageType& NextStage);
 
@@ -148,6 +185,11 @@ private:
 	void ScheduleGameOver(float DelaySeconds);
 	FTimerHandle GameOverTimerHandle;
 	float GameOverDelay = 1.5f;
+
+	UFUNCTION()
+	void ScheduleGameClear(float DelaySeconds);
+	FTimerHandle GameClearTimerHandle;
+	float GameClearDelay = 1.5f;
 	
 	FDelegateHandle ActorSpawnedHandle;
 	
@@ -159,5 +201,16 @@ private:
 	
 	bool bPrevZoomState = false;
 	bool bGameOverShown = false;
-	bool bGameClearShown = false;
+
+	// 현재 장착 무기 이름 & 샷건 여부
+	UPROPERTY()
+	FString CurrentWeaponName;
+
+	bool bIsShotgunWeapon = false;
+
+	// 샷건 전용 데미지 텍스트 랜덤 오프셋 반경
+	float DamageTextScreenRadiusPx = 60.f;
+
+	// 샷건일 때 월드 위치를 화면 중앙 기준으로 살짝 랜덤 오프셋
+	FVector GetShotgunScreenRandomLoc(const FVector& BaseWorldLoc) const;
 };
