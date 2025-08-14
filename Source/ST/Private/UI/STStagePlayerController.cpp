@@ -15,6 +15,7 @@
 
 #include "Enemy/STEnemyBase.h"
 #include "Enemy/STEnemyBoss.h"
+#include "Enemy/STEnemyBossAIController.h"
 
 #include "System/STGameInstance.h"
 #include "System/STGameTypes.h"
@@ -86,12 +87,25 @@ void ASTStagePlayerController::BeginPlay()
 	SetInputMode(FInputModeGameOnly());
 	bShowMouseCursor = false;
 	
-	// 실제 데이터 대신 임시 값으로 전달
-	UpdateEnemyStatus(0, 10); // 적 처치: 0 / 총 10명
-	AddDamageKillLog(TEXT("10의 피해를 받았습니다.")); // 로그 메시지
-
-	//게임 클리어 화면 테스트
-	//ShowGameClearResult(15000, 20000); // 점수: 15000, 최고기록: 20000
+	if (!CachedBossAI)
+	{
+		TArray<AActor*> FoundControllers;
+		UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASTEnemyBossAIController::StaticClass(), FoundControllers);
+		if (FoundControllers.Num() > 0)
+		{
+			CachedBossAI = Cast<ASTEnemyBossAIController>(FoundControllers[0]);
+			if (CachedBossAI)
+			{
+				// 중복 바인딩 방지
+				CachedBossAI->OnBossRecognizedPlayer.RemoveDynamic(this, &ASTStagePlayerController::HandleBossRecognizedPlayer);
+				CachedBossAI->OnBossRecognizedPlayer.AddDynamic(this, &ASTStagePlayerController::HandleBossRecognizedPlayer);
+			}
+		}
+		else
+		{
+			UE_LOG(LogSystem, Warning, TEXT("No ASTEnemyBossAIController found at BeginPlay."));
+		}
+	}
 
 
 	// JM : GameMode OnStageClear 이벤트 바인딩
@@ -502,30 +516,56 @@ void ASTStagePlayerController::ShowBossBar(AActor* BossActor)
 		return;
 	}
 
-	// 위젯 정리
+	// 기존 것 정리
 	HideBossBar();
 
 	CurrentBoss = Boss;
 
-	// 위젯 생성 및 Viewport 추가
+	// 위젯 생성 & 즉시 표시
 	if (!BossBarWidget)
 	{
 		BossBarWidget = CreateWidget<USTBossBarWidget>(this, BossBarWidgetClass);
+		if (BossBarWidget)
+		{
+			BossBarWidget->AddToViewport(80);
+
+			// 호출 즉시 보이도록
+			BossBarWidget->SetVisibility(ESlateVisibility::Visible);
+
+			// 첫 프레임은 꽉 찬 상태로 보이게 (위젯의 bFirstDisplayFull 로직과 합쳐져 안전)
+			BossBarWidget->UpdateBossHP(1.f, 1.f);
+		}
 	}
-	if (BossBarWidget && !BossBarWidget->IsInViewport())
+	else
 	{
-		BossBarWidget->AddToViewport(80);
+		BossBarWidget->SetVisibility(ESlateVisibility::Visible);
+		BossBarWidget->UpdateBossHP(1.f, 1.f);
 	}
 
-	// 첫 값 올 때까지 숨김
-	if (BossBarWidget)
-	{
-		BossBarWidget->SetVisibility(ESlateVisibility::Hidden);
-	}
-
-	// 델리게이트 바인딩
+	// 델리게이트 바인딩(중복 방지 후)
+	Boss->OnEnemyHealthChanged.RemoveDynamic(this, &ASTStagePlayerController::OnBossHealthChanged);
 	Boss->OnEnemyHealthChanged.AddDynamic(this, &ASTStagePlayerController::OnBossHealthChanged);
+
+	Boss->OnDied.RemoveDynamic(this, &ASTStagePlayerController::OnBossDied);
 	Boss->OnDied.AddDynamic(this, &ASTStagePlayerController::OnBossDied);
+}
+
+void ASTStagePlayerController::HandleBossRecognizedPlayer()
+{
+	if (bBossUIActivated || !CachedBossAI)
+	{
+		return;
+	}
+
+	APawn* BossPawn = CachedBossAI->GetPawn();
+	if (!BossPawn)
+	{
+		UE_LOG(LogSystem, Warning, TEXT("HandleBossRecognizedPlayer: Boss Pawn is null."));
+		return;
+	}
+
+	bBossUIActivated = true;
+	ShowBossBar(BossPawn);
 }
 
 void ASTStagePlayerController::OnBossHealthChanged(float Current, float Max, float Percent)

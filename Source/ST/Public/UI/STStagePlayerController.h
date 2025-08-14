@@ -15,6 +15,7 @@ class UUWCrosshairWidget;
 class USTMovementComponent;
 class USTBossBarWidget;
 class ASTEnemyBoss;
+class ASTEnemyBossAIController;
 
 UCLASS()
 class ST_API ASTStagePlayerController : public APlayerController
@@ -52,6 +53,15 @@ public:
 	void ShowBossBar(AActor* BossActor);
 	UFUNCTION(BlueprintCallable, Category="UI|Boss")
 	void HideBossBar();
+	
+	// 보스 조우(플레이어 인식) 델리게이트 수신
+	UFUNCTION()
+	void HandleBossRecognizedPlayer();
+
+	// 바인딩 대상 캐시(보스 1명 전제)
+	UPROPERTY()
+	ASTEnemyBossAIController* CachedBossAI = nullptr;
+	bool bBossUIActivated = false;
 
 	// 메뉴 스테이지 전환
 	UFUNCTION()	void HandlePauseReturnToMain();
