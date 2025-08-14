@@ -205,6 +205,12 @@ void ASTEnemyBoss::Die()
             AIController->BrainComponent->StopLogic(TEXT("Dead"));
         }
     }
+	
+	if (SkillComponent)
+	{
+		SkillComponent->ForceStopAllSkills();
+		SkillComponent->CleanupActiveParticles();
+	}
 
     if (GetMesh()->GetAnimInstance())
     {
