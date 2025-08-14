@@ -487,7 +487,7 @@ void ASTStagePlayerController::TriggerGameClearWithTempData()
 		TempHighScore = Info.HighScore;
 	}
 	
-	ShowGameClearResult(TempScore, TempHighScore);
+	ShowGameClearResult();
 }
 
 void ASTStagePlayerController::ScheduleGameOver(float DelaySeconds)
@@ -650,8 +650,9 @@ void ASTStagePlayerController::ShowGameOverResult(int32 Score, int32 KillCount, 
 	}
 }
 
-void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
+void ASTStagePlayerController::ShowGameClearResult()
 {
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::ShowGameClearResult() Start"));
 	if (!GameClearWidget && GameClearWidgetClass)
 	{
 		GameClearWidget = CreateWidget<USTGameClearWidget>(this, GameClearWidgetClass);
@@ -664,6 +665,18 @@ void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
 		}
 	}
 
+	int32 Score = 0, HighScore = 0;
+	if (const ASTPlayerState* STPlayerState = GetPlayerState<ASTPlayerState>())
+	{
+		const FPlayerStateInfo& PlayerStateInfo = STPlayerState->GetPlayerStateInfo();
+		Score = PlayerStateInfo.Score;
+		HighScore = PlayerStateInfo.HighScore;
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::ShowGameClearResult() Can't Get STPlayerState"));
+	}
+
 	if (GameClearWidget)
 	{
 		GameClearWidget->SetResultInfo(Score, HighScore);
@@ -671,6 +684,7 @@ void ASTStagePlayerController::ShowGameClearResult(int32 Score, int32 HighScore)
 		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
 	}
+	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::ShowGameClearResult() End"));
 }
 
 
@@ -701,15 +715,23 @@ void ASTStagePlayerController::HandleStageClear()
 			NextStage = EStageType::Stage3;
 			LoadingScreenIndex = 3;
 			break;
-		// TODO: 보스스테이지 클리어시 처리
+		case EStageType::Stage3:
+			NextStage = EStageType::Ending;
+			LoadingScreenIndex = 4;		// TODO: 보여줄 로딩화면 처리 (아직 없긴함) - 엔딩시네마틱?
+			break;
 		default:	
 			break;
 	}
 
-	if (NextStage != EStageType::None)
+	if (NextStage == EStageType::Stage2 || NextStage == EStageType::Stage3)
 	{
 		STGameInstance->LastStage = NextStage;
 		LoadNextStage_BP(NextStage, LoadingScreenIndex);	// 다음 스테이지로 이동(BP Implement 이벤트)
+	}
+	else if (NextStage == EStageType::Ending)
+	{
+		// TODO: 게임 클리어화면 보여주기
+		ShowGameClearResult();
 	}
 	else
 	{

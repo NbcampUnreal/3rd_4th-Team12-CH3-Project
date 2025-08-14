@@ -61,7 +61,7 @@ public:
 	UFUNCTION()
 	void ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken);
 	UFUNCTION()
-	void ShowGameClearResult(int32 Score, int32 HighScore);
+	void ShowGameClearResult();
 
 	// 로딩 화면
 	UFUNCTION( BlueprintImplementableEvent )
