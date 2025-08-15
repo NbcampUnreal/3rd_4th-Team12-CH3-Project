@@ -30,7 +30,11 @@ void USTWeaponManagerComponent::BeginPlay()
 void USTWeaponManagerComponent::RequestEquipWeapon(TSoftClassPtr<ASTWeaponBase> WeaponClass)
 {
 	
-	if (!OwnerChar)
+	if (!OwnerChar )
+	{
+		return;
+	}
+	if (WeaponClass.IsNull()|| WeaponClass == CurrentWeaponClass)
 	{
 		return;
 	}
