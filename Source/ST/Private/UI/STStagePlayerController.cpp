@@ -1175,6 +1175,8 @@ void ASTStagePlayerController::HandlePlayEndingRequested()
 			TEXT("엔딩 영상을 출력합니다")
 		);
 	}
+
+	PlayGameClearBGM_BP();
 }
 
 // JM: 레벨이동 통합관리
