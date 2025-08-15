@@ -43,9 +43,10 @@ void USTWeaponManagerComponent::RequestEquipWeapon(TSoftClassPtr<ASTWeaponBase> 
 	
 	bIsWeaponChanged = true;
 	UAnimInstance* AnimInstance = OwnerChar->GetMesh()->GetAnimInstance();
+	UAnimInstance* FPSAnimInstance = OwnerChar->GetFPSSkeletalMesh()->GetAnimInstance();
 	UAnimMontage* EquipMontage = OwnerChar->GetMontageConfig()->EquipMontage;
 
-	if (!AnimInstance)
+	if (!AnimInstance&&!FPSAnimInstance)
 	{
 		return;
 	}
@@ -54,8 +55,16 @@ void USTWeaponManagerComponent::RequestEquipWeapon(TSoftClassPtr<ASTWeaponBase> 
 		return;
 	}
 	AnimInstance->Montage_Play(EquipMontage);
+	FPSAnimInstance->Montage_Play(EquipMontage);
 	MontageEndedDelegate.BindUObject(this, &USTWeaponManagerComponent::OnEquipMontageEnded);
-	AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, EquipMontage);
+	if (OwnerChar->GetCurrentViewMode() == EViewMode::TPS)
+	{
+		AnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, EquipMontage);
+	}
+	else
+	{
+		FPSAnimInstance->Montage_SetEndDelegate(MontageEndedDelegate, EquipMontage);
+	}
 	
 	
 }
