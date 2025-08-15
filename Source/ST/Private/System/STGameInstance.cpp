@@ -206,6 +206,9 @@ void USTGameInstance::ResetGameData()
 	// TODO: 일일히 변수 하나씩 하지말고 struct로 확장필요
 	// LastStage = EStageType::None;
 	SelectedCharacter = ECharacterType::None;
+	// TODO: 테스트용
+	LastStage = EStageType::Stage3;
+	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetGameData() End"));
 }
 
