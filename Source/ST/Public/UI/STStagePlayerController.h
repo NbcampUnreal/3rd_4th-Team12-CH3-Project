@@ -82,8 +82,8 @@ public:
 	void ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken, const FText& ReasonText);
 	UFUNCTION()
 	void ShowGameClearResult();
-	UFUNCTION( BlueprintImplementableEvent )
-	void PlayGameClearBGM_BP();		// JM : 스테이지 클리어 BGM 재생
+	/*UFUNCTION( BlueprintImplementableEvent )	
+	void PlayGameClearBGM_BP();		// JM : 이제 안쓰는듯? */
 	void StopLevelBGM();			// JM : 이전 레벨 BGM 정지
 	void PlayAnotherBGM(const EBGMType& BGMType);	// JM : BGM 변경
 	UFUNCTION()
