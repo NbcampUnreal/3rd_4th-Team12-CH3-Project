@@ -8,10 +8,13 @@
 
 class ASTWeaponBase;
 DECLARE_MULTICAST_DELEGATE_OneParam(FOnCharacterZooming, bool);
+DECLARE_MULTICAST_DELEGATE_OneParam(FOnViewModeChanged, EViewMode); // when view Change
 
-
-
-
+// Forward Declarations
+class UCameraComponent;
+class USpringArmComponent;
+class USTCameraComponent;
+struct FInputActionValue;
 class USTPlayerBaseData;
 class USTMovementComponent;
 class USTHealthComponent;
@@ -29,13 +32,6 @@ enum class EViewMode : uint8
 	TPS UMETA(DisplayName = "TPS"),
 	FPS UMETA(DisplayName = "FPS"),
 };
-
-// Forward Declarations
-class UCameraComponent;
-class USpringArmComponent;
-struct FInputActionValue;
-
-DECLARE_MULTICAST_DELEGATE_OneParam(FOnViewModeChanged, EViewMode); // when view Change
 
 UCLASS()
 class ST_API ASTPlayerCharacter : public ACharacter
@@ -71,20 +67,32 @@ protected:
     void SetViewMode(bool bIsTPS);
 
     // Camera Components
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera|TPSCamera")
     TObjectPtr<USpringArmComponent> TPSSpringArmComponent;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
-    TObjectPtr<UCameraComponent> TPSCameraComponent;
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera|TPSCamera")
+    TObjectPtr<USTCameraComponent> TPSCameraComponent;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|TPSCamera")
+    float TPSNormalSpringArmTargetLength = 300.f;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera")
-    TObjectPtr<UCameraComponent> FPSCameraComponent;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|TPSCamera")
+    float TPSZoomSpringArmTargetLength = 150.f;
+  
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|TPSCamera")
+    float TPSNormalFOV = 90.f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
-    float FirstPersonFieldOfView = 103.f;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|TPSCamera")
+    float TPSZoomFOV = 60.f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera")
-    float FirstPersonScale = 1.0f;
+    UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Camera|FPSCamera")
+    TObjectPtr<USTCameraComponent> FPSCameraComponent;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|FPSCamera")
+    float FPSFieldOfView = 105.f;
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|FPSCamera")
+    float FPSZoomFieldOfView = 75.f;
 
     // Camera Variables
     EViewMode CurrentViewMode = EViewMode::TPS;
