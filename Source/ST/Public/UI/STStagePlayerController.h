@@ -189,6 +189,7 @@ private:
 	ASTEnemyBoss* CurrentBoss = nullptr;
 	
 	// JM: 레벨이동 담당 함수(로딩 화면 + 데이터 초기화)
+	UFUNCTION ( BlueprintCallable )
 	void LoadLevelWithDataResetAndLoadingScreen(const EStageType& NextStage);
 
 	// 게임 오버 화면 딜레이

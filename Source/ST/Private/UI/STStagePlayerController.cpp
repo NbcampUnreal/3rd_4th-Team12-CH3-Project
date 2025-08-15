@@ -959,6 +959,9 @@ void ASTStagePlayerController::PlayAnotherBGM(const EBGMType& BGMType)
 
 		switch (BGMType)
 		{
+			case EBGMType::Stop:
+				UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::PlayAnotherBGM() Just Stop Sound and Return"));
+				return;
 			case EBGMType::GameClear:
 				BGMComp->SetSound(ClearBGM);
 				break;
@@ -1162,6 +1165,7 @@ void ASTStagePlayerController::HandleGameClearReturnToMain()
 
 void ASTStagePlayerController::HandlePlayEndingRequested()
 {
+	UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::HandlePlayEndingRequested Start"));
 	// 임시 로그 출력
 	UE_LOG(LogSystem, Log, TEXT("엔딩 영상을 출력합니다"));
 
@@ -1175,8 +1179,9 @@ void ASTStagePlayerController::HandlePlayEndingRequested()
 			TEXT("엔딩 영상을 출력합니다")
 		);
 	}
-
-	PlayGameClearBGM_BP();
+	PlayAnotherBGM(EBGMType::Stop);
+	UE_LOG(LogSystem, Warning, TEXT("ASTStagePlayerController::HandlePlayEndingRequested End"));
+	// PlayGameClearBGM_BP();
 }
 
 // JM: 레벨이동 통합관리
