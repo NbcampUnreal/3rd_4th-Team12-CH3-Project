@@ -51,8 +51,10 @@ void USTGameInstance::StartNewGame()
 void USTGameInstance::GoToNextStage()
 {
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToNextStage() Start"));
+
+	GoToLevel(GetNextStageType(LastStage));
 	
-	EStageType NextStage = GetNextStageType(LastStage);
+	/*EStageType NextStage = GetNextStageType(LastStage);
 	if (NextStage != EStageType::None)
 	{
 		GoToLevel(NextStage);
@@ -61,7 +63,7 @@ void USTGameInstance::GoToNextStage()
 	{
 		UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToNextStage() All Stage Cleared."));
 		// GoToLevel(EStageType::Ending); // TODO: 엔딩 레벨로 이동
-	}
+	}*/
 	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToNextStage() End"));
 }
@@ -71,19 +73,39 @@ void USTGameInstance::GoToLevel(EStageType StageType)
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToLevel(%s) Start"), *StaticEnum<EStageType>()->GetValueAsString(StageType));
 	
 	FName TargetLevelName = FName("MainMenu");	// Default 값
-
 	switch (StageType)
 	{
-		case EStageType::MainMenu:	TargetLevelName = FName("MainMenu"); break;
-		case EStageType::Lobby:		TargetLevelName = FName("LobbyLevel"); break;
-		case EStageType::Stage1:	TargetLevelName = FName("Stage1"); break;
-		case EStageType::Stage2:	TargetLevelName = FName("Stage2"); break;
-		case EStageType::Stage3:	TargetLevelName = FName("Stage3"); break;
-		case EStageType::Ending:	TargetLevelName = FName("Ending"); break;
-		default:					break;
+		case EStageType::MainMenu:
+			TargetLevelName = FName("MainMenu");
+			LastStage = EStageType::MainMenu;
+			break;
+		case EStageType::Lobby:
+			TargetLevelName = FName("LobbyLevel");
+			LastStage = EStageType::Lobby;
+			break;
+		case EStageType::Stage1:	
+			TargetLevelName = FName("Stage1");
+			LastStage = EStageType::Stage1;
+			break;
+		case EStageType::Stage2:
+			TargetLevelName = FName("Stage2");
+			LastStage = EStageType::Stage2;
+			break;
+		case EStageType::Stage3:	
+			TargetLevelName = FName("Stage3");
+			LastStage = EStageType::Stage3;
+			break;
+		case EStageType::Ending:	
+			TargetLevelName = FName("Ending");
+			LastStage = EStageType::Ending;
+			break;
+		default:	// EStageType == None인 경우, MainMenu로 이동
+			UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::GoToLevel(%s) StageType == None"), *StaticEnum<EStageType>()->GetValueAsString(StageType))
+			break;
 	}
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToLevel(%s) OpenLevel(%s)"), *StaticEnum<EStageType>()->GetValueAsString(StageType), *TargetLevelName.ToString());
 	UGameplayStatics::OpenLevel(GetWorld(), TargetLevelName);
+	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToLevel(%s) End"), *StaticEnum<EStageType>()->GetValueAsString(StageType));
 }
 
@@ -119,7 +141,7 @@ void USTGameInstance::ResetDataForRetry()
 	ResetPlayerStateInfo();
 	PlayerStateInfo.HighScore = HighScore;
 
-	LastStage = EStageType::Stage1;
+// 	LastStage = EStageType::Stage1;
 	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetPlayerStateInfo() End"));
 }
@@ -182,8 +204,11 @@ void USTGameInstance::ResetGameData()
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetGameData() Start"));
 
 	// TODO: 일일히 변수 하나씩 하지말고 struct로 확장필요
-	LastStage = EStageType::None;
+	// LastStage = EStageType::None;
 	SelectedCharacter = ECharacterType::None;
+	// TODO: 테스트용
+	// LastStage = EStageType::Stage3;
+	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetGameData() End"));
 }
 

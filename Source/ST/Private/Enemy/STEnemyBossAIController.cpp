@@ -15,4 +15,19 @@ ASTEnemyBossAIController::ASTEnemyBossAIController()
     {
         HearingConfig->HearingRange = 3000.f;
     }
+
+	bHasRecognizedPlayer = false;
+}
+
+void ASTEnemyBossAIController::OnPerceptionUpdated(AActor* Actor, FAIStimulus Stimulus)
+{
+	// 부모 클래스 호출로 RecognitionGauge 업데이트
+	Super::OnPerceptionUpdated(Actor, Stimulus);
+
+	if (RecognitionGauge >= 100.f && !bHasRecognizedPlayer)
+	{
+		bHasRecognizedPlayer = true;
+		OnBossRecognizedPlayer.Broadcast();
+        
+	}
 }

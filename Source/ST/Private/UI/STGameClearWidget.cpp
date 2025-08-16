@@ -18,6 +18,10 @@ void USTGameClearWidget::NativeConstruct()
 	{
 		Btn_ReturnToMain->OnClicked.AddDynamic(this, &USTGameClearWidget::HandleReturnToMainClicked);
 	}
+	if (Btn_Ending)
+	{
+		Btn_Ending->OnClicked.AddDynamic(this, &USTGameClearWidget::HandlePlayEndingClicked);
+	}
 }
 
 void USTGameClearWidget::SetResultInfo(int32 Score, int32 HighScore)
@@ -37,4 +41,9 @@ void USTGameClearWidget::HandleRetryClicked()
 void USTGameClearWidget::HandleReturnToMainClicked()
 {
 	OnReturnToMainRequested.Broadcast();
+}
+
+void USTGameClearWidget::HandlePlayEndingClicked()
+{
+	OnPlayEndingRequested.Broadcast();
 }

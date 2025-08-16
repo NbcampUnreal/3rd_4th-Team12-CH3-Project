@@ -10,6 +10,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Player/STCameraComponent.h"
 #include "Player/STHealthComponent.h"
 #include "Player/STMovementComponent.h"
 #include "Player/STPlayerAnimInstance.h"
@@ -34,25 +35,38 @@ ASTPlayerCharacter::ASTPlayerCharacter()
 		GetCharacterMovement()->CrouchedHalfHeight = 60.f;
 	}
 	
-	// TPS Camera Setup
 	TPSSpringArmComponent = CreateDefaultSubobject<USpringArmComponent>(TEXT("TPSSpringArmComponent"));
-	TPSSpringArmComponent->SetupAttachment(GetRootComponent());
-	TPSSpringArmComponent->bUsePawnControlRotation = true;
-	TPSSpringArmComponent->bAutoActivate = false;
-	TPSCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("TPSCameraComponent"));
-	TPSCameraComponent->SetupAttachment(TPSSpringArmComponent, USpringArmComponent::SocketName);
-	TPSCameraComponent->bUsePawnControlRotation = false;
+	if (TPSSpringArmComponent)
+	{
+		TPSSpringArmComponent->SetupAttachment(GetRootComponent());
+		TPSSpringArmComponent->bUsePawnControlRotation = true;
+		TPSSpringArmComponent->bAutoActivate = false;
+		TPSSpringArmComponent->TargetArmLength = TPSNormalSpringArmTargetLength;
+    
+		TPSCameraComponent = CreateDefaultSubobject<USTCameraComponent>(TEXT("TPSCameraComponent"));
+		if (TPSCameraComponent)
+		{
+			TPSCameraComponent->SetupAttachment(TPSSpringArmComponent, USpringArmComponent::SocketName);
+			TPSCameraComponent->bUsePawnControlRotation = false;
+			TPSCameraComponent->SetCameraType(ECameraType::TPS);
+			TPSCameraComponent->SetFieldOfView(TPSNormalFOV);
+			TPSCameraComponent->SetZoomFOV(TPSZoomFOV);
+		}
+	}
 
 	// FPS Camera Setup
-	FPSCameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("FPSCameraComponent"));
-	FPSCameraComponent->SetupAttachment(GetRootComponent());
-	FPSCameraComponent->bUsePawnControlRotation = true;
-	FPSCameraComponent->bEnableFirstPersonFieldOfView = true;
-	FPSCameraComponent->bEnableFirstPersonScale = true;
-	FPSCameraComponent->FirstPersonFieldOfView = FirstPersonFieldOfView;
-	FPSCameraComponent->FirstPersonScale = FirstPersonScale;
-	FPSCameraComponent->bAutoActivate = false;
-
+	FPSCameraComponent = CreateDefaultSubobject<USTCameraComponent>(TEXT("FPSCameraComponent"));
+	if (FPSCameraComponent)
+	{
+		FPSCameraComponent->SetupAttachment(GetRootComponent());
+		FPSCameraComponent->bUsePawnControlRotation = true;
+		FPSCameraComponent->bAutoActivate = false;
+		FPSCameraComponent->SetFieldOfView(FPSFieldOfView);  
+		FPSCameraComponent->SetCameraType(ECameraType::FPS);
+		FPSCameraComponent->SetZoomFOV(FPSZoomFieldOfView);
+		
+	}
+	
 	// FPS Mesh Component
 	FPSSkeletalMeshComponent = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FPSSkeletalMeshComponent"));
 	FPSSkeletalMeshComponent->SetupAttachment(FPSCameraComponent);
@@ -120,6 +134,15 @@ void ASTPlayerCharacter::BeginPlay()
 			WeaponManager->EquipWeapon(SoftWeaponClass);
 		}
 	}
+	if (IsValid(TPSCameraComponent))
+	{
+		FOnCharacterZooming.AddUObject(TPSCameraComponent, &USTCameraComponent::HandleZoom);
+	}
+	if (IsValid(FPSCameraComponent))
+	{
+		FOnCharacterZooming.AddUObject(FPSCameraComponent, &USTCameraComponent::HandleZoom);
+	}
+	
 
 	
 }

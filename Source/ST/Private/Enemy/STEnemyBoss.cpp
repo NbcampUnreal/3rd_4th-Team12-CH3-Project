@@ -195,6 +195,19 @@ void ASTEnemyBoss::PhaseChangingEndNotify()
     StateComponent->SetState(EEnemyState::Idle);
 }
 
+float ASTEnemyBoss::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent,
+	AController* EventInstigator, AActor* DamageCauser)
+{
+	// 페이즈 변경 중이거나 죽은 상태면 데미지 무시
+	if (StateComponent->IsInState(EEnemyState::PhaseChanging) || 
+		StateComponent->IsInState(EEnemyState::Dead))
+	{
+		return 0.0f;
+	}
+    
+	return Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+}
+
 void ASTEnemyBoss::Die()
 {
     if (AAIController* AIController = Cast<AAIController>(GetController()))
@@ -205,6 +218,12 @@ void ASTEnemyBoss::Die()
             AIController->BrainComponent->StopLogic(TEXT("Dead"));
         }
     }
+	
+	if (SkillComponent)
+	{
+		SkillComponent->ForceStopAllSkills();
+		SkillComponent->CleanupActiveParticles();
+	}
 
     if (GetMesh()->GetAnimInstance())
     {
