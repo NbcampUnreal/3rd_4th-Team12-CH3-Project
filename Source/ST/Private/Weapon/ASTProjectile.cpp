@@ -92,6 +92,11 @@ void ASTProjectile::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor,
 			UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ImpactEffect, Hit.ImpactPoint, Hit.ImpactNormal.Rotation());
 		}
 
+
+		if (VortexEffectActorClass)
+		{
+			GetWorld()->SpawnActor<AActor>(VortexEffectActorClass, Hit.ImpactPoint, FRotator::ZeroRotator);
+		}
 		if (ImpactSound)
 		{
 			UGameplayStatics::PlaySoundAtLocation(this, ImpactSound, GetActorLocation());
