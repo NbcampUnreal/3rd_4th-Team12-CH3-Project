@@ -207,7 +207,7 @@ void USTGameInstance::ResetGameData()
 	// LastStage = EStageType::None;
 	SelectedCharacter = ECharacterType::None;
 	// TODO: 테스트용
-	LastStage = EStageType::Stage3;
+	// LastStage = EStageType::Stage3;
 	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetGameData() End"));
 }

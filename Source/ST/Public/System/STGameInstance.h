@@ -24,7 +24,8 @@ public:
 
 	/* member variables */
 	FPlayerStateInfo PlayerStateInfo;
-	
+
+	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category="Level" )	// JM: 디버그용
 	EStageType LastStage;
 
 	UPROPERTY( BlueprintReadWrite, Category="PlayerInfo" )
