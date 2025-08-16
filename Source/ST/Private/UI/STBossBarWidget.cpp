@@ -12,7 +12,7 @@ void USTBossBarWidget::NativeConstruct()
 	
 	if (Txt_BossName)
 	{
-		Txt_BossName->SetText(FText::FromString(TEXT("아이언 헤드")));
+		Txt_BossName->SetText(FText::FromString(TEXT("아이언 미러")));
 	}
 }
 
@@ -20,7 +20,7 @@ void USTBossBarWidget::SetBossName(const FText& InName)
 {
 	if (Txt_BossName)
 	{
-		Txt_BossName->SetText(FText::FromString(TEXT("아이언 헤드")));
+		Txt_BossName->SetText(FText::FromString(TEXT("아이언 미러")));
 	}
 }
 
