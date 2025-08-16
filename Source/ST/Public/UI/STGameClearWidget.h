@@ -20,12 +20,16 @@ public:
 
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRetryRequested);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReturnToMainRequested);
+	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayEndingRequested);
 
 	UPROPERTY(BlueprintAssignable, Category="Event")
 	FOnRetryRequested OnRetryRequested;
 
 	UPROPERTY(BlueprintAssignable, Category="Event")
 	FOnReturnToMainRequested OnReturnToMainRequested;
+
+	UPROPERTY(BlueprintAssignable, Category="Event")
+	FOnPlayEndingRequested OnPlayEndingRequested;
 	
 protected:
 	virtual void NativeConstruct() override;
@@ -35,8 +39,10 @@ protected:
 
 	UPROPERTY(meta = (BindWidget)) UButton* Btn_Retry;
 	UPROPERTY(meta = (BindWidget)) UButton* Btn_ReturnToMain;
+	UPROPERTY(meta = (BindWidget)) UButton* Btn_Ending;
 	
 private:
 	UFUNCTION() void HandleRetryClicked();
 	UFUNCTION() void HandleReturnToMainClicked();
+	UFUNCTION() void HandlePlayEndingClicked();
 };

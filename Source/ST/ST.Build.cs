@@ -11,7 +11,7 @@ public class ST : ModuleRules
 		PublicDependencyModuleNames.AddRange(new string[] 
 		{
 			"Core", "CoreUObject", "Engine", "InputCore", "EnhancedInput",
-			"AIModule", "NavigationSystem", "GameplayTasks", "UMG"
+			"AIModule", "NavigationSystem", "GameplayTasks", "UMG", "Niagara", "NiagaraCore"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[] {  });
