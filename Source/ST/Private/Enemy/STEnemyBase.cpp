@@ -1,8 +1,12 @@
 #include "Enemy/STEnemyBase.h"
+
+#include "AIController.h"
+#include "BrainComponent.h"
 #include "Enemy/STEnemyAlertReceiver.h"
 #include "Engine/DamageEvents.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "Kismet/GameplayStatics.h"
 #include "System/STGameMode.h"
 
 ASTEnemyBase::ASTEnemyBase()
@@ -26,7 +30,18 @@ void ASTEnemyBase::BeginPlay()
 	{
 		StateComponent->OnStateChanged.AddDynamic(this, &ASTEnemyBase::OnStateChanged_UpdateSpeed);
 	}
+	
 	NotifyHealthChanged();
+
+	// 방어율 미리 계산
+	UpdateDamageReductionMultiplier();
+}
+
+void ASTEnemyBase::UpdateDamageReductionMultiplier()
+{
+	// 방어력을 0~95% 사이로 제한하고 배율 미리 계산
+	Defense = FMath::Clamp(Defense, 0.0f, 95.0f);
+	CachedDamageReductionMultiplier = (100.0f - Defense) / 100.0f;
 }
 
 float ASTEnemyBase::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, AController* EventInstigator,
@@ -70,18 +85,34 @@ void ASTEnemyBase::ProcessDamage(float RawDamage, FName HitBone, FVector HitLoca
 		return;
 	}
 	float Multiplier=1.0f;
+	bool bIsWeakPoint = false;
+	
 	if (WeakPointMultipliers.Contains(HitBone))
 	{
 		Multiplier=WeakPointMultipliers[HitBone];
+		bIsWeakPoint = true;
+	}
+
+	float TrueDamage = 0.0f;
+    
+	if (bIsWeakPoint)
+	{
+		// 약점 공격인 경우 방어력 무시하고 약점 배율만 적용
+		TrueDamage = RawDamage * Multiplier;
+	}
+	else
+	{
+		// 방어력을 퍼센테이지로 적용
+		TrueDamage = RawDamage * CachedDamageReductionMultiplier;
 	}
 	
 	// 약점 배율 + 적 방어력 계산 후 실제 데미지 적용
-	float TrueDamage=FMath::Max(0.0f, RawDamage*Multiplier-Defense);
+	TrueDamage = FMath::Max(0.0f, TrueDamage);
 	float PreviousHealth = Health;
 	Health=FMath::Max(0.0f, Health-TrueDamage);
 	
 	// SH 치명타 확인 후 UI로 전달
-	const bool bCritical = WeakPointMultipliers.Contains(HitBone) && Multiplier > 1.0f;
+	const bool bCritical = bIsWeakPoint && Multiplier > 1.0f;
 	OnDamageTaken.Broadcast(this, TrueDamage, bCritical);
 
 	// 체력이 실제로 변했을 때 델리게이트 호출
@@ -119,8 +150,35 @@ void ASTEnemyBase::Die()
 	{
 		return;
 	}
+	
 	// State를 Dead로 변경
 	StateComponent->SetState(EEnemyState::Dead);
+
+	if (AAIController* AIController = Cast<AAIController>(GetController()))
+	{
+		AIController->StopMovement();
+		if (AIController->BrainComponent)
+		{
+			AIController->BrainComponent->StopLogic(TEXT("Dead"));
+		}
+	}
+
+	if (GetMesh()->GetAnimInstance())
+	{
+		UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
+        
+		AnimInstance->StopAllMontages(0.1f);
+	}
+
+	if (DeathMontage && GetMesh() && GetMesh()->GetAnimInstance())
+	{
+		GetMesh()->GetAnimInstance()->Montage_Play(DeathMontage, 1.0f);
+	}
+
+	if (DeathSound)
+	{
+		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
+	}
 
 	// SH 킬 정보를 UI로 전달
 	OnDied.Broadcast(this);

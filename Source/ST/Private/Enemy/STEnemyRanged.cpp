@@ -1,9 +1,7 @@
 #include "Enemy/STEnemyRanged.h"
 #include "Enemy/STEnemyProjectile.h"
-#include "AIController.h"
 #include "TimerManager.h"
 #include "Engine/World.h"
-#include "BrainComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Enemy/STRangedAnimInstance.h"
 #include "Kismet/GameplayStatics.h"
@@ -11,8 +9,9 @@
 ASTEnemyRanged::ASTEnemyRanged()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	AttackRange = 1600.f;
-	ApproachDistance = 800.f;
+	AttackRange = 1800.f;
+	ApproachDistance = 1400.f;
+	Defense = 10.f;
 	AmmoCount=MaxAmmo;
 	bIsAttackCooldown = false;
 	StateComponent->SetState(EEnemyState::Idle);
@@ -138,21 +137,7 @@ void ASTEnemyRanged::Die()
 {
 	GetWorldTimerManager().ClearAllTimersForObject(this);
 	bIsAttackCooldown = false;
-
-	if (AAIController* AIController = Cast<AAIController>(GetController()))
-	{
-		AIController->StopMovement();
-		if (AIController->BrainComponent)
-		{
-			AIController->BrainComponent->StopLogic(TEXT("Dead"));
-		}
-	}
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	if (DeathSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
-	}
 
 	Super::Die();
 }

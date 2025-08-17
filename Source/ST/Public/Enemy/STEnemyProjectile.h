@@ -26,7 +26,7 @@ public:
 	UParticleSystem* ProjectileParticle;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
-	float ProjectileDamage = 10.f;
+	float ProjectileDamage = 20.f;
 	
 	void FireInDirection(const FVector& ShootDirection);
 

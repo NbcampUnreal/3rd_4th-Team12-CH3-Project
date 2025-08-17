@@ -1,16 +1,16 @@
 ﻿#include "Enemy/STEnemyBoss.h"
 #include "AIController.h"
-#include "BrainComponent.h"
 #include "Enemy/STEnemySkillComponent.h"
 #include "BehaviorTree/BlackboardComponent.h"
 #include "Enemy/STBossAnimInstance.h"
 #include "Engine/World.h"
-#include "Kismet/GameplayStatics.h"
 
 ASTEnemyBoss::ASTEnemyBoss()
 {
     PrimaryActorTick.bCanEverTick = false;
     SkillComponent = CreateDefaultSubobject<USTEnemySkillComponent>(TEXT("SkillComponent"));
+
+	Defense = 50.f;
 }
 
 void ASTEnemyBoss::BeginPlay()
@@ -126,11 +126,8 @@ void ASTEnemyBoss::CheckPhase(float CurrentHealth, float Max_Health, float Healt
     	StateComponent->SetState(EEnemyState::PhaseChanging);
     	CurrentPhase = EBossPhase::Phase2;
 
-        if (GEngine)
-        {
-            GEngine->AddOnScreenDebugMessage(-1, 3.f, FColor::Purple,
-                FString::Printf(TEXT("[BOSS] Phase 2 Activated")));
-        }
+    	Defense = 70.0f;
+    	UpdateDamageReductionMultiplier(); // 방어력 배율 재계산
     	
     	int32 OldPhaseInt = static_cast<int32>(EBossPhase::Phase1) + 1;
     	int32 NewPhaseInt = static_cast<int32>(EBossPhase::Phase2) + 1;
@@ -210,31 +207,11 @@ float ASTEnemyBoss::TakeDamage(float DamageAmount, struct FDamageEvent const& Da
 
 void ASTEnemyBoss::Die()
 {
-    if (AAIController* AIController = Cast<AAIController>(GetController()))
-    {
-        AIController->StopMovement();
-        if (AIController->BrainComponent)
-        {
-            AIController->BrainComponent->StopLogic(TEXT("Dead"));
-        }
-    }
-	
 	if (SkillComponent)
 	{
 		SkillComponent->ForceStopAllSkills();
 		SkillComponent->CleanupActiveParticles();
 	}
-
-    if (GetMesh()->GetAnimInstance())
-    {
-        UAnimInstance* AnimInstance = GetMesh()->GetAnimInstance();
-        
-        AnimInstance->StopAllMontages(0.1f);
-    }
-    
-    if (DeathSound)
-    {
-        UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
-    }
+	
     Super::Die();
 }
