@@ -24,6 +24,7 @@ protected:
 	void HandleSpawnItem();
 
 	void SetSpawnTimer();
+	
 
 	TSoftClassPtr<ASTItemBase> GetSpawningItem();
 

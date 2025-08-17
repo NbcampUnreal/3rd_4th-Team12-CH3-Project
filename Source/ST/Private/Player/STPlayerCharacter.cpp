@@ -131,7 +131,7 @@ void ASTPlayerCharacter::BeginPlay()
 		if (IsValid(WeaponManager))
 		{
 			TSoftClassPtr<ASTWeaponBase> SoftWeaponClass = CachedPlayerState->GetPlayerStateInfo().PlayerWeaponData.WeaponClass;
-			WeaponManager->EquipWeapon(SoftWeaponClass);
+			WeaponManager->RequestEquipWeapon(SoftWeaponClass);
 		}
 	}
 	if (IsValid(TPSCameraComponent))
@@ -186,6 +186,8 @@ void ASTPlayerCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputC
 	if (InputConfig->ZoomAction)
 	{
 		EnhancedInputComponent->BindAction(InputConfig->ZoomAction, ETriggerEvent::Started, this, &ASTPlayerCharacter::Zoom);
+		EnhancedInputComponent->BindAction(InputConfig->ZoomAction, ETriggerEvent::Completed, this, &ASTPlayerCharacter::Zoom);
+		
 	}
 	if (InputConfig->FireAction)
 	{
