@@ -75,6 +75,11 @@ void ASTGameMode::BeginPlay()
 	Super::BeginPlay();
 	BindStageClearZoneEnterEvent();
 	BindPlayerDeathEvent();
+	/*if (USTGameInstance* STGameInstance = Cast<USTGameInstance>(GetGameInstance()))
+	{
+		STGameInstance->BindStageClearDelegate(this);
+	}*/
+	
 	ResetStage();
 	StartStage();
 	
