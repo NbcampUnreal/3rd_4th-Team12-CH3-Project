@@ -146,3 +146,18 @@ struct FGameStateInfo
 	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
 	TArray<FText> StageProgressList;
 };
+
+USTRUCT( BlueprintType ) 
+struct FSaveData
+{
+	GENERATED_BODY()
+
+	FSaveData()
+	{
+		HighScore = 0;
+	};
+
+	UPROPERTY(VisibleAnywhere, Category="Save")	// 매크로 안쓰면 직렬화 안됨, .sav에 값이 안들어감!
+	int32 HighScore;
+	// 볼륨, 마우스 감도 등 기타 설정 추가 가능
+};

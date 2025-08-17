@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "STGameMode.h"
 #include "Engine/GameInstance.h"
 #include "STGameTypes.h"
 #include "STGameInstance.generated.h"
@@ -19,6 +20,9 @@ public:
 	USTGameInstance();
 
 	virtual void Init() override;
+	/*void BindStageClearDelegate(ASTGameMode* STGameMode);
+	UFUNCTION()
+	void HandleStageClear();*/
 
 	/*virtual void Init() override;*/
 
@@ -75,10 +79,13 @@ public:
 	void GoToRetry();
 	
 	// TODO: 게임 저장/불러오기(아카이빙) 기능 구현
+	void LoadSavedData();
+	void SaveSavedData(const FSaveData& SaveData);	// 데이터는 프로젝트 폴더 > Saved > SaveGames에 저장됨(배포후엔 C:\\... AppData/프로젝트명/Saved/SaveGames에 저장)
 	
 private:
 	EStageType GetNextStageType(EStageType CurrentStage) const;
 	void ResetGameData();
 
 	void ResetPlayerStateInfo();
+	
 };
