@@ -44,8 +44,6 @@ protected:
 	
 	UPROPERTY(EditDefaultsOnly, Category = "SFX")
 	USoundBase* FireSound;
-	UPROPERTY(EditDefaultsOnly, Category = "SFX")
-	USoundBase* DeathSound;
 	UPROPERTY(EditDefaultsOnly, Category = "VFX")
 	UParticleSystem* AttackParticle;
 

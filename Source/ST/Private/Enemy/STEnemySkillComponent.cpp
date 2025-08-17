@@ -887,55 +887,109 @@ void USTEnemySkillComponent::PlaySingleParticleEffect(const FParticleEffectSetti
     {
         if (SocketName == NAME_None || SocketName == TEXT("None")) continue;
 
-        // 소켓 존재 확인
-        if (!MeshComp->DoesSocketExist(SocketName))
-        {
-            continue;
-        }
-
         USceneComponent* SpawnedComponent = nullptr;
 
-        // Niagara 시스템
-        if (ParticleEffect.NiagaraSystem)
+        // Invisible 상태에서는 원래 위치 기준으로 월드에 직접 스폰
+        if (bPositionModified && !OwnerEnemy->GetMesh()->IsVisible())
         {
-            UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAttached(
-                ParticleEffect.NiagaraSystem,
-                MeshComp,
-                SocketName,
-                ParticleEffect.LocationOffset,
-                ParticleEffect.RotationOffset,
-                EAttachLocation::KeepRelativeOffset,
-                ParticleEffect.bAutoDestroy
-            );
-
-            SpawnedComponent = NiagaraComp;
-
-            if (NiagaraComp)
+            // 원래 위치를 기준으로 소켓 위치 계산
+            FVector SpawnLocation = OriginalPosition;
+            FRotator SpawnRotation = FRotator::ZeroRotator;
+            
+            if (MeshComp->DoesSocketExist(SocketName))
             {
-                NiagaraComp->SetWorldScale3D(ParticleEffect.Scale);
+                FTransform MeshTransform = FTransform(OwnerEnemy->GetActorRotation(), OriginalPosition);
+                FTransform SocketLocalTransform = MeshComp->GetSocketTransform(SocketName, RTS_Component);
+                
+                FTransform WorldSocketTransform = SocketLocalTransform * MeshTransform;
+                SpawnLocation = WorldSocketTransform.GetLocation();
+            }
+            else
+            {
+                // 소켓이 없으면 그냥 원래 위치 사용
+                SpawnLocation = OriginalPosition;
+            }
+            
+            // 파티클 오프셋 적용
+            SpawnLocation += ParticleEffect.LocationOffset;
+            SpawnRotation += ParticleEffect.RotationOffset;
+
+            // Niagara 시스템
+            if (ParticleEffect.NiagaraSystem)
+            {
+                UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAtLocation(
+                    GetWorld(),
+                    ParticleEffect.NiagaraSystem,
+                    SpawnLocation,
+                    SpawnRotation,
+                    ParticleEffect.Scale,
+                    ParticleEffect.bAutoDestroy
+                );
+                SpawnedComponent = NiagaraComp;
+            }
+            // Cascade 시스템
+            else if (ParticleEffect.ParticleSystem)
+            {
+                UParticleSystemComponent* ParticleComp = UGameplayStatics::SpawnEmitterAtLocation(
+                    GetWorld(),
+                    ParticleEffect.ParticleSystem,
+                    SpawnLocation,
+                    SpawnRotation,
+                    ParticleEffect.Scale,
+                    ParticleEffect.bAutoDestroy
+                );
+                SpawnedComponent = ParticleComp;
             }
         }
-        // Cascade 시스템
-        else if (ParticleEffect.ParticleSystem)
+        else
         {
-            UParticleSystemComponent* ParticleComp = UGameplayStatics::SpawnEmitterAttached(
-                ParticleEffect.ParticleSystem,
-                MeshComp,
-                SocketName,
-                ParticleEffect.LocationOffset,
-                ParticleEffect.RotationOffset,
-                ParticleEffect.Scale,
-                EAttachLocation::KeepRelativeOffset,
-                ParticleEffect.bAutoDestroy
-            );
+            // 일반 상태에서는 소켓에 부착
+            if (!MeshComp->DoesSocketExist(SocketName))
+            {
+                continue;
+            }
 
-            SpawnedComponent = ParticleComp;
+            // Niagara 시스템
+            if (ParticleEffect.NiagaraSystem)
+            {
+                UNiagaraComponent* NiagaraComp = UNiagaraFunctionLibrary::SpawnSystemAttached(
+                    ParticleEffect.NiagaraSystem,
+                    MeshComp,
+                    SocketName,
+                    ParticleEffect.LocationOffset,
+                    ParticleEffect.RotationOffset,
+                    EAttachLocation::KeepRelativeOffset,
+                    ParticleEffect.bAutoDestroy
+                );
+
+                SpawnedComponent = NiagaraComp;
+
+                if (NiagaraComp)
+                {
+                    NiagaraComp->SetWorldScale3D(ParticleEffect.Scale);
+                }
+            }
+            // Cascade 시스템
+            else if (ParticleEffect.ParticleSystem)
+            {
+                UParticleSystemComponent* ParticleComp = UGameplayStatics::SpawnEmitterAttached(
+                    ParticleEffect.ParticleSystem,
+                    MeshComp,
+                    SocketName,
+                    ParticleEffect.LocationOffset,
+                    ParticleEffect.RotationOffset,
+                    ParticleEffect.Scale,
+                    EAttachLocation::KeepRelativeOffset,
+                    ParticleEffect.bAutoDestroy
+                );
+
+                SpawnedComponent = ParticleComp;
+            }
         }
 
         // 공통 처리
         if (SpawnedComponent)
         {
-            // 지속 시간 설정
             if (ParticleEffect.Duration > 0.0f)
             {
                 FTimerHandle DestroyHandle;
@@ -953,7 +1007,6 @@ void USTEnemySkillComponent::PlaySingleParticleEffect(const FParticleEffectSetti
                 );
             }
 
-            // 활성 컴포넌트 추적
             ActiveParticleComponents.Add(SpawnedComponent);
         }
     }

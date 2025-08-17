@@ -27,7 +27,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Movement")
 	float PatrolSpeed = 200.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Movement")
-	float ChaseSpeed = 600.f;
+	float ChaseSpeed = 800.f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "AI|Movement")
 	float InvestigationSpeed = 400.f;
 	
@@ -53,6 +53,11 @@ public:
 	// 현재 타켓
 	UPROPERTY(BlueprintReadOnly, Category = "AI|Target")
 	AActor* CurrentTarget = nullptr;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Death")
+	UAnimMontage* DeathMontage;
+	UPROPERTY(EditDefaultsOnly, Category = "SFX")
+	USoundBase* DeathSound;
 
 	// 적 체력 변화 델리게이트
 	UPROPERTY(BlueprintAssignable)
@@ -89,8 +94,12 @@ public:
 	float GetHealthPercentage() const { return MaxHealth > 0.f ? (Health / MaxHealth) * 100.f : 0.f; }
 	
 protected:
+	float CachedDamageReductionMultiplier = 1.0f;
+	
 	virtual void BeginPlay() override;
-
+	
+	// 방어력 배율 계산 및 캐싱
+	void UpdateDamageReductionMultiplier();
 private:
 	// 체력 변화 알림 함수
 	void NotifyHealthChanged();
