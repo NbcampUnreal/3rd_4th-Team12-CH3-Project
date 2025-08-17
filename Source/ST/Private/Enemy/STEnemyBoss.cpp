@@ -50,6 +50,7 @@ void ASTEnemyBoss::InitializePhaseSkills()
     TArray<EEnemySkillID> Phase2Skills = {
         EEnemySkillID::BossMelee1,
         EEnemySkillID::BossMelee2,
+    	EEnemySkillID::BossBomb,
         EEnemySkillID::BossFireAttack,
         EEnemySkillID::BossHookUltimate,
         EEnemySkillID::BossDashUltimate,

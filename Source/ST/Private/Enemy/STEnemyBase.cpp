@@ -15,10 +15,20 @@ ASTEnemyBase::ASTEnemyBase()
 
 	// 상태 관리 컴포넌트
 	StateComponent = CreateDefaultSubobject<USTEnemyStateComponent>(TEXT("StateComponent"));
-
+	
 	// 약점 부위와 피해 배율 설정
 	WeakPointMultipliers.Add(FName("head"), 2.0f);
-	WeakPointMultipliers.Add(FName("back"), 1.5f);
+	WeakPointMultipliers.Add(FName("head_pist_back_bott_l"), 2.0f);
+	WeakPointMultipliers.Add(FName("head_pist_back_bott_r"), 2.0f);
+	WeakPointMultipliers.Add(FName("head_pist_fr_bott_l"), 2.0f);
+	WeakPointMultipliers.Add(FName("head_pist_fr_bott_r"), 2.0f);
+	WeakPointMultipliers.Add(FName("head_pist_side_bott_l"), 2.0f);
+	WeakPointMultipliers.Add(FName("head_pist_side_bott_r"), 2.0f);
+	WeakPointMultipliers.Add(FName("head_pist_under_bott_l"), 2.0f);
+	WeakPointMultipliers.Add(FName("head_pist_under_bott_r"), 2.0f);
+	WeakPointMultipliers.Add(FName("neck_01"), 2.0f);
+	WeakPointMultipliers.Add(FName("neck_hose_big"), 2.0f);
+	WeakPointMultipliers.Add(FName("neck_hose_sm"), 2.0f);
 }
 
 void ASTEnemyBase::BeginPlay()
