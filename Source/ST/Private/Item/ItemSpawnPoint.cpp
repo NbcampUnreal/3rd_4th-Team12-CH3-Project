@@ -3,8 +3,11 @@
 
 #include "Item/ItemSpawnPoint.h"
 
+#include "Engine/AssetManager.h"
 #include "Item/STItemBase.h"
 
+
+struct FStreamableManager;
 
 AItemSpawnPoint::AItemSpawnPoint()
 {
@@ -35,22 +38,34 @@ void AItemSpawnPoint::HandleSpawnItem()
 	{
 		return;
 	}
-
 	TSoftClassPtr<ASTItemBase> ItemClassToSpawnPtr = GetSpawningItem();
 	if (ItemClassToSpawnPtr.IsValid())
 	{
-		UClass* LoadedClass = ItemClassToSpawnPtr.LoadSynchronous();
-		if (LoadedClass)
-		{
-			
-			SpawnItem = GetWorld()->SpawnActor<ASTItemBase>(LoadedClass, GetActorLocation(), FRotator::ZeroRotator);
-
-			// 스폰된 아이템에 델리게이트를 바인딩합니다.
-			if (IsValid(SpawnItem))
+		FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
+		Streamable.RequestAsyncLoad(
+			ItemClassToSpawnPtr.ToSoftObjectPath(),
+			FStreamableDelegate::CreateLambda([this, ItemClassToSpawnPtr]() 
 			{
-				SpawnItem->OnDestroyed.AddDynamic(this, &AItemSpawnPoint::DestroyedSpawnItem);
-			}
-		}
+				UClass* LoadedClass = ItemClassToSpawnPtr.Get(); 
+				if (LoadedClass)
+				{
+					//world spawn 
+					SpawnItem = GetWorld()->SpawnActor<ASTItemBase>(
+						LoadedClass,
+						GetActorLocation(),
+						FRotator::ZeroRotator
+					);
+					// binding item
+					if (IsValid(SpawnItem))
+					{
+						SpawnItem->OnDestroyed.AddDynamic(
+							this, 
+							&AItemSpawnPoint::DestroyedSpawnItem
+						);
+					}
+				}
+			})
+		);
 	}
 }
 
