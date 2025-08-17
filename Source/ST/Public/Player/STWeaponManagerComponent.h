@@ -25,13 +25,13 @@ class ST_API USTWeaponManagerComponent : public UActorComponent
 
 public:	
 	USTWeaponManagerComponent();
-	void EquipWeapon( TSoftClassPtr<ASTWeaponBase> WeaponClass);
-	void UnequipWeapon();
 	void RequestEquipWeapon(TSoftClassPtr<ASTWeaponBase> WeaponClass);
 	EWeaponType GetCurrentWeaponType();
 protected:
 	virtual void BeginPlay() override;
 	
+	void EquipWeapon( TSoftClassPtr<ASTWeaponBase> WeaponClass);
+	void UnequipWeapon();
 	void OnEquipMontageEnded(UAnimMontage* Montage, bool bInterrupted);
 	
 	FStItemPivotData* GetWeaponPivotData(EWeaponType type);
@@ -48,9 +48,9 @@ private:
 	
 	UPROPERTY(VisibleInstanceOnly)
 	TObjectPtr<ASTWeaponBase> CurrentWeapon;
-
+	UPROPERTY()
 	TSoftClassPtr<ASTWeaponBase> CurrentWeaponClass;
-
+	UPROPERTY()
 	TSoftClassPtr<ASTWeaponBase> PendingWeaponClass;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SocketOffset", meta = (AllowPrivateAccess = true))
