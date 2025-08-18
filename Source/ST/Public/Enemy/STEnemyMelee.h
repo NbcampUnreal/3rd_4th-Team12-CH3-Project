@@ -27,12 +27,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat")
 	float AttackCooldown = 2.0f;
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Combat")
-	float MeleeDamage = 20.f;
+	float MeleeDamage = 10.f;
 	
 	UPROPERTY(EditDefaultsOnly, Category = "SFX")
 	USoundBase* AttackSound;
-	UPROPERTY(EditDefaultsOnly, Category = "SFX")
-	USoundBase* DeathSound;
 	UPROPERTY(EditDefaultsOnly, Category = "VFX")
 	UParticleSystem* SlashParticle;
 	

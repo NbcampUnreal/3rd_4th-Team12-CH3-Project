@@ -62,9 +62,6 @@ public:
 							AController* EventInstigator, AActor* DamageCauser) override;
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Boss Death")
-	USoundBase* DeathSound = nullptr;
-	
 	virtual void BeginPlay() override;
 	virtual void Die() override;
 

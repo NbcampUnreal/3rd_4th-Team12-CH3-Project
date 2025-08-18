@@ -51,6 +51,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Effects")
 	UParticleSystem* ImpactEffect;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Vortex")
+	TSubclassOf<AActor> VortexEffectActorClass;
+
 	// 피해량
 	UPROPERTY(EditDefaultsOnly, Category = "Damage")
 	float Damage;

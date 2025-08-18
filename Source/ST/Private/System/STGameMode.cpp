@@ -22,19 +22,16 @@ ASTGameMode::ASTGameMode()
 	/* 변수 기본값 설정 */
 	TotalEnemies = 0;
 	DeadEnemies = 0;
-	StageTimeLimit = 123;
+	StageTimeLimit = 0;
 	bStageCleared = false;
 	StageInfoTable = nullptr;
-	/*RemainingTime = StageTimeLimit;
-	BossPhase = 1;*/
 }
 
 void ASTGameMode::OnEnemyKilled()
 {
-	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnEnemyKilled() Start"));
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnEnemyKilled() Start / Killed(%d / %d)"), DeadEnemies, TotalEnemies);
 
 	DeadEnemies++;
-	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnEnemyKilled() Enemy killed(%d / %d)"), DeadEnemies, TotalEnemies);
 
 	// STPlayerState Kill Count 증가
 	ASTStagePlayerController* STPlayerController = Cast<ASTStagePlayerController>(GetWorld()->GetFirstPlayerController());
@@ -42,12 +39,14 @@ void ASTGameMode::OnEnemyKilled()
 	{
 		STPlayerState->AddKillCount();
 	}
-	
-	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
+
+	// GameState 업데이트
+	if (ASTGameState* STGameState = GetGameState<ASTGameState>()) 
 	{
 		STGameState->SetRemainingEnemies(TotalEnemies - DeadEnemies);
 	}
 
+	// 모든 적 처치 시 Clear Zone 안내하기
 	if (DeadEnemies >= TotalEnemies)
 	{
 		// TODO: 모든 적을 섬멸했다. 다음 스테이지로 이동하라 메시지 표시 (이벤트? OnEnemyAllKilled?)
@@ -66,6 +65,8 @@ void ASTGameMode::OnPlayerDied()
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::OnPlayerDied() End"));
 }
+
+
 
 /************** protected functions **************/
 void ASTGameMode::BeginPlay()
@@ -92,6 +93,7 @@ void ASTGameMode::RestartPlayer(AController* NewPlayer)
 		return;
 	}
 
+	// 플레이어 pawn생성 (최초 1회만)
 	if (!STGameInstance->PlayerPawnInstance)
 	{
 		FActorSpawnParameters SpawnParams;
@@ -106,9 +108,8 @@ void ASTGameMode::RestartPlayer(AController* NewPlayer)
 		Super::RestartPlayer(NewPlayer);
 		return;
 	}
-
-	AActor* PlayerStart = FindPlayerStart(NewPlayer, "");
-	if (PlayerStart)
+	
+	if (const AActor* PlayerStart = FindPlayerStart(NewPlayer, ""))
 	{
 		PlayerPawnInstance->SetActorLocationAndRotation(PlayerStart->GetActorLocation(), PlayerStart->GetActorRotation());
 	}
@@ -118,18 +119,15 @@ void ASTGameMode::RestartPlayer(AController* NewPlayer)
 		PlayerPawnInstance->SetActorLocationAndRotation(FVector::ZeroVector, FRotator::ZeroRotator);
 	}
 
-	// 캐릭터의 상태를 활성화
+	// Pawn 활성화 및 Possess
 	PlayerPawnInstance->SetActorHiddenInGame(false);
 	PlayerPawnInstance->SetActorEnableCollision(true);
 	PlayerPawnInstance->SetActorTickEnabled(true);
-
-	// PlayerController가 캐릭터를 소유
 	NewPlayer->Possess(PlayerPawnInstance);
 
-	// 스켈레탈 메시 교체 로직
+	// 스켈레탈 메시 교체
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::RestartPlayer() Character Type : %s"), *StaticEnum<ECharacterType>()->GetValueAsString(STGameInstance->SelectedCharacter));
-	ASTPlayerCharacter* PlayerCharacter = Cast<ASTPlayerCharacter>(PlayerPawnInstance);
-	if (PlayerCharacter)
+	if (const ASTPlayerCharacter* STPlayerCharacter = Cast<ASTPlayerCharacter>(PlayerPawnInstance))
 	{
 		USkeletalMesh* MeshToUse = nullptr;
 		if (STGameInstance->SelectedCharacter == ECharacterType::JaxMercer)
@@ -145,7 +143,7 @@ void ASTGameMode::RestartPlayer(AController* NewPlayer)
 
 		if (MeshToUse)
 		{
-			PlayerCharacter->GetMesh()->SetSkeletalMesh(MeshToUse);
+			STPlayerCharacter->GetMesh()->SetSkeletalMesh(MeshToUse);
 		}
 		else
 		{
@@ -157,15 +155,14 @@ void ASTGameMode::RestartPlayer(AController* NewPlayer)
 }
 
 
+
 /************** private functions **************/
 void ASTGameMode::StartStage()
 {
-	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::StartStage() Start"));
-
-	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::StartStage() Stage Started. Time Limit : %d seconds"), StageTimeLimit);
-	GetWorldTimerManager().SetTimer(StageTimerHandle, this, &ASTGameMode::OnTimeOver, StageTimeLimit, false);		// StageTimeLimit 후 OnTimeOver실행
-	GetWorldTimerManager().SetTimer(StageTimerUpdateHandle, this, &ASTGameMode::UpdateStageTimerUI, 1.0f, true);	// 1초마다 UI 업데이트
+	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::StartStage() Start / Stage Time Limit : %d seconds"), StageTimeLimit);
 	
+	GetWorldTimerManager().SetTimer(StageTimerHandle, this, &ASTGameMode::OnTimeOver, StageTimeLimit, false);
+	GetWorldTimerManager().SetTimer(StageTimerUpdateHandle, this, &ASTGameMode::UpdateStageTimerUI, 1.0f, true);
 	SetStagePhase(EStagePhase::InProgress);
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::StartStage() End"));
@@ -177,13 +174,15 @@ void ASTGameMode::EndStage(const EStageResult Result)
 	
 	GetWorldTimerManager().ClearTimer(StageTimerHandle);
 	GetWorldTimerManager().ClearTimer(StageTimerUpdateHandle);
-	
+
+	// GameState 업데이트
 	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
 	{
 		STGameState->SetStageResult(Result);
 	}
-	
-	ASTStagePlayerController* STPlayerController = Cast<ASTStagePlayerController>(GetWorld()->GetFirstPlayerController());
+
+	// 점수계산
+	const ASTStagePlayerController* STPlayerController = Cast<ASTStagePlayerController>(GetWorld()->GetFirstPlayerController());
 	if (ASTPlayerState* STPlayerState = STPlayerController->GetPlayerState<ASTPlayerState>())
 	{
 		if (Result == EStageResult::Clear)	STPlayerState->CalculateScore(true);
@@ -194,6 +193,7 @@ void ASTGameMode::EndStage(const EStageResult Result)
 		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::EndStage() Can't Get ASTPlayerState"));
 	}
 
+	// 이벤트 브로드캐스트
 	if (Result == EStageResult::Clear)
 	{
 		OnStageClear.Broadcast();
@@ -217,15 +217,18 @@ void ASTGameMode::ResetStage()
 	DeadEnemies = 0;
 	bStageCleared = false;
 
-	FString CurrentStageName = UGameplayStatics::GetCurrentLevelName(GetWorld());
-	FStageInfoRow* StageInfo = GetStageInfoFromDataTable(CurrentStageName);
-	StageTimeLimit = StageInfo->TimeLimit;
+	// 현재 스테이지 정보 불러오기
+	const FString CurrentStageName = UGameplayStatics::GetCurrentLevelName(GetWorld());
+	const FStageInfoRow* StageInfo = GetStageInfoFromDataTable(CurrentStageName);
+	StageTimeLimit = StageInfo ? StageInfo->TimeLimit : StageTimeLimit;
 
+	// 적 수 카운트
 	TArray<AActor*> EnemyActors;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), ASTEnemyBase::StaticClass(), EnemyActors);
 	TotalEnemies = EnemyActors.Num();
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::ResetStage() Stage(%s) > %d Enemies Found"), *CurrentStageName, TotalEnemies);
 
+	// GameState 초기화
 	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
 	{
 		STGameState->SetStagePhase(EStagePhase::Start);
@@ -233,10 +236,11 @@ void ASTGameMode::ResetStage()
 		STGameState->SetRemainingTime(StageTimeLimit);
 		STGameState->SetStageResult(EStageResult::None);
 		STGameState->SetBossPhase(1);
-		STGameState->SetStageGoalText(StageInfo->StageGoalText);
-		STGameState->SetStageProgressList(StageInfo->StageProgressList);
-		/*UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::ResetStage() StageProgressList[0] : %s"), *StageInfo->StageProgressList[0].ToString());
-		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::ResetStage() StageProgressList[1] : %s"), *StageInfo->StageProgressList[1].ToString());*/
+		if (StageInfo)
+		{
+			STGameState->SetStageGoalText(StageInfo->StageGoalText);
+			STGameState->SetStageProgressList(StageInfo->StageProgressList);
+		}
 	}
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::ResetStage() End"));
@@ -270,8 +274,8 @@ void ASTGameMode::HandlePlayerEnteredClearZone()
 	}
 	else if (DeadEnemies < TotalEnemies)
 	{
-		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() Not Yet Clear Condition(%d/%d enemies killed)"), DeadEnemies, TotalEnemies);
 		// TODO: 아직 조건이 되지 않았다는 UI 메시지 표시
+		UE_LOG(LogSystem, Warning, TEXT("ASTGameMode::HandlePlayerEnteredClearZone() Not Yet Clear Condition(%d/%d enemies killed)"), DeadEnemies, TotalEnemies);
 	}
 	else if (bStageCleared)
 	{
@@ -312,6 +316,7 @@ FStageInfoRow* ASTGameMode::GetStageInfoFromDataTable(const FString& StageName) 
 void ASTGameMode::BindStageClearZoneEnterEvent()
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BindStageClearZoneEnterEvent() Start"));
+	
 	TArray<AActor*> FoundActors;
 	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AStageClearZone::StaticClass(),FoundActors);
 
@@ -322,6 +327,7 @@ void ASTGameMode::BindStageClearZoneEnterEvent()
 			ClearZone->OnPlayerEnteredClearZone.AddDynamic(this, &ASTGameMode::ASTGameMode::HandlePlayerEnteredClearZone);
 		}
 	}
+	
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BindStageClearZoneEnterEvent() End"));
 }
 
@@ -329,7 +335,7 @@ void ASTGameMode::BindPlayerDeathEvent()
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BindPlayerDeathEvent() Start"));
 
-	if (ASTPlayerCharacter* STPlayerCharacter = Cast<ASTPlayerCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn()))
+	if (const ASTPlayerCharacter* STPlayerCharacter = Cast<ASTPlayerCharacter>(GetWorld()->GetFirstPlayerController()->GetPawn()))
 	{
 		if (USTHealthComponent* HealthComponent = STPlayerCharacter->GetHealthComponent())
 		{
@@ -349,16 +355,12 @@ void ASTGameMode::BindPlayerDeathEvent()
 	UE_LOG(LogSystem, Log, TEXT("ASTGameMode::BindPlayerDeathEvent() End"));
 }
 
-void ASTGameMode::UpdateStageTimerUI()
+void ASTGameMode::UpdateStageTimerUI() const
 {
-	// UE_LOG(LogSystem, Log, TEXT("ASTGameMode::UpdateStageTimerUI() Start"));		// 1초마다 반복으로 로그가 너무 많아서 비활성화
-
 	if (ASTGameState* STGameState = GetGameState<ASTGameState>())
 	{
-		float RemainingTimeFloat = GetWorld()->GetTimerManager().GetTimerRemaining(StageTimerHandle);	// 내림(0~29초), 올림(1~30초)
-		int32 RemainingTimeSeconds = FMath::CeilToInt(RemainingTimeFloat);
+		const float RemainingTimeFloat = GetWorld()->GetTimerManager().GetTimerRemaining(StageTimerHandle);	// 내림(0~29초), 올림(1~30초)
+		const int32 RemainingTimeSeconds = FMath::CeilToInt(RemainingTimeFloat);
 		STGameState->SetRemainingTime(RemainingTimeSeconds);
 	}
-	
-	// UE_LOG(LogSystem, Log, TEXT("ASTGameMode::UpdateStageTimerUI() Start"));
 }

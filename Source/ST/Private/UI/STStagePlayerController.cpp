@@ -181,6 +181,7 @@ void ASTStagePlayerController::GetPlayerResults(
 	int32& OutKillCount,
 	int32& OutDamageDealt,
 	int32& OutDamageTaken,
+	int32& OutBulletsUsed,
 	int32& OutHighScore
 ) const
 {
@@ -191,6 +192,7 @@ void ASTStagePlayerController::GetPlayerResults(
 	OutKillCount   = Info.KillCount;
 	OutDamageDealt = Info.TotalDamageInflicted;
 	OutDamageTaken = Info.TotalDamageReceived;
+	OutBulletsUsed = Info.TotalUsedAmmo;
 	OutHighScore   = Info.HighScore;
 }
 
@@ -275,14 +277,7 @@ void ASTStagePlayerController::OnUnPossess()
 	bShowMouseCursor = true;
 }
 
-// 히트마커&데미지량
-static bool IsHeadShot(const FName& BoneName)
-{
-	const FString B = BoneName.ToString();
-	return B.Equals(TEXT("head"), ESearchCase::IgnoreCase)
-		|| B.Equals(TEXT("Head"), ESearchCase::IgnoreCase)
-		|| B.Contains(TEXT("head"), ESearchCase::IgnoreCase);
-}
+
 
 // 진행 상황 텍스트
 void ASTStagePlayerController::RefreshMissionProgress(int32 ProgressIndex)
@@ -703,8 +698,8 @@ void ASTStagePlayerController::ScheduleGameOver(float DelaySeconds)
 	FTimerDelegate D;
 	D.BindWeakLambda(this, [this]()
 	{
-		int32 Score, Kills, DmgDealt, DmgTaken, HighScore;
-		GetPlayerResults(Score, Kills, DmgDealt, DmgTaken, HighScore);
+		int32 Score, Kills, DmgDealt, DmgTaken, BulletsUsed, HighScore;
+		GetPlayerResults(Score, Kills, DmgDealt, DmgTaken, BulletsUsed, HighScore);
 		ShowGameOverResult(Score, Kills, DmgDealt, DmgTaken, PendingGameOverReason);
 	});
 
@@ -896,7 +891,9 @@ void ASTStagePlayerController::ShowGameClearResult()
 		}
 	}
 
-	int32 Score = 0, HighScore = 0;
+	int32 Score = 0, KillCount = 0, DamageDealt = 0, DamageTaken = 0, BulletsUsed = 0, HighScore = 0;
+	GetPlayerResults(Score, KillCount, DamageDealt, DamageTaken, BulletsUsed, HighScore);
+	
 	if (const ASTPlayerState* STPlayerState = GetPlayerState<ASTPlayerState>())
 	{
 		const FPlayerStateInfo& PlayerStateInfo = STPlayerState->GetPlayerStateInfo();
@@ -910,23 +907,25 @@ void ASTStagePlayerController::ShowGameClearResult()
 
 	if (GameClearWidget)
 	{
-		GameClearWidget->SetResultInfo(Score, HighScore);
+		GameClearWidget->SetResultInfo(
+			Score,
+			HighScore,
+			DamageDealt,
+			DamageTaken,
+			BulletsUsed,
+			KillCount
+		);
+
 		SetPause(true);
 		SetInputMode(FInputModeUIOnly());
 		bShowMouseCursor = true;
 
 		if (PlayerCameraManager)
 		{
-			PlayerCameraManager->StartCameraFade(
-				1.f,  // From (검정)
-				0.f,  // To (화면)
-				0.25f,
-				FLinearColor::Black,
-				false,
-				false
-			);
+			PlayerCameraManager->StartCameraFade(1.f, 0.f, 0.25f, FLinearColor::Black, false, false);
 		}
 	}
+
 	UE_LOG(LogSystem, Log, TEXT("ASTStagePlayerController::ShowGameClearResult() End"));
 }
 

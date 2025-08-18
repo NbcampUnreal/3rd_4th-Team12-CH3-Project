@@ -164,6 +164,7 @@ void ASTPlayerState::AddTotalDamageInflicted(const float Amount)
 
 void ASTPlayerState::AddTotalUsedAmmo(const int32 Amount)
 {
+	// UE_LOG(LogSystem, Warning, TEXT("AddTotalUsed AMMO : %d"), PlayerStateInfo.TotalUsedAmmo);
 	PlayerStateInfo.TotalUsedAmmo += Amount;
 }
 
@@ -251,8 +252,8 @@ void ASTPlayerState::OnAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnAmmoChanged(%d / %d) Start"), CurrentAmmo, MaxAmmo);
 
-	int32 UsedAmmo = PlayerStateInfo.PlayerWeaponData.CurrentAmmo - CurrentAmmo;
-	AddTotalUsedAmmo(UsedAmmo);		// 보통 1발씩 증가
+	// int32 UsedAmmo = PlayerStateInfo.PlayerWeaponData.CurrentAmmo - CurrentAmmo;
+	AddTotalUsedAmmo(1);		// 보통 1발씩 증가
 	
 	SetCurrentAmmo(CurrentAmmo);
 	SetMaxAmmo(MaxAmmo);
@@ -301,7 +302,7 @@ void ASTPlayerState::CalculateScore(bool bIsStageClear)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::CalculateScoreAtGameOver() Start"));
 	
-	int RemainingTime = 0;
+	int32 RemainingTime = 0;
 	if (ASTGameState* STGameState = Cast<ASTGameState>(GetWorld()->GetGameState()))
 	{
 		RemainingTime = STGameState->GetGameStateInfo().RemainingTime;
@@ -315,9 +316,17 @@ void ASTPlayerState::CalculateScore(bool bIsStageClear)
 	UE_LOG(LogSystem, Warning, TEXT("ASTPlayerState::CalculateScoreAtGameOver() %d = Score(%d) - %.1f - %f"), NewScore, PlayerStateInfo.Score, PlayerStateInfo.TotalDamageReceived, PlayerStateInfo.TotalUsedAmmo * 0.1f);
 	if (bIsStageClear)
 	{
-		NewScore += RemainingTime * 5; 
+		constexpr int32 ClearBonus = 1000;
+		NewScore += (RemainingTime * 5 + ClearBonus);	
 	}
 	SetScore(FMath::Clamp(NewScore, 0, NewScore));
+
+	if (USTGameInstance* STGameInstance = Cast<USTGameInstance>(GetWorld()->GetGameInstance()))
+	{
+		FSaveData SaveData;
+		SaveData.HighScore = PlayerStateInfo.HighScore;
+		STGameInstance->SaveSavedData(SaveData);
+	}
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::CalculateScoreAtGameOver() End"));
 }
