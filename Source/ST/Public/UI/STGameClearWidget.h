@@ -16,27 +16,37 @@ class ST_API USTGameClearWidget : public UUserWidget
 
 public:
 	UFUNCTION(BlueprintCallable)
-	void SetResultInfo(int32 Score, int32 HighScore);
-
+	void SetResultInfo(
+		int32 Score,
+		int32 HighScore,
+		int32 DamageDealt,
+		int32 DamageTaken,
+		int32 BulletsUsed,
+		int32 EnemiesKilled
+	);
+	
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnRetryRequested);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnReturnToMainRequested);
 	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayEndingRequested);
-
-	UPROPERTY(BlueprintAssignable, Category="Event")
-	FOnRetryRequested OnRetryRequested;
-
-	UPROPERTY(BlueprintAssignable, Category="Event")
-	FOnReturnToMainRequested OnReturnToMainRequested;
-
-	UPROPERTY(BlueprintAssignable, Category="Event")
-	FOnPlayEndingRequested OnPlayEndingRequested;
+	
+	UPROPERTY(BlueprintAssignable, Category="Event") FOnRetryRequested OnRetryRequested;
+	UPROPERTY(BlueprintAssignable, Category="Event") FOnReturnToMainRequested OnReturnToMainRequested;
+	UPROPERTY(BlueprintAssignable, Category="Event") FOnPlayEndingRequested OnPlayEndingRequested;
 	
 protected:
 	virtual void NativeConstruct() override;
 
+	// 게임 결과
+	UPROPERTY(meta = (BindWidget)) UTextBlock* Txt_DamageDealt;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* Txt_DamageTaken;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* Txt_BulletsUsed;
+	UPROPERTY(meta = (BindWidget)) UTextBlock* Txt_EnemiesKilled;
+
+	// 점수
 	UPROPERTY(meta = (BindWidget)) UTextBlock* Txt_Score;
 	UPROPERTY(meta = (BindWidget)) UTextBlock* Txt_HighScore;
 
+	// 버튼
 	UPROPERTY(meta = (BindWidget)) UButton* Btn_Retry;
 	UPROPERTY(meta = (BindWidget)) UButton* Btn_ReturnToMain;
 	UPROPERTY(meta = (BindWidget)) UButton* Btn_Ending;
