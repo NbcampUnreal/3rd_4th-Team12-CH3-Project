@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "Kismet/GameplayStatics.h"
 #include "Player/STPlayerCharacter.h"
+#include "Perception/AISense_Hearing.h"
 
 // 생성자
 ASTWeaponBase::ASTWeaponBase()
@@ -65,6 +66,12 @@ void ASTWeaponBase::Fire()
 		return;
 	}
 	//실제 발사 호출
+	UAISense_Hearing::ReportNoiseEvent(
+	GetWorld(),
+	GetActorLocation(),       // 발생 위치
+	1.0f,                    // 1.0 = 보통크기 소리 , 더 크게 하려면 2.0~5.0 정도도 가능)
+	GetOwner()               // 플레이어
+);
 	HandleFire();
 }
 
