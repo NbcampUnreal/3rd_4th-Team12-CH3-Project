@@ -22,80 +22,26 @@ void USTGameInstance::Init() //  생성자에서는 BP가 NULL로 되어서 문�
 	ResetPlayerStateInfo();
 }
 
-/*
-void USTGameInstance::BindStageClearDelegate(ASTGameMode* STGameMode)
-{
-	// GameMode 이벤트 바인딩
-	if (STGameMode)
-	{
-		STGameMode->OnStageClear.AddDynamic(this, &USTGameInstance::HandleStageClear);
-		UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::OnStart() OnStageClear Bind Success"));
-	}
-	else
-	{
-		UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::OnStart() OnStageClear Bind Failed"));
-	}
-}
-
-void USTGameInstance::HandleStageClear()
-{
-	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::HandleStageClear() Start"));
-
-	SaveSavedData();
-	
-	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::HandleStageClear() End"));
-}*/
-
-/*void USTGameInstance::Init()
-{
-	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::Init() Start"));
-	Super::Init();
-
-	if (MainPlayerClass)	// 게임 시작시 한 번만 캐릭터 인스턴스 생성 및 보관
-	{
-		PlayerPawnInstance = GetWorld()->SpawnActor<APawn>(MainPlayerClass);
-		if (PlayerPawnInstance)
-		{
-			UE_LOG(LogSystem, Log, TEXT("USTGameInstance::Init() Set PlayerPawnInstance"));
-			PlayerPawnInstance->SetActorHiddenInGame(true);
-			PlayerPawnInstance->SetActorEnableCollision(false);
-			PlayerPawnInstance->SetActorTickEnabled(false);
-		}
-	}
-	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::Init() End"));
-}*/
-
-
-void USTGameInstance::StartNewGame()
+void USTGameInstance::StartNewGame()	// TODO: 더 이상 사용 X
 {
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::StartNewGame() Start"));
+	
 	ResetGameData();
 	GoToLevel(EStageType::Lobby);	// 새 게임은 항상 로비에서 캐릭터를 선택하면서 시작함
 	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::StartNewGame() End"));
 }
 
-void USTGameInstance::GoToNextStage()
+void USTGameInstance::GoToNextStage()		// TODO: 이젠 사용 X
 {
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToNextStage() Start"));
 
 	GoToLevel(GetNextStageType(LastStage));
 	
-	/*EStageType NextStage = GetNextStageType(LastStage);
-	if (NextStage != EStageType::None)
-	{
-		GoToLevel(NextStage);
-	}
-	else
-	{
-		UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToNextStage() All Stage Cleared."));
-		// GoToLevel(EStageType::Ending); // TODO: 엔딩 레벨로 이동
-	}*/
-	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToNextStage() End"));
 }
 
-void USTGameInstance::GoToLevel(EStageType StageType)
+void USTGameInstance::GoToLevel(const EStageType StageType)
 {
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::GoToLevel(%s) Start"), *StaticEnum<EStageType>()->GetValueAsString(StageType));
 	
@@ -163,12 +109,10 @@ void USTGameInstance::ResetDataForRetry()
 {
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetPlayerStateInfo() Start"));
 	
-	int32 HighScore = PlayerStateInfo.HighScore;
+	const int32 HighScore = PlayerStateInfo.HighScore;
 	PlayerStateInfo = FPlayerStateInfo();
 	ResetPlayerStateInfo();
 	PlayerStateInfo.HighScore = HighScore;
-
-// 	LastStage = EStageType::Stage1;
 	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetPlayerStateInfo() End"));
 }
@@ -229,17 +173,13 @@ EStageType USTGameInstance::GetNextStageType(EStageType CurrentStage) const
 void USTGameInstance::ResetGameData()
 {
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetGameData() Start"));
-
-	// TODO: 일일히 변수 하나씩 하지말고 struct로 확장필요
-	// LastStage = EStageType::None;
+	
 	SelectedCharacter = ECharacterType::None;
-	// TODO: 테스트용
-	// LastStage = EStageType::Stage3;
 	
 	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::ResetGameData() End"));
 }
 
-void USTGameInstance::ResetPlayerStateInfo() // player 정보 초기화 
+void USTGameInstance::ResetPlayerStateInfo() // 준범 : player 정보 초기화 
 {
 	if (IsValid(PlayerDefaultDataAsset))
 	{
@@ -253,9 +193,7 @@ void USTGameInstance::ResetPlayerStateInfo() // player 정보 초기화
 		PlayerStateInfo.ZoomMultiplier = PlayerDefaultDataAsset->ZoomMultiplier;
 		//weapon
 		PlayerStateInfo.PlayerWeaponData.WeaponClass = PlayerDefaultDataAsset->BaseWeapon;
-		
 	}
-	
 }
 
 void USTGameInstance::LoadSavedData()
@@ -265,9 +203,7 @@ void USTGameInstance::LoadSavedData()
 
 	if (UGameplayStatics::DoesSaveGameExist(SlotName, SlotIndex))
 	{
-		USTSaveGame* LoadGame = Cast<USTSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, SlotIndex));
-
-		if (LoadGame)
+		if (const USTSaveGame* LoadGame = Cast<USTSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, SlotIndex)))
 		{
 			PlayerStateInfo.HighScore = LoadGame->SaveData.HighScore;	// 지금은 HighScore만 저장하기
 			UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::LoadSavedData() Success to Load SavedData(HighScore=%d)"), LoadGame->SaveData.HighScore);
@@ -289,7 +225,6 @@ void USTGameInstance::SaveSavedData(const FSaveData& SaveData)
 	USTSaveGame* SaveObj = Cast<USTSaveGame>(UGameplayStatics::CreateSaveGameObject(USTSaveGame::StaticClass()));
 
 	SaveObj->SaveData = SaveData;
-	// SaveObj->SaveData.HighScore = SaveData.HighScore;
 
 	UGameplayStatics::SaveGameToSlot(SaveObj, USTSaveGame::DefaultSlotName, USTSaveGame::DefaultUserIndex);
 	
