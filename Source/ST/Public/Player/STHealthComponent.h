@@ -24,6 +24,8 @@ public:
 public:
 	
 	bool IsDead() const { return bIsDead; }
+
+	void SetDead(bool NewDead);
 	
 	float GetCurrentHealth() const { return CurrentHealth; }
 	
