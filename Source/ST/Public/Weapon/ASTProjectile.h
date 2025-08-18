@@ -76,7 +76,7 @@ protected:
 
 	// 중력 효과가 지속되는 시간
 	UPROPERTY(EditDefaultsOnly, Category = "Vortex")
-	float VortexDuration = 5.0f;
+	float VortexDuration = 4.5f;
 
 	// 데미지를 주는 간격 (0.2초마다)
 	UPROPERTY(EditDefaultsOnly, Category = "Vortex")
