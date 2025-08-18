@@ -5,15 +5,20 @@
 #include "System/STGameTypes.h"
 #include "STStagePlayerController.generated.h"
 
+class UAudioComponent;
+class USoundBase;
+
+class UUserWidget;
 class USTStageWidget;
 class USTPauseMenuWidget;
 class USTScoreboardWidget;
 class USTGameOverWidget;
 class USTGameClearWidget;
-class UUserWidget;
 class UUWCrosshairWidget;
+
 class USTMovementComponent;
 class USTBossBarWidget;
+
 class ASTEnemyBoss;
 class ASTEnemyBossAIController;
 
@@ -23,206 +28,153 @@ class ST_API ASTStagePlayerController : public APlayerController
 	GENERATED_BODY()
 
 public:
+	// ===== 생성자 & 기본 오버라이드 =====
 	ASTStagePlayerController();
-	
+
 	virtual void BeginPlay() override;
 	virtual void SetupInputComponent() override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void OnPossess(APawn* InPawn) override;
 	virtual void OnUnPossess() override;
 
-	// UI 업데이트 함수
+	// ===== UI 업데이트 =====
 	UFUNCTION() void UpdateHealth(float CurrentHP, float MaxHP);
 	UFUNCTION() void UpdateWeapon(const FString& WeaponName);
-	UFUNCTION()	void UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo);
-	UFUNCTION( BlueprintCallable, Category="Timer")	void UpdateTimer(int32 RemainingSeconds);
-	UFUNCTION()	void UpdateEnemyStatus(int32 Killed, int32 Total);
-	UFUNCTION()	void AddDamageKillLog(const FString& LogText);
+	UFUNCTION() void UpdateAmmo(int32 CurrentAmmo, int32 MaxAmmo);
+	UFUNCTION(BlueprintCallable, Category="Timer") void UpdateTimer(int32 RemainingSeconds);
+	UFUNCTION() void UpdateEnemyStatus(int32 Killed, int32 Total);
+	UFUNCTION() void AddDamageKillLog(const FString& LogText);
 
-	// 전투 피드백
+	// ===== 전투 피드백 =====
 	UFUNCTION() void ShowHitMarker();
 	UFUNCTION() void ShowKillConfirmed();
 	UFUNCTION() void ShowDamageTextAt(FVector WorldLocation, int32 Damage);
 	UFUNCTION() void HandleEnemyDied_ShowConfirm(AActor* DeadEnemy);
 
-	// 일시정지 메뉴
+	// ===== 메뉴 / 보스 UI =====
 	void TogglePauseMenu();
 
-	// 보스 체력바
-	UFUNCTION(BlueprintCallable, Category="UI|Boss")
-	void ShowBossBar(AActor* BossActor);
-	UFUNCTION(BlueprintCallable, Category="UI|Boss")
-	void HideBossBar();
-	
-	// 보스 조우(플레이어 인식) 델리게이트 수신
-	UFUNCTION()
-	void HandleBossRecognizedPlayer();
+	UFUNCTION(BlueprintCallable, Category="UI|Boss") void ShowBossBar(AActor* BossActor);
+	UFUNCTION(BlueprintCallable, Category="UI|Boss") void HideBossBar();
 
-	// 바인딩 대상 캐시(보스 1명 전제)
-	UPROPERTY()
-	ASTEnemyBossAIController* CachedBossAI = nullptr;
+	UFUNCTION() void HandleBossRecognizedPlayer();
+
+	// 보스 AI
+	UPROPERTY() ASTEnemyBossAIController* CachedBossAI = nullptr;
 	bool bBossUIActivated = false;
 
-	// 메뉴 스테이지 전환
-	UFUNCTION()	void HandlePauseReturnToMain();
-	UFUNCTION()	void HandleQuitGame();
-	UFUNCTION()	void HandleStageClear();	// JM 스테이지 클리어시 델리게이트
-	UFUNCTION()	void HandleStageFailed();	// JM 스테이지 실패시 델리게이트
+	// ===== 메뉴/스테이지 전환 핸들러 =====
+	UFUNCTION() void HandlePauseReturnToMain();
+	UFUNCTION() void HandleQuitGame();
+	UFUNCTION() void HandleStageClear();
+	UFUNCTION() void HandleStageFailed();
 
-	// Game Over / Clear 버튼
-	UFUNCTION()	void HandleGameOverRetry();
-	UFUNCTION()	void HandleGameOverReturnToMain();
-	UFUNCTION()	void HandleGameClearRetry();
-	UFUNCTION()	void HandleGameClearReturnToMain();
-	UFUNCTION()	void HandlePlayEndingRequested();
-	
+	// ===== GameOver / GameClear 버튼 =====
+	UFUNCTION() void HandleGameOverRetry();
+	UFUNCTION() void HandleGameOverReturnToMain();
+	UFUNCTION() void HandleGameClearRetry();
+	UFUNCTION() void HandleGameClearReturnToMain();
+	UFUNCTION() void HandlePlayEndingRequested();
 
-	// Game Over / Clear UI
-	UFUNCTION()
-	void ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken, const FText& ReasonText);
-	UFUNCTION()
-	void ShowGameClearResult();
-	/*UFUNCTION( BlueprintImplementableEvent )	
-	void PlayGameClearBGM_BP();		// JM : 이제 안쓰는듯? */
-	void StopLevelBGM();			// JM : 이전 레벨 BGM 정지
-	void PlayAnotherBGM(const EBGMType& BGMType);	// JM : BGM 변경
-	UFUNCTION()
-	void PlayBossBGM(int32 OldPhaseInt, int32 NewPhaseInt);
+	// ===== 결과 UI 표시 =====
+	UFUNCTION() void ShowGameOverResult(int32 Score, int32 KillCount, int32 DamageDealt, int32 DamageTaken, const FText& ReasonText);
+	UFUNCTION() void ShowGameClearResult();
 
-	// 로딩 화면
-	UFUNCTION( BlueprintImplementableEvent )
+	// ===== BGM =====
+	void PlayAnotherBGM(const EBGMType& BGMType);
+	UFUNCTION() void PlayBossBGM(int32 OldPhaseInt, int32 NewPhaseInt);
+
+	// ===== 로딩 화면 (BP 이벤트) =====
+	UFUNCTION(BlueprintImplementableEvent)
 	void LoadNextStage_BP(EStageType NextStage, int32 LoadingScreenIndex);
-	
-	
+
 protected:
-	
-	// 컴포넌트/위젯 클래스
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UUserWidget> StageWidgetClass;
+	// ===== 위젯 클래스 / 인스턴스 =====
+	UPROPERTY(EditDefaultsOnly, Category="UI") TSubclassOf<UUserWidget> StageWidgetClass;
+	UPROPERTY() USTStageWidget* StageWidget = nullptr;
 
-	UPROPERTY()
-	USTStageWidget* StageWidget;
+	UPROPERTY(EditDefaultsOnly, Category="UI") TSubclassOf<UUserWidget> PauseMenuWidgetClass;
+	UPROPERTY() USTPauseMenuWidget* PauseMenuWidget = nullptr;
 
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<UUserWidget> PauseMenuWidgetClass;
+	UPROPERTY(EditDefaultsOnly, Category="UI") TSubclassOf<USTScoreboardWidget> ScoreboardWidgetClass;
+	UPROPERTY() USTScoreboardWidget* ScoreboardWidget = nullptr;
 
-	UPROPERTY()
-	USTPauseMenuWidget* PauseMenuWidget;
+	UPROPERTY(EditDefaultsOnly, Category="UI") TSubclassOf<USTGameOverWidget> GameOverWidgetClass;
+	UPROPERTY() USTGameOverWidget* GameOverWidget = nullptr;
 
-	// 점수판 UI 위젯 클래스
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<USTScoreboardWidget> ScoreboardWidgetClass;
+	UPROPERTY(EditDefaultsOnly, Category="UI") TSubclassOf<USTGameClearWidget> GameClearWidgetClass;
+	UPROPERTY() USTGameClearWidget* GameClearWidget = nullptr;
 
-	// 점수판 위젯 인스턴스
-	UPROPERTY()
-	USTScoreboardWidget* ScoreboardWidget;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="UI|Boss", meta=(AllowPrivateAccess="true"))
+	TSubclassOf<USTBossBarWidget> BossBarWidgetClass;
+	UPROPERTY() USTBossBarWidget* BossBarWidget = nullptr;
 
-	// Enemy 델리게이트 수신
-	UFUNCTION()
-	void OnBossHealthChanged(float Current, float Max, float Percent);
+	// ===== 사운드 에셋 =====
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sound") USoundBase* ClearBGM = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sound") USoundBase* BossPhase2BGM = nullptr;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Sound") UAudioComponent* BGMComp = nullptr;
 
-	UFUNCTION()
-	void OnBossDied(AActor* DeadEnemy);
+	// ===== 보스 이벤트 수신 =====
+	UFUNCTION() void OnBossHealthChanged(float Current, float Max, float Percent);
+	UFUNCTION() void OnBossDied(AActor* DeadEnemy);
 
-	// 게임 오버 UI 클래스
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<USTGameOverWidget> GameOverWidgetClass;
-
-	// 게임 오버 UI 인스턴스
-	UPROPERTY()
-	USTGameOverWidget* GameOverWidget;
-
-	// 게임 클리어 UI 클래스
-	UPROPERTY(EditDefaultsOnly, Category = "UI")
-	TSubclassOf<USTGameClearWidget> GameClearWidgetClass;
-
-	// 게임 클리어 UI 인스턴스
-	UPROPERTY()
-	USTGameClearWidget* GameClearWidget;
-
-	// JM : BGM 에셋
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
-	USoundBase* ClearBGM;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
-	USoundBase* BossPhase2BGM;
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sound")
-	UAudioComponent* BGMComp;
-	
-	// 키 입력 핸들러
+	// ===== 점수판 입력 핸들러 =====
 	void ShowScoreboard();
 	void HideScoreboard();
 
 private:
+	// ===== 진행 상태 =====
 	int32 KilledEnemyCount = 0;
 	int32 TotalEnemyCount  = 0;
+	bool  bGameOverShown   = false;
+
 	FText PendingGameOverReason = NSLOCTEXT("GameOver", "DefaultReason", "게임 오버");
-	void GetPlayerResults(
-	int32& OutScore,
-	int32& OutKillCount,
-	int32& OutDamageDealt,
-	int32& OutDamageTaken,
-	int32& OutHighScore
-	) const;
-	
-	UFUNCTION()
-	void RefreshMissionProgress(int32 ProgressIndex);
-	
-	UFUNCTION()
-	void HandleEnemyDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical);
 
-	UFUNCTION()
-	void HandlePlayerHealed(float HealAmount);
+	// ===== 캐시 =====
+	UPROPERTY() UUWCrosshairWidget*   CachedCrosshair = nullptr;
+	UPROPERTY() USTMovementComponent* CachedMoveComp  = nullptr;
+	bool bPrevZoomState = false;
 
-	UFUNCTION()
-	void HandlePlayerDamaged(float DamageAmount);
-	
-	UFUNCTION()
-	void ShowDamageNumberAtActor(AActor* Target, int32 Damage, bool bCritical, FName SocketName = TEXT("HealthBar"));
-	
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category="UI|Boss", meta=(AllowPrivateAccess="true"))
-	TSubclassOf<USTBossBarWidget> BossBarWidgetClass;
+	// ===== 무기 상태 =====
+	UPROPERTY() FString CurrentWeaponName;
+	bool  bIsShotgunWeapon = false;
+	float DamageTextScreenRadiusPx = 60.f;
 
-	UPROPERTY()
-	USTBossBarWidget* BossBarWidget = nullptr;
-
-	UPROPERTY()
-	ASTEnemyBoss* CurrentBoss = nullptr;
-	
-	// JM: 레벨이동 담당 함수(로딩 화면 + 데이터 초기화)
-	UFUNCTION ( BlueprintCallable )
-	void LoadLevelWithDataResetAndLoadingScreen(const EStageType& NextStage);
-
-	// 게임 오버 화면 딜레이
-	UFUNCTION()
-	void ScheduleGameOver(float DelaySeconds);
+	// ===== 타이머 핸들 / 딜레이 =====
 	FTimerHandle GameOverTimerHandle;
 	float GameOverDelay = 1.5f;
 
-	UFUNCTION()
-	void ScheduleGameClear(float DelaySeconds);
 	FTimerHandle GameClearTimerHandle;
 	float GameClearDelay = 1.5f;
-	
+
 	FDelegateHandle ActorSpawnedHandle;
-	
-	UPROPERTY()
-	UUWCrosshairWidget* CachedCrosshair = nullptr;
-	
-	UPROPERTY()
-	USTMovementComponent* CachedMoveComp = nullptr;
-	
-	bool bPrevZoomState = false;
-	bool bGameOverShown = false;
 
-	// 현재 장착 무기 이름 & 샷건 여부
-	UPROPERTY()
-	FString CurrentWeaponName;
+	// ===== 내부 로직 =====
+	void GetPlayerResults(
+		int32& OutScore,
+		int32& OutKillCount,
+		int32& OutDamageDealt,
+		int32& OutDamageTaken,
+		int32& BulletUesd,
+		int32& OutHighScore
+	) const;
 
-	bool bIsShotgunWeapon = false;
+	UFUNCTION() void RefreshMissionProgress(int32 ProgressIndex);
+	UFUNCTION() void HandleEnemyDamageTaken(AActor* DamagedActor, float DamageAmount, bool bCritical);
+	UFUNCTION() void HandlePlayerHealed(float HealAmount);
+	UFUNCTION() void HandlePlayerDamaged(float DamageAmount);
+	UFUNCTION() void ShowDamageNumberAtActor(AActor* Target, int32 Damage, bool bCritical, FName SocketName = TEXT("HealthBar"));
 
-	// 샷건 전용 데미지 텍스트 랜덤 오프셋 반경
-	float DamageTextScreenRadiusPx = 60.f;
+	// 레벨 이동
+	UFUNCTION(BlueprintCallable) void LoadLevelWithDataResetAndLoadingScreen(const EStageType& NextStage);
 
-	// 샷건일 때 월드 위치를 화면 중앙 기준으로 살짝 랜덤 오프셋
+	// 스케줄러
+	UFUNCTION() void ScheduleGameOver(float DelaySeconds);
+	UFUNCTION() void ScheduleGameClear(float DelaySeconds);
+
+	// 샷건용 데미지텍스트 오프셋
 	FVector GetShotgunScreenRandomLoc(const FVector& BaseWorldLoc) const;
+
+	// 현재 보스
+	UPROPERTY() ASTEnemyBoss* CurrentBoss = nullptr;
 };
