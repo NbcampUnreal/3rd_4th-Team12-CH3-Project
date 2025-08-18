@@ -6,6 +6,7 @@
 #include "GameFramework/Actor.h"
 #include "ItemSpawnPoint.generated.h"
 
+class USTItemSpawnList;
 class ASTItemBase;
 
 UCLASS()
@@ -36,7 +37,7 @@ protected:
 	float SpawnTimer = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	TArray<TSoftClassPtr<ASTItemBase>> SpawnItems;
+	TObjectPtr<USTItemSpawnList> ItemListToSpawn;
 	
 private:
 	

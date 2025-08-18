@@ -5,6 +5,7 @@
 
 #include "Engine/AssetManager.h"
 #include "Item/STItemBase.h"
+#include "Item/STItemSpawnList.h"
 
 
 struct FStreamableManager;
@@ -23,10 +24,10 @@ void AItemSpawnPoint::BeginPlay()
 
 TSoftClassPtr<ASTItemBase> AItemSpawnPoint::GetSpawningItem()
 {
-	if (SpawnItems.Num() > 0)
+	if (IsValid(ItemListToSpawn) && ItemListToSpawn->SpawnableItems.Num() > 0)
 	{
-		int32 SpawnNumber = FMath::RandRange(0, SpawnItems.Num() - 1);
-		return SpawnItems[SpawnNumber];
+		int32 SpawnNumber = FMath::RandRange(0, ItemListToSpawn->SpawnableItems.Num() - 1);
+		return ItemListToSpawn->SpawnableItems[SpawnNumber];
 	}
 	return nullptr;
 }
