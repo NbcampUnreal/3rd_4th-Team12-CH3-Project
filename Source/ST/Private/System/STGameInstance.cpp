@@ -1,7 +1,9 @@
 ﻿#include "System/STGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Player/STPlayerBaseData.h"
+#include "System/STGameMode.h"
 #include "System/STLog.h"
+#include "System/STSaveGame.h"
 
 /************** public functions **************/
 USTGameInstance::USTGameInstance()
@@ -16,8 +18,33 @@ USTGameInstance::USTGameInstance()
 void USTGameInstance::Init() //  생성자에서는 BP가 NULL로 되어서 문제 발생 
 {
 	Super::Init();
+	LoadSavedData();
 	ResetPlayerStateInfo();
 }
+
+/*
+void USTGameInstance::BindStageClearDelegate(ASTGameMode* STGameMode)
+{
+	// GameMode 이벤트 바인딩
+	if (STGameMode)
+	{
+		STGameMode->OnStageClear.AddDynamic(this, &USTGameInstance::HandleStageClear);
+		UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::OnStart() OnStageClear Bind Success"));
+	}
+	else
+	{
+		UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::OnStart() OnStageClear Bind Failed"));
+	}
+}
+
+void USTGameInstance::HandleStageClear()
+{
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::HandleStageClear() Start"));
+
+	SaveSavedData();
+	
+	UE_LOG(LogSystem, Log, TEXT("USTGameInstance::HandleStageClear() End"));
+}*/
 
 /*void USTGameInstance::Init()
 {
@@ -229,4 +256,42 @@ void USTGameInstance::ResetPlayerStateInfo() // player 정보 초기화
 		
 	}
 	
+}
+
+void USTGameInstance::LoadSavedData()
+{
+	const FString SlotName = USTSaveGame::DefaultSlotName;
+	const int32 SlotIndex = USTSaveGame::DefaultUserIndex;
+
+	if (UGameplayStatics::DoesSaveGameExist(SlotName, SlotIndex))
+	{
+		USTSaveGame* LoadGame = Cast<USTSaveGame>(UGameplayStatics::LoadGameFromSlot(SlotName, SlotIndex));
+
+		if (LoadGame)
+		{
+			PlayerStateInfo.HighScore = LoadGame->SaveData.HighScore;	// 지금은 HighScore만 저장하기
+			UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::LoadSavedData() Success to Load SavedData(HighScore=%d)"), LoadGame->SaveData.HighScore);
+		}
+		else
+		{
+			UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::LoadSavedData() Load Success, but Cast Failed"));			
+		}
+	}
+	else
+	{
+		// SaveData = FSaveData(); // 나중에 save data로 관리해야 한다면, 해당 구조체를 헤더에 추가.(지금은 PlayerStateInfo를 초기화해서 안해도 됨)
+		UE_LOG(LogSystem, Warning, TEXT("USTGameInstance::LoadSavedData() Load Failed, No Save Data. (Use Default SaveData())"));
+	}
+}
+
+void USTGameInstance::SaveSavedData(const FSaveData& SaveData)
+{
+	USTSaveGame* SaveObj = Cast<USTSaveGame>(UGameplayStatics::CreateSaveGameObject(USTSaveGame::StaticClass()));
+
+	SaveObj->SaveData = SaveData;
+	// SaveObj->SaveData.HighScore = SaveData.HighScore;
+
+	UGameplayStatics::SaveGameToSlot(SaveObj, USTSaveGame::DefaultSlotName, USTSaveGame::DefaultUserIndex);
+	
+	UE_LOG(LogSystem, Warning, TEXT("게임 저장 완료! HighScore = %d"), SaveObj->SaveData.HighScore);
 }

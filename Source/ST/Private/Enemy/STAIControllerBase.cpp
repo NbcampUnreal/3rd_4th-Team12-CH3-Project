@@ -46,7 +46,7 @@ void ASTAIControllerBase::StartBehaviorTree()
 
 void ASTAIControllerBase::NotifyPlayerAttack(AActor* DamagedEnemy)
 {
-    AddToRecognitionGauge(60.0f);
+    AddToRecognitionGauge(90.0f);
 }
 
 void ASTAIControllerBase::AddToRecognitionGauge(float Delta)

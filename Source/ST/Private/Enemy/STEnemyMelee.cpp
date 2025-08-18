@@ -1,17 +1,16 @@
 #include "Enemy/STEnemyMelee.h"
-#include "AIController.h"
 #include "TimerManager.h"
 #include "Kismet/GameplayStatics.h"
 #include "Engine/World.h"
 #include "Enemy/STMeleeAnimInstance.h"
-#include "BrainComponent.h"
 #include "Components/CapsuleComponent.h"
 
 ASTEnemyMelee::ASTEnemyMelee()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	AttackRange = 200.f;
+	AttackRange = 400.f;
 	bIsAttackCooldown = false;
+	Defense = 20.f;
 	StateComponent->SetState(EEnemyState::Idle);
 }
 
@@ -104,21 +103,7 @@ void ASTEnemyMelee::AttackEndNotify()
 void ASTEnemyMelee::Die()
 {
 	GetWorldTimerManager().ClearAllTimersForObject(this);
-
-	if (AAIController* AIController = Cast<AAIController>(GetController()))
-	{
-		AIController->StopMovement();
-		if (AIController->BrainComponent)
-		{
-			AIController->BrainComponent->StopLogic(TEXT("Dead"));
-		}
-	}
 	GetCapsuleComponent()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-
-	if (DeathSound)
-	{
-		UGameplayStatics::PlaySoundAtLocation(this, DeathSound, GetActorLocation());
-	}
 	
 	Super::Die();
 }
