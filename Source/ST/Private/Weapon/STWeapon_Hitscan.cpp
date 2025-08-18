@@ -6,17 +6,18 @@
 #include "Particles/ParticleSystemComponent.h"
 #include "Player/STPlayerCharacter.h" // 캐릭터 클래스 포함
 
-// ★ 부모가 호출해 줄 FireWeapon 함수의 실제 내용
+// 발사 실제 로직 구현
 void ASTWeapon_Hitscan::FireWeapon()
 {
+	//캐릭터 가져오기 및 캐릭터 타입인지 확인
 	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
 	if (!OwnerCharacter) return;
-
+	//컨트롤러 가져오기
 	AController* OwnerController = OwnerCharacter->GetController();
 	APlayerController* PC = Cast<APlayerController>(OwnerController);
 	if (!PC) return;
 
-	// 1. 화면 중앙에서 월드 방향을 계산합니다.
+	//화면 중앙에서 월드 방향을 계산합니다.
 	int32 ViewportSizeX, ViewportSizeY;
 	PC->GetViewportSize(ViewportSizeX, ViewportSizeY);
 	const FVector2D ScreenCenter(ViewportSizeX / 2.0f, ViewportSizeY / 2.0f);
