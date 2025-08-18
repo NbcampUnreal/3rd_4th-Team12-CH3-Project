@@ -143,7 +143,11 @@ void ASTPlayerCharacter::BeginPlay()
 		FOnCharacterZooming.AddUObject(FPSCameraComponent, &USTCameraComponent::HandleZoom);
 	}
 	
-
+	ASTGameMode* GameMode = GetWorld()->GetAuthGameMode<ASTGameMode>();
+	if (IsValid(GameMode))
+	{
+		GameMode->OnStageFailed.AddDynamic(this,&ASTPlayerCharacter::HandleDeath);
+	}
 	
 }
 
@@ -360,6 +364,10 @@ float ASTPlayerCharacter::TakeDamage(float DamageAmount, struct FDamageEvent con
 
 void ASTPlayerCharacter::HandleDeath()
 {
+	if (!HealthComponent->IsDead())
+	{
+		HealthComponent->SetDead(true);
+	}
 	SetViewMode(true);
 	GetMesh()->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
