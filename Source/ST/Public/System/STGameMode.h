@@ -6,12 +6,12 @@
 #include "STGameTypes.h"
 #include "STGameMode.generated.h"
 
-// DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnPlayerEnteredClearZone);	// Clear Zone -> PlayerController -> GameMode 순으로 접근
+/* Event Delegate */
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageClear);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnStageFailed);
 
 /**
- *  게임 규칙, 결과 판단, 진행
+ *  게임 규칙, 결과 판단, 진행을 담당하는 GameMode (작성자 : JM)
  */
 UCLASS()
 class ST_API ASTGameMode : public AGameMode
@@ -22,51 +22,62 @@ public:
 	ASTGameMode();
 
 	UPROPERTY (BlueprintAssignable, Category = "Event" )
-	FOnStageClear OnStageClear;
+	FOnStageClear OnStageClear;		// 스테이지 클리어 이벤트
 
 	UPROPERTY( BlueprintAssignable, Category = "Event" )
-	FOnStageFailed OnStageFailed;
+	FOnStageFailed OnStageFailed;	// 스테이지 실패 이벤트
 
 	UFUNCTION( BlueprintCallable )
-	void OnEnemyKilled();			// Enemy -> GameMode
+	void OnEnemyKilled();			// 적 처치 시 호출(Enemy -> GameMode)
 
 	UFUNCTION( BlueprintCallable )
-	void OnPlayerDied();			// PlayerCharacter -> GameMode
+	void OnPlayerDied();			// 플레이어 사망 시 호출(PlayerCharacter -> GameMode)
 	
 protected:
+	/* Player */
 	UPROPERTY( EditAnywhere, BlueprintReadWrite, Category = "PlayerClasses" )
 	TSubclassOf<APawn> MainPlayerClass;
-	
+
+	/* Engine Overrides */
 	virtual void BeginPlay() override;
 	virtual void RestartPlayer(AController* NewPlayer) override;
 
-	
-	
-
-private:
-	// member variables
-	UPROPERTY( VisibleInstanceOnly, Category = "StageInfo" )
-	int32 TotalEnemies;
-	UPROPERTY( VisibleInstanceOnly, Category = "StageInfo" )
-	int32 DeadEnemies;
-	UPROPERTY( VisibleInstanceOnly, Category = "StageInfo" )
-	int32 StageTimeLimit;
-	FTimerHandle StageTimerHandle;
-	FTimerHandle StageTimerUpdateHandle;
-	bool bStageCleared;
+	/* Stage Data */
 	UPROPERTY(EditDefaultsOnly, Category="StageInfo", meta = (AllowPrivateAccess = "true"))
 	UDataTable* StageInfoTable;
 	
-	// member functions
+
+private:
+	/* Stage Runtime Variables */
+	UPROPERTY( VisibleInstanceOnly, Category = "StageInfo" )
+	int32 TotalEnemies = 0;
+
+	UPROPERTY( VisibleInstanceOnly, Category = "StageInfo" )
+	int32 DeadEnemies = 0;
+
+	UPROPERTY( VisibleInstanceOnly, Category = "StageInfo" )
+	int32 StageTimeLimit = 0;
+	bool bStageCleared = false;
+	
+	FTimerHandle StageTimerHandle;
+	FTimerHandle StageTimerUpdateHandle;
+
+	/* Stage Logic */
 	void StartStage();
 	void EndStage(const EStageResult Result);
 	void ResetStage();
 	void OnTimeOver();
+
+	
+	/* Stage Event Handlers */
 	UFUNCTION()
 	void HandlePlayerEnteredClearZone();
-	void SetStagePhase(const EStagePhase NewPhase) const;
-	FStageInfoRow* GetStageInfoFromDataTable(const FString& StageName) const;
+	
 	void BindStageClearZoneEnterEvent();
 	void BindPlayerDeathEvent();
-	void UpdateStageTimerUI();
+
+	/* Stage Utilities */
+	void SetStagePhase(const EStagePhase NewPhase) const;
+	FStageInfoRow* GetStageInfoFromDataTable(const FString& StageName) const;
+	void UpdateStageTimerUI() const;
 };
