@@ -65,7 +65,7 @@ void USTStageWidget::UpdateEnemyStatus(int32 Killed, int32 Total)
 {
     if (Txt_EnemyStatus)
     {
-        const FString Text = FString::Printf(TEXT("죽인 적 수 : %d / 전체 적 수 : %d"), Killed, Total);
+        const FString Text = FString::Printf(TEXT("처치한 적 수 : %d / 전체 적 수 : %d"), Killed, Total);
         Txt_EnemyStatus->SetText(FText::FromString(Text));
     }
 }
