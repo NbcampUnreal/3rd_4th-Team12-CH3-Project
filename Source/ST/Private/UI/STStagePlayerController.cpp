@@ -1119,7 +1119,15 @@ void ASTStagePlayerController::HandleStageFailed()
 //Game Over 버튼
 void ASTStagePlayerController::HandleGameOverRetry()
 {
-	LoadLevelWithDataResetAndLoadingScreen(EStageType::Stage1);
+	// LoadLevelWithDataResetAndLoadingScreen(EStageType::Stage1);
+
+	EStageType CurrStage = EStageType::None;
+	if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
+	{
+		CurrStage = GI->LastStage;
+	}
+	LoadLevelWithDataResetAndLoadingScreen(CurrStage);
+	
 	/*if (USTGameInstance* GI = GetGameInstance<USTGameInstance>())
 	{
 		// GI->GoToLevel(EStageType::Stage1);
