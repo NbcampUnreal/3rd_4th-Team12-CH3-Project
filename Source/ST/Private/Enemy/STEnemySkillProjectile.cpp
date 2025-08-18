@@ -1,4 +1,3 @@
-// Enemy/STEnemyProjectile.cpp - Action 시스템 전용 (정석적인 초기화)
 #include "Enemy/STEnemySkillProjectile.h"
 #include "NiagaraComponent.h"
 #include "GameFramework/ProjectileMovementComponent.h"
@@ -44,7 +43,6 @@ ASTEnemySkillProjectile::ASTEnemySkillProjectile()
     ProjectileNiagaraComp->SetupAttachment(RootComponent);
     ProjectileNiagaraComp->SetAutoActivate(false);
 
-    // ✅ InitialLifeSpan을 0으로 설정 (자동 삭제 방지, 폭발 시에만 삭제)
     InitialLifeSpan = 0.0f;
 }
 
@@ -60,7 +58,6 @@ void ASTEnemySkillProjectile::InitializeProjectile(
     UNiagaraSystem* NiagaraTrail,
     UNiagaraSystem* NiagaraExplosion)
 {
-    // 기본 설정
     ProjectileDamage = Damage;
     AreaDamageRadius = AreaRadius;
     TrailEffect = Trail;
@@ -79,19 +76,16 @@ void ASTEnemySkillProjectile::InitializeProjectile(
     {
         ProjectileNiagaraComp->SetAsset(NiagaraTrailEffect);
         ProjectileNiagaraComp->Activate();
-        UE_LOG(LogTemp, Warning, TEXT("[INIT] Niagara TrailEffect activated: %s"), *NiagaraTrailEffect->GetName());
     }
     else if (TrailEffect && ProjectileParticleComp)
     {
         ProjectileParticleComp->SetTemplate(TrailEffect);
         ProjectileParticleComp->ActivateSystem();
-        UE_LOG(LogTemp, Warning, TEXT("[INIT] Cascade TrailEffect activated: %s"), *TrailEffect->GetName());
     }
 
     if (FireSound)
     {
         UGameplayStatics::PlaySoundAtLocation(GetWorld(), FireSound, GetActorLocation());
-        UE_LOG(LogTemp, Warning, TEXT("[INIT] FireSound played: %s"), *FireSound->GetName());
     }
 
     // 지연 폭발 설정
@@ -104,17 +98,14 @@ void ASTEnemySkillProjectile::InitializeProjectile(
             ExplosionDelay,
             false
         );
-        UE_LOG(LogTemp, Warning, TEXT("[INIT] Delayed explosion set: %.1fs"), ExplosionDelay);
     }
     
-    UE_LOG(LogTemp, Warning, TEXT("[INIT] Projectile fully initialized"));
 }
 
 void ASTEnemySkillProjectile::BeginPlay()
 {
     Super::BeginPlay();
 
-    // ✅ 이미 초기화되었으면 충돌 설정만
     if (bIsInitialized)
     {
         // 충돌 설정
@@ -127,12 +118,6 @@ void ASTEnemySkillProjectile::BeginPlay()
             CollisionComponent->OnComponentBeginOverlap.AddDynamic(this, &ASTEnemySkillProjectile::OnOverlapBegin);
             CollisionComponent->OnComponentHit.AddDynamic(this, &ASTEnemySkillProjectile::OnHit);
         }
-        
-        UE_LOG(LogTemp, Warning, TEXT("[BEGINPLAY] Projectile BeginPlay completed"));
-    }
-    else
-    {
-        UE_LOG(LogTemp, Error, TEXT("[BEGINPLAY] Projectile not initialized!"));
     }
 }
 
@@ -149,10 +134,8 @@ void ASTEnemySkillProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherA
 {
     if (!bDelayedExplosion)
     {
-        // 🔥 먼저 World에 독립적으로 이펙트 스폰
         PlayExplosionEffects(Hit.Location);
         
-        // 🔥 약간 지연 후 프로젝타일 삭제 (이펙트 시작 시간 확보)
         FTimerHandle DestroyTimerHandle;
         GetWorld()->GetTimerManager().SetTimer(
             DestroyTimerHandle,
@@ -160,7 +143,7 @@ void ASTEnemySkillProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherA
             {
                 Destroy();
             },
-            0.1f,  // 0.1초 후 삭제
+            0.1f,
             false
         );
     }
@@ -179,10 +162,8 @@ void ASTEnemySkillProjectile::OnOverlapBegin(UPrimitiveComponent* OverlappedComp
     {
         ApplyDamageToTarget(OtherActor, HitLocation);
         
-        // 🔥 먼저 World에 독립적으로 이펙트 스폰
         PlayExplosionEffects(HitLocation);
         
-        // 🔥 약간 지연 후 프로젝타일 삭제
         FTimerHandle DestroyTimerHandle;
         GetWorld()->GetTimerManager().SetTimer(
             DestroyTimerHandle,
@@ -203,12 +184,9 @@ void ASTEnemySkillProjectile::TriggerDelayedExplosion()
     bHasExploded = true;
     const FVector ExplosionLocation = GetActorLocation();
 
-    UE_LOG(LogTemp, Warning, TEXT("[EXPLOSION] Delayed explosion triggered at %s"), *ExplosionLocation.ToString());
-
     // 폭발 데미지
     if (AreaDamageRadius > 0.f)
     {
-        // ✅ 주변의 모든 액터를 찾아서 Player 태그가 있는 것만 데미지 적용
         TArray<AActor*> OverlappingActors;
         UKismetSystemLibrary::SphereOverlapActors(
             GetWorld(),
@@ -216,13 +194,13 @@ void ASTEnemySkillProjectile::TriggerDelayedExplosion()
             AreaDamageRadius,
             TArray<TEnumAsByte<EObjectTypeQuery>>(),
             APawn::StaticClass(),
-            TArray<AActor*>{ProjectileShooter}, // 발사자 제외
+            TArray<AActor*>{ProjectileShooter},
             OverlappingActors
         );
         
         for (AActor* Actor : OverlappingActors)
         {
-            // ✅ Player 태그가 있는 액터에게만 데미지 적용
+        	// Player 태그만 데미지 적용
             if (Actor && Actor->ActorHasTag("Player"))
             {
                 UGameplayStatics::ApplyDamage(
@@ -232,8 +210,6 @@ void ASTEnemySkillProjectile::TriggerDelayedExplosion()
                     this,
                     nullptr
                 );
-                
-                UE_LOG(LogTemp, Warning, TEXT("[EXPLOSION] Damage applied to Player: %s"), *Actor->GetName());
             }
         }
     }
@@ -254,18 +230,17 @@ void ASTEnemySkillProjectile::TriggerDelayedExplosion()
 void ASTEnemySkillProjectile::PlayExplosionEffects(const FVector& Location)
 {
     // 폭발 파티클
-    if (NiagaraExplosionEffect)  // Trail이 아닌 Explosion 사용!
+    if (NiagaraExplosionEffect)
     {
         UNiagaraFunctionLibrary::SpawnSystemAtLocation(
             GetWorld(), 
-            NiagaraExplosionEffect,  // Explosion Effect 사용
+            NiagaraExplosionEffect,
             Location,
             FRotator::ZeroRotator,
             FVector::OneVector,
-            true  // bAutoDestroy = true
+            true
         );
     }
-    // 🔥 Cascade Explosion Effect (World에 직접 스폰)
     else if (ExplosionEffect)
     {
         UGameplayStatics::SpawnEmitterAtLocation(
@@ -327,14 +302,12 @@ void ASTEnemySkillProjectile::ApplyDamageToTarget(AActor* Target, const FVector&
 
 void ASTEnemySkillProjectile::SpawnHitEffects(const FVector& Location, const FVector& Normal)
 {
-    // 폭발 이펙트 사용
     if (ExplosionEffect)
     {
         const FRotator HitRotation = Normal.Rotation();
         UGameplayStatics::SpawnEmitterAtLocation(GetWorld(), ExplosionEffect, Location, HitRotation);
     }
     
-    // 폭발 사운드 사용
     if (ExplosionSound)
     {
         UGameplayStatics::PlaySoundAtLocation(GetWorld(), ExplosionSound, Location);
@@ -345,19 +318,16 @@ void ASTEnemySkillProjectile::SetProjectileAppearance(UStaticMesh* Mesh, UMateri
 {
     if (!ProjectileMesh) return;
 
-    // 메시 설정
     if (Mesh)
     {
         ProjectileMesh->SetStaticMesh(Mesh);
     }
-
-    // 머티리얼 설정
+	
     if (Material)
     {
         ProjectileMesh->SetMaterial(0, Material);
     }
 
-    // 크기 설정
     if (!Scale.IsNearlyZero())
     {
         ProjectileMesh->SetRelativeScale3D(Scale);
