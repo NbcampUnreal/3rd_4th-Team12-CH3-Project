@@ -23,6 +23,7 @@ protected:
 	virtual void BeginPlay() override;
 
 	void HandleSpawnItem();
+	void SpawnItemDirectly(UClass* ItemClass);
 
 	void SetSpawnTimer();
 	
@@ -37,7 +38,7 @@ protected:
 	float SpawnTimer = 0.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Setting")
-	TObjectPtr<USTItemSpawnList> ItemListToSpawn;
+	TArray<TSoftClassPtr<ASTItemBase>> SpawnableItems;
 	
 private:
 	
