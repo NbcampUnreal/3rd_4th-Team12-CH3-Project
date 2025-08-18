@@ -1,4 +1,3 @@
-// Enemy/STEnemyProjectile.h - Action 시스템 전용 (정석적인 초기화)
 #pragma once
 
 #include "CoreMinimal.h"
@@ -33,7 +32,6 @@ public:
     UPROPERTY(VisibleAnywhere, Category="VFX")
     class UNiagaraComponent* ProjectileNiagaraComp;
 
-    // === Action 시스템용 속성들 ===
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Combat")
     float ProjectileDamage = 50.0f;
 
@@ -48,7 +46,7 @@ public:
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "SFX")
     USoundBase* HitSound = nullptr;
 
-    // === Action에서 설정할 이펙트/사운드 ===
+    // Action에서 설정할 이펙트/사운드
     UPROPERTY(BlueprintReadWrite, Category="Effects")
     UParticleSystem* TrailEffect = nullptr;
     UPROPERTY(BlueprintReadWrite, Category="Effects")
@@ -72,7 +70,6 @@ public:
     UPROPERTY(BlueprintReadWrite, Category="Explosion")
     float ExplosionDelay = 2.0f;
 
-    // ✅ 정석적인 초기화 함수 추가
     UFUNCTION(BlueprintCallable)
     void InitializeProjectile(
         float Damage,
@@ -87,7 +84,6 @@ public:
         UNiagaraSystem* NiagaraExplosion = nullptr
     );
 
-    // === 설정 함수들 ===
     UFUNCTION(BlueprintCallable)
     void SetProjectileAppearance(UStaticMesh* Mesh, UMaterialInterface* Material, const FVector& Scale);
 
@@ -121,8 +117,6 @@ private:
     FTimerHandle ExplosionTimerHandle;
     FTimerHandle TrailTimerHandle;
     bool bHasExploded = false;
-
-    // ✅ 초기화 완료 플래그
     bool bIsInitialized = false;
 
     UFUNCTION()
