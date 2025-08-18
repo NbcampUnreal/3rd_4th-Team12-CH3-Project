@@ -13,6 +13,11 @@ USTHealthComponent::USTHealthComponent()
 	// ...
 }
 
+void USTHealthComponent::SetDead(bool NewDead)
+{
+	bIsDead = NewDead;
+}
+
 void USTHealthComponent::Initialize()
 {
 	UpdateHealthStatus();
