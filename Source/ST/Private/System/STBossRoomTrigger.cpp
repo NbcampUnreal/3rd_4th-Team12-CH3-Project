@@ -1,5 +1,4 @@
 ﻿#include "System/STBossRoomTrigger.h"
-
 #include "Player/STPlayerCharacter.h"
 #include "System/STLog.h"
 
@@ -7,6 +6,7 @@
 ASTBossRoomTrigger::ASTBossRoomTrigger()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	DoorToClose = nullptr;
 }
 
 void ASTBossRoomTrigger::NotifyActorBeginOverlap(AActor* OtherActor)

@@ -25,7 +25,9 @@ void ASTDoor::BeginPlay()
 	{
 		if (ASTEnemyBoss* Boss = Cast<ASTEnemyBoss>(E))
 		{
+			Boss->OnDied.RemoveDynamic(this, &ASTDoor::HandleBossDefeated);	// 중복 바인딩 방지
 			Boss->OnDied.AddDynamic(this, &ASTDoor::HandleBossDefeated);
+			
 			UE_LOG(LogSystem, Warning, TEXT("ASTDoor::BeginPlay() Binding Success : HandleBossDefeated"));
 		}
 		else
@@ -50,6 +52,5 @@ void ASTDoor::HandleBossDefeated(AActor* DeadEnemy)
 	else
 	{
 		UE_LOG(LogSystem, Warning, TEXT("ASTDoor::HandleBossDefeated() Cast Failed"));
-		
 	}
 }

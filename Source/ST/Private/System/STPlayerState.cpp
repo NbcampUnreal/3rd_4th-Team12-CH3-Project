@@ -164,6 +164,7 @@ void ASTPlayerState::AddTotalDamageInflicted(const float Amount)
 
 void ASTPlayerState::AddTotalUsedAmmo(const int32 Amount)
 {
+	// UE_LOG(LogSystem, Warning, TEXT("AddTotalUsed AMMO : %d"), PlayerStateInfo.TotalUsedAmmo);
 	PlayerStateInfo.TotalUsedAmmo += Amount;
 }
 
@@ -251,8 +252,8 @@ void ASTPlayerState::OnAmmoChanged(int32 CurrentAmmo, int32 MaxAmmo)
 {
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::OnAmmoChanged(%d / %d) Start"), CurrentAmmo, MaxAmmo);
 
-	int32 UsedAmmo = PlayerStateInfo.PlayerWeaponData.CurrentAmmo - CurrentAmmo;
-	AddTotalUsedAmmo(UsedAmmo);		// 보통 1발씩 증가
+	// int32 UsedAmmo = PlayerStateInfo.PlayerWeaponData.CurrentAmmo - CurrentAmmo;
+	AddTotalUsedAmmo(1);		// 보통 1발씩 증가
 	
 	SetCurrentAmmo(CurrentAmmo);
 	SetMaxAmmo(MaxAmmo);

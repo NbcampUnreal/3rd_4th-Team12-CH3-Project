@@ -282,6 +282,11 @@ FStItemPivotData* USTWeaponManagerComponent::GetWeaponPivotData(EWeaponType type
              WeaponRow = TEXT("Sniper");
              break;
           }
+       case EWeaponType::Launcher:
+       	{
+       		WeaponRow = TEXT("Launcher");
+       		break;
+       	}
        default:
           return nullptr;
        }

@@ -11,12 +11,14 @@ class ST_API ASTDoor : public AActor
 
 public:
 	ASTDoor();
+	
 	UPROPERTY( EditAnywhere, Category ="Door")
-	bool bIsClosed;
+	bool bIsClosed;		// NOTE: bIsOpened가 더 직관적임(긍정상태값으로 네이밍 하는게 좋음)
 
-	/* member functions */
+	/* Blueprint Events */
 	UFUNCTION( BlueprintImplementableEvent )
 	void OpenDoor();
+	
 	UFUNCTION( BlueprintImplementableEvent )
 	void CloseDoor();
 
@@ -27,6 +29,6 @@ protected:
 	void HandleBossDefeated(AActor* DeadEnemy);
 
 private:
-	UPROPERTY( EditAnywhere, Category ="Door")
+	UPROPERTY( EditAnywhere, Category ="Door", meta = ( AllowPrivateAccess = "true" ) )
 	UStaticMeshComponent* DoorMesh;
 };
