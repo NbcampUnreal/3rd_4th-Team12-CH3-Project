@@ -46,6 +46,7 @@ public:
 	EStageType LastStage;
 
 	/* Player State */
+	UPROPERTY()
 	FPlayerStateInfo PlayerStateInfo;
 	
 	UFUNCTION( BlueprintCallable, Category="Save" )

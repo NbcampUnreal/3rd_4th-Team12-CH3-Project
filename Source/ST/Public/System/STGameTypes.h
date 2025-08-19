@@ -100,20 +100,20 @@ struct FPlayerStateInfo		// TODO: 향후 PlayerState가 커지면, 레벨 이동
 		, TotalUsedAmmo(0)
 	{}
 
-	ECharacterType SelectedCharacter;
-	float CurrentHP;
-	float MaxHP;
-	float MoveSpeed;
-	float SprintMultiplier;
-	float CrouchMultiplier;
-	float ZoomMultiplier;
-	FWeaponSaveData PlayerWeaponData;
-	int32 KillCount;
-	int32 Score;
-	int32 HighScore;
-	float TotalDamageReceived;	// 받은 피해량
-	float TotalDamageInflicted;	// 가한 피해량
-	int32 TotalUsedAmmo;
+	UPROPERTY() ECharacterType SelectedCharacter;
+	UPROPERTY() float CurrentHP;
+	UPROPERTY() float MaxHP;
+	UPROPERTY() float MoveSpeed;
+	UPROPERTY() float SprintMultiplier;
+	UPROPERTY() float CrouchMultiplier;
+	UPROPERTY() float ZoomMultiplier;
+	UPROPERTY() FWeaponSaveData PlayerWeaponData;
+	UPROPERTY() int32 KillCount;
+	UPROPERTY() int32 Score;
+	UPROPERTY() int32 HighScore;
+	UPROPERTY() float TotalDamageReceived;	// 받은 피해량
+	UPROPERTY() float TotalDamageInflicted;	// 가한 피해량
+	UPROPERTY() int32 TotalUsedAmmo;
 };
 
 USTRUCT( BlueprintType )

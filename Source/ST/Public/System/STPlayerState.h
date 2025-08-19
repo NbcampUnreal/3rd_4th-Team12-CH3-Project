@@ -54,6 +54,7 @@ protected:
 	void OnChangedCurrentWeapon( const TSoftClassPtr<ASTWeaponBase> NewWeapon);
 	
 private:
+	UPROPERTY()
 	FPlayerStateInfo PlayerStateInfo;
 	float ScoreMultiplier = 0.01f; 
 };

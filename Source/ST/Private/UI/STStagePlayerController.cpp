@@ -84,6 +84,14 @@ void ASTStagePlayerController::BeginPlay()
 		}
 	}
 
+	// JM : 레벨 로드시 플레이어 현재 체력으로 초기화
+	if (ASTPlayerState* STPlayerState = GetPlayerState<ASTPlayerState>())
+	{
+		const FPlayerStateInfo PlayerStateInfo = STPlayerState->GetPlayerStateInfo();
+		UpdateHealth(PlayerStateInfo.CurrentHP, PlayerStateInfo.MaxHP);
+		
+	}
+
 	SetInputMode(FInputModeGameOnly());
 	bShowMouseCursor = false;
 	
@@ -1208,6 +1216,12 @@ void ASTStagePlayerController::LoadLevelWithDataResetAndLoadingScreen(const ESta
 				break;
 			case EStageType::Stage1:
 				LoadingScreenIndex = 1;
+				break;
+			case EStageType::Stage2:
+				LoadingScreenIndex = 2;
+				break;
+			case EStageType::Stage3:
+				LoadingScreenIndex = 3;
 				break;
 			case EStageType::Ending:
 				LoadingScreenIndex = 4;
