@@ -323,9 +323,12 @@ void ASTPlayerState::CalculateScore(bool bIsStageClear)
 
 	if (USTGameInstance* STGameInstance = Cast<USTGameInstance>(GetWorld()->GetGameInstance()))
 	{
-		FSaveData SaveData;
-		SaveData.HighScore = PlayerStateInfo.HighScore;
-		STGameInstance->SaveSavedData(SaveData);
+		if (STGameInstance->LastStage == EStageType::Stage3)	// 보스 스테이지를 클리어한 경우에만 저장
+		{
+			FSaveData SaveData;
+			SaveData.HighScore = PlayerStateInfo.HighScore;
+			STGameInstance->SaveSavedData(SaveData);
+		}
 	}
 	
 	UE_LOG(LogSystem, Log, TEXT("ASTPlayerState::CalculateScoreAtGameOver() End"));
