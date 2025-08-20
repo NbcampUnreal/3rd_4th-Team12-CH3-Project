@@ -3,9 +3,13 @@
 
 #include "Player/STPlayerAnimInstance.h"
 #include "Player/STPlayerCharacter.h"
-#include "Player/STStatusComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/KismetMathLibrary.h"
+#include "Player/STHealthComponent.h"
+#include "Player/STMovementComponent.h"
+#include "Player/STWeaponManagerComponent.h"
+#include "Weapon/STWeaponBase.h"
+#include "Weapon/STWeaponType.h"
 
 USTPlayerAnimInstance::USTPlayerAnimInstance()
 {
@@ -17,8 +21,9 @@ USTPlayerAnimInstance::USTPlayerAnimInstance()
 	bShouldMove = false;
 	bIsFalling = false;
 	bIsCrouching = false;
-	bIsDead = false;
 	bIsZooming = false;
+	WeaponType = EWeaponType::Rifle;
+	bIsDead = false;
 }
 
 void USTPlayerAnimInstance::NativeInitializeAnimation()
@@ -43,8 +48,8 @@ void USTPlayerAnimInstance::NativeUpdateAnimation(float DeltaSeconds)
 	}
 
 	UpdateMovementProperties();
-	UpdateStatusProperties();
 	CalculateAimOffset(DeltaSeconds);
+	UpdateWeaponProperties();
 	
 }
 
@@ -55,13 +60,11 @@ void USTPlayerAnimInstance::UpdateMovementProperties()
 	{
 		return;
 	}
-
 	
 	Velocity = OwnerCharacterMovement->Velocity;
 	GroundSpeed = UKismetMathLibrary::VSizeXY(Velocity);
 	bIsFalling = OwnerCharacterMovement->IsFalling();
 	bIsCrouching = OwnerCharacterMovement->IsCrouching();
-
 	
 	if (Velocity.SizeSquared() > 0.0f)
 	{
@@ -72,55 +75,45 @@ void USTPlayerAnimInstance::UpdateMovementProperties()
 	float GroundAcceleration = UKismetMathLibrary::VSizeXY(OwnerCharacterMovement->GetCurrentAcceleration());
 	bool bIsAccelerated = !FMath::IsNearlyZero(GroundAcceleration);
 	bShouldMove = (GroundSpeed > KINDA_SMALL_NUMBER) && bIsAccelerated;
-	bIsZooming = OwnerCharacter->GetStatusComponent()->IsZooming();
+	bIsZooming = OwnerCharacter->GetPlayerMovementComponent()->IsZooming();
+	bIsDead = OwnerCharacter->GetHealthComponent()->IsDead();
 }
 #pragma endregion
 
 #pragma region Aim Properties
 void USTPlayerAnimInstance::CalculateAimOffset(float DeltaSeconds)
 {
-	if (!IsValid(OwnerCharacter))
-	{
-		return;
-	}
-
-	
 	FRotator ControlRotation = OwnerCharacter->GetControlRotation();
 	FRotator ActorRotation = OwnerCharacter->GetActorRotation();
-	FRotator DeltaRotation = UKismetMathLibrary::NormalizedDeltaRotator(ControlRotation, ActorRotation);
 
+	float TargetYaw = FMath::UnwindDegrees(ControlRotation.Yaw - ActorRotation.Yaw);
+	float TargetPitch = FMath::UnwindDegrees(ControlRotation.Pitch - ActorRotation.Pitch);
 
-	FRotator TargetAimOffset = FRotator(DeltaRotation.Pitch, DeltaRotation.Yaw, 0.0f);
-	FRotator CurrentAimOffset = FRotator(AimPitch, AimYaw, 0.0f);
+	FRotator TargetAimOffset(TargetPitch, TargetYaw, 0.f);
+	FRotator CurrentAimOffset(AimPitch, AimYaw, 0.f);
 
+	float InterpSpeed = bIsZooming ? 8.f : 20.f;
+	if (bShouldMove) InterpSpeed *= 1.5f;
 
-	FRotator InterpolatedAimOffset = FMath::RInterpTo(CurrentAimOffset, TargetAimOffset, DeltaSeconds, 15.0f);
+	FRotator Interpolated = FMath::RInterpTo(CurrentAimOffset, TargetAimOffset, DeltaSeconds, InterpSpeed);
 
+	// Clamp after Interpolation
+	AimYaw = FMath::Clamp(Interpolated.Yaw, -90, 90);
+	AimPitch = FMath::Clamp(Interpolated.Pitch, -90, 90);
 
-	AimYaw = FMath::Clamp(InterpolatedAimOffset.Yaw, -90.0f, 90.0f);
-	AimPitch = FMath::Clamp(InterpolatedAimOffset.Pitch, -90.0f, 90.0f);
 }
+
+
+
 #pragma endregion
 
-#pragma region Status Properties
-void USTPlayerAnimInstance::UpdateStatusProperties()
+#pragma region WeaponProperties
+
+void USTPlayerAnimInstance::UpdateWeaponProperties()
 {
-	if (!IsValid(OwnerCharacter))
+	if (IsValid(OwnerCharacter))
 	{
-		bIsDead = false;
-		return;
-	}
-
-	USTStatusComponent* CurrentStatusComponent = OwnerCharacter->GetStatusComponent();
-	if (IsValid(CurrentStatusComponent))
-	{
-		bIsDead = CurrentStatusComponent->IsDead();
-	}
-	else
-	{
-		bIsDead = false;
+		WeaponType = OwnerCharacter->GetWeaponManagerComponent()->GetCurrentWeaponType();
 	}
 }
 #pragma endregion
-
-

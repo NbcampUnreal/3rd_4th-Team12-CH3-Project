@@ -1,263 +1,256 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
+// Copyright Epic Games, Inc. All Rights Reserved.
 
 #include "Weapon/STWeaponBase.h"
 #include "GameFramework/Character.h"
-#include "Engine/World.h"
-#include "DrawDebugHelpers.h"
 #include "Kismet/GameplayStatics.h"
-#include "Particles/ParticleSystem.h"
+#include "Player/STPlayerCharacter.h"
+#include "Perception/AISense_Hearing.h"
 
-
-// Sets default values
+// 생성자
 ASTWeaponBase::ASTWeaponBase()
 {
- 	// Set this actor to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = false;
 
 
-	// 스태틱 메시 초기화
+	//1인칭용 메쉬설정
 	WeaponMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh"));
 	RootComponent = WeaponMesh;
+
+	//3인칭용 메쉬설정
+	WeaponMesh3p=CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WeaponMesh3p"));
+	WeaponMesh3p->SetupAttachment(RootComponent);
 }
 
-// Called when the game starts or when spawned
+// BeginPlay
 void ASTWeaponBase::BeginPlay()
 {
 	Super::BeginPlay();
 	if (WeaponDataAsset)
 	{
-		//시작시 구조체 데이터를 통해 무기 기본값 설정
+		//데이터 에셋을 통해 기본 총기 데이터 설정
 		const FSTWeaponData& Data = WeaponDataAsset->WeaponData;
 		WeaponType = Data.WeaponType;
 		Damage = Data.Damage;
 		FireRate = Data.FireRate;
 		MagazineSize = Data.MagazineSize;
 		ReloadTime = Data.ReloadTime;
-		SpreadAngle=Data.SpreadAngle;
+		SpreadAngle = Data.SpreadAngle;
 		PelletsPerShot= Data.PelletsPerShot;
-		
+		CameraShakeScale = Data.CameraShakeScale;
+		DefaultSpreadAngle = Data.SpreadAngle;
 		CurrentAmmo = MagazineSize;
-
-		UE_LOG(LogTemp, Log, TEXT("Weapon Initialized: %s, Damage: %.1f, Ammo: %d"),
-	*UEnum::GetValueAsString(Data.WeaponType), Damage, MagazineSize);
 	}
 	else
 	{
+		//데이터 에셋을 찾지 못한 경우
 		UE_LOG(LogTemp, Warning, TEXT("WeaponDataAsset not assigned."));
 	}
-	
-}
 
+	//총기 생성시 델리게이트를 통해 탄약 정보 방송
+	if (OnWeaponEquipped.IsBound())
+	{
+		OnWeaponEquipped.Broadcast(WeaponName);
+	}
+	if (OnAmmoChanged.IsBound())
+	{
+		OnAmmoChanged.Broadcast(CurrentAmmo, MagazineSize);
+	}
+}
 
 void ASTWeaponBase::Fire()
 {
-	//만약 발사 딜레이가 끝났고 탄약이 있다면
+	//탄약 및 총기 발사 딜레이 확인을 통해 발사 가능여부 판단
 	if (!bCanFire || CurrentAmmo <= 0)
 	{
-		if (CurrentAmmo <= 0)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("No Ammo"));
-		}
+		if (CurrentAmmo <= 0) { UE_LOG(LogTemp, Warning, TEXT("No Ammo")); }
 		return;
 	}
-	
+	//실제 발사 호출
+	UAISense_Hearing::ReportNoiseEvent(
+	GetWorld(),
+	GetActorLocation(),       // 발생 위치
+	1.0f,                    // 1.0 = 보통크기 소리 , 더 크게 하려면 2.0~5.0 정도도 가능)
+	GetOwner()               // 플레이어
+);
 	HandleFire();
 }
 
+
 void ASTWeaponBase::HandleFire()
 {
-	if (FireSound)
-	{
-		//블루프린트에서 소리가 설정 되었다면
-		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
-	}
-	
-	//다음 발사를 위해 bCanFire을 비활성화 및 탄약 감소
+
+	// 공통 기능구현 사운드, 탄약 감소, 연사 타이머, 화면 흔들림, 총구 이펙트
+
+	//총기 소리 발생
+	UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
+
+	//장전 딜레이용 변수 값 설정
 	bCanFire = false;
+	//탄약 감소
 	CurrentAmmo--;
-	UE_LOG(LogTemp, Warning, TEXT("Bang! Ammo: %d"), CurrentAmmo);
-
-	// 60/FireRate
-	//설정 시간후 발사 활성화 함수 실행을 통해 발사 딜레이 설정
+	//감소된 탄약을 델리게이트를 통해 방송
+	OnAmmoChanged.Broadcast(CurrentAmmo, MagazineSize);
+	//60/FireRate 초 뒤에 발사 가능 함수 호출
 	GetWorld()->GetTimerManager().SetTimer(FireRateTimerHandle, this, &ASTWeaponBase::EnableFire, 60.0f / FireRate, false);
+	//카메라 쉐이크 호출
+	PlayFireCameraShake();
 
-	// 2. 탄환 발사 (라인 트레이스)
-
-
-	//이 무기를 가지고 있는 캐릭터 호출 및 컨트롤러 유무 확인후 컨트롤러 가져오기
-	ACharacter* OwnerCharacter = Cast<ACharacter>(GetOwner());
-	AController* OwnerController = OwnerCharacter ? OwnerCharacter->GetController() : nullptr;
-	APlayerController* PC = Cast<APlayerController>(OwnerController);
-
-	// 1. 뷰포트(화면)의 크기를 가져와 정중앙 좌표를 구함
-	int32 ViewportSizeX, ViewportSizeY;
-	//화면 크기 받아오기
-	PC->GetViewportSize(ViewportSizeX, ViewportSizeY);
-	//화면 정중앙 지정
-	const FVector2D ScreenCenter(ViewportSizeX / 2.0f, ViewportSizeY / 2.0f);
-
-	FVector WorldLocation, WorldDirection;
-
-
-	//2d 화면 좌표를 현재 카메라 위치및 보는 방향으로 변환
-	if (PC->DeprojectScreenPositionToWorld(ScreenCenter.X, ScreenCenter.Y, WorldLocation, WorldDirection))
+	//머즐 이펙트
+	if (MuzzleFlashEffect)
 	{
-		//변환된 위치와 방향으로 트레이스 시작점 설정
-		FVector TraceStart = WorldLocation;
-		
-		//라인 트레이스를 실행할 함수
-		PerformTrace(TraceStart, WorldDirection);
-
-		if (MuzzleFlashEffect)
+		if (ASTPlayerCharacter* PlayerCharacter = Cast<ASTPlayerCharacter>(GetOwner()))
 		{
-			// 방금 만든 MuzzleSocket의 위치에 총구 화염 효과를 재생합니다.
+			UStaticMeshComponent* ActiveWeaponMesh = PlayerCharacter->GetCurrentViewMode() == EViewMode::FPS ? WeaponMesh : WeaponMesh3p;
 			UGameplayStatics::SpawnEmitterAttached(
-				MuzzleFlashEffect,        // 재생할 파티클
-				WeaponMesh,               // 부착할 컴포넌트 (총기 메시)
-				TEXT("MuzzleSocket")      // 부착할 소켓 이름
+				MuzzleFlashEffect,
+				ActiveWeaponMesh,
+				TEXT("MuzzleSocket")
 			);
+			PlayerCharacter->OnWeaponFired();
 		}
 	}
+
+	//자식 클래스에서 재정의할 FireWeapon
+	FireWeapon();
 }
 
-// PerformTrace: 무기 타입에 따라 다른 방식으로 라인 트레이스 발사
-void ASTWeaponBase::PerformTrace(const FVector& Start, const FVector& Direction)
+void ASTWeaponBase::FireWeapon()
 {
-
-	//충돌 검사용 변수 생성
-	FCollisionQueryParams QueryParams;
-
-	//지금 무기 및 들고있는 캐릭터 라인트레이스에서 제외
-	QueryParams.AddIgnoredActor(this);
-	QueryParams.AddIgnoredActor(GetOwner());
-	
-	switch (WeaponType)
-	{
-	case EWeaponType::Shotgun:
-		UE_LOG(LogTemp, Warning, TEXT("Shotgun firing - PelletsPerShot: %d"), PelletsPerShot);
-		for (int32 i = 0; i < PelletsPerShot; ++i)
-		{
-			//원뿔 안에서 무작위 방향 뽑기
-			FVector RandomDirection = FMath::VRandCone(Direction, FMath::DegreesToRadians(SpreadAngle));
-			//라인트레이스가 끝나는 지점 구하기
-			FVector TraceEnd = Start + (RandomDirection * WeaponDataAsset->WeaponData.TraceDistance);
-
-			//충돌 결과를 담을 구조체
-			FHitResult HitResult;
-			//만약 맞았다면?
-			if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, TraceEnd, ECC_Visibility, QueryParams))
-			{
-				//충돌 결과를 담을 구조체를 함수로 전달
-				ProcessHit(HitResult);
-			}
-                DrawDebugLine(GetWorld(), Start, TraceEnd, FColor::Green, false, 2.0f, 0, 1.0f);
-		}
-		break;
-
-	case EWeaponType::Rifle:
-	case EWeaponType::Sniper:
-	default:
-		UE_LOG(LogTemp, Warning, TEXT("noamlgun firing - PelletsPerShot: %d"), PelletsPerShot);
-
-		//원뿔 안에서 무작위 방향 뽑기
-		FVector RandomDirection = FMath::VRandCone(Direction, FMath::DegreesToRadians(SpreadAngle));
-		
-		//라인트레이스가 끝나는 지점 구하기
-		FVector TraceEnd = Start + (RandomDirection * WeaponDataAsset->WeaponData.TraceDistance);
-
-		//충돌 결과를 담을 구조체
-		FHitResult HitResult;
-		
-		//만약 맞았다면?
-		if (GetWorld()->LineTraceSingleByChannel(HitResult, Start, TraceEnd, ECC_Visibility, QueryParams))
-		{
-			//충돌 결과를 담을 구조체를 함수로 전달
-			ProcessHit(HitResult);
-		}
-		DrawDebugLine(GetWorld(), Start, TraceEnd, FColor::Green, false, 2.0f, 0, 1.0f);
-		break;
-	}
 }
 
-// ProcessHit: 충돌 결과를 받아 데미지 처리 및 디버그 드로잉
-void ASTWeaponBase::ProcessHit(const FHitResult& HitResult)
-{
-	//에디터에서 실행시 충돌 검사용 디버그 스피어 생성
-#if WITH_EDITOR
-	DrawDebugSphere(GetWorld(), HitResult.ImpactPoint, 15.f, 12, FColor::Red, false, 2.0f);
-#endif
-
-	//충돌한 액터를 가져오기
-	if (AActor* HitActor = HitResult.GetActor())
-	{
-		//블루프린트에서 이팩트를 적용 했다면
-		if (UParticleSystem* SelectedImpactEffect = ImpactEffect_Default)
-		{
-			// 라인트레이스가 맞은 위치에 파티클 생성
-			UGameplayStatics::SpawnEmitterAtLocation(
-				GetWorld(),
-				SelectedImpactEffect,
-				HitResult.ImpactPoint,
-				HitResult.ImpactNormal.Rotation()
-			);
-		}
+//총기 딜레이 함수
+void ASTWeaponBase::EnableFire() { bCanFire = true; }
 
 
-		//맞은 대상에게 데미지 전달
-		UE_LOG(LogTemp, Warning, TEXT("Hit Actor: %s"), *HitActor->GetName());
-		AController* OwnerController = GetOwner() ? GetOwner()->GetInstigatorController() : nullptr;
-		UGameplayStatics::ApplyDamage(HitActor, Damage, OwnerController, this, UDamageType::StaticClass());
-	}
-}
-
-
-//연사 딜레이가 끝나면 호출되어 발사 가능한 상태로 만들어줌
-void ASTWeaponBase::EnableFire()
-{
-	// bCanFire를 true로 설정하여 다시 발사할 수 있도록 허용합니다.
-	bCanFire = true;
-}
-
-
-
+//장전 함수
 void ASTWeaponBase::StartReload()
 {
-	//장전 중 또는 탄창이 가득 찬 경우나 발사 딜레이가 호출되고 있는경우 
+	//장전중 또는 탄약이 가득 차 있거나 총기 딜레이 함수 즉 총을 발사하고 있을때는 장전 불가능
 	if (bIsReloading || CurrentAmmo == MagazineSize || GetWorld()->GetTimerManager().IsTimerActive(FireRateTimerHandle))
 	{
-		return; // 세 조건 중 하나라도 참이면 재장전하지 않고 즉시 종료
+		return;
 	}
 
-	//장전 사운드 실행
+	//장전 사운드
 	if (ReloadSound)
 	{
 		UGameplayStatics::PlaySoundAtLocation(this, ReloadSound, GetActorLocation());
 	}
+
+	//장전 중 및 발사 불가능 처리
 	bIsReloading = true;
 	bCanFire = false;
 
-	UE_LOG(LogTemp, Log, TEXT("Reloading..."));
-
-	// ReloadTime 후에 FinishReload 함수 호출
+	//reloadTime 후 실제 장전 완료 함수 호출
 	GetWorld()->GetTimerManager().SetTimer(ReloadTimerHandle, this, &ASTWeaponBase::FinishReload, ReloadTime, false);
 }
 
+
 void ASTWeaponBase::FinishReload()
 {
+	//탄약 채움 및 장전 완료 발사 가능 처리
 	CurrentAmmo = MagazineSize;
 	bIsReloading = false;
 	bCanFire = true;
 
-	UE_LOG(LogTemp, Log, TEXT("Reload Complete. Ammo: %d"), CurrentAmmo);
+	//탄약 정보 델리게이트 방송
+	if (OnAmmoChanged.IsBound())
+	{
+		OnAmmoChanged.Broadcast(CurrentAmmo, MagazineSize);
+	}
 }
 
-//총기 발사 모드
+//발사 모드 게터
 EFireMode ASTWeaponBase::GetFireMode() const
 {
 	if (WeaponDataAsset)
 	{
 		return WeaponDataAsset->WeaponData.FireMode;
 	}
-	return EFireMode::Automatic; // 데이터 애셋이 없으면 기본값 반환
+	return EFireMode::Automatic;
+}
+
+//단발 연발 조정 발사 로직
+void ASTWeaponBase::StartFire()
+{
+	const EFireMode Mode = GetFireMode();
+
+	if (Mode == EFireMode::Automatic)
+	{
+		GetWorld()->GetTimerManager().SetTimer(AutoFireTimerHandle, this, &ASTWeaponBase::Fire, 60.0f / FireRate, true, 0.0f);
+	}
+	else if (Mode == EFireMode::SemiAutomatic)
+	{
+		Fire();
+	}
+}
+
+//마우스를 때는 시점에 호출되는 발사 정지 함수
+void ASTWeaponBase::StopFire()
+{
+	GetWorld()->GetTimerManager().ClearTimer(AutoFireTimerHandle);
+}
+
+
+//쓸지 모르는 총기 사격 모드 변경 함수
+void ASTWeaponBase::ToggleFireMode()
+{
+
+	if (!WeaponDataAsset) return;
+
+	//일단 라이플만 가능
+	if (WeaponDataAsset->WeaponData.WeaponType != EWeaponType::Rifle)
+	{
+		return;
+	}
+	
+	EFireMode& CurrentMode = WeaponDataAsset->WeaponData.FireMode;
+	if (CurrentMode == EFireMode::Automatic)
+	{
+		CurrentMode = EFireMode::SemiAutomatic;
+	}
+	else
+	{
+		CurrentMode = EFireMode::Automatic;
+	}
+}
+
+//카메라 쉐이크 함수
+void ASTWeaponBase::PlayFireCameraShake()
+{
+	if (APlayerController* PC = Cast<APlayerController>(GetOwner()->GetInstigatorController()))
+	{
+		if (FireCameraShake)
+		{
+			PC->ClientStartCameraShake(FireCameraShake, CameraShakeScale);
+		}
+	}
+}
+
+//조준시 총기 정확도 향상 함수
+void ASTWeaponBase::StartAiming()
+{
+	bIsAiming = true;
+
+	if (WeaponDataAsset->WeaponData.WeaponType == EWeaponType::Shotgun)
+	{
+	SpreadAngle = SpreadAngle / 1.5f;
+	}
+	 else
+	{
+	 	SpreadAngle = 0.0f;
+	}
+}
+
+//종료시 원래 정확도로 바꿔주는 함수
+void ASTWeaponBase::StopAiming()
+{
+	bIsAiming = false;
+	SpreadAngle = DefaultSpreadAngle;
+}
+
+//발사중인지 확인하는 함수
+bool ASTWeaponBase::IsFiring() const
+{
+	return GetWorld() && GetWorld()->GetTimerManager().IsTimerActive(AutoFireTimerHandle);
 }

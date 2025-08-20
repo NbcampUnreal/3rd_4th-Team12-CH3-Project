@@ -1,0 +1,163 @@
+﻿#pragma once
+
+#include "CoreMinimal.h"
+#include "UObject/Object.h"
+#include "STGameTypes.generated.h"
+
+/**
+ *	Enum 모음집
+ */
+class ASTWeaponBase;
+
+UENUM( BlueprintType )
+enum class EStagePhase : uint8
+{
+	Start		UMETA( DisplayName = "Start" ),		// 스테이지 시작 직후(인트로, 준비 등)
+	InProgress	UMETA( DisplayName = "InProgress" ),// 진행 중(적 전투, 탐험 등)
+	AllKilled	UMETA( DisplayName = "AllKilled" ),	// 모든 적을 섬멸한 상태 (목적지로 이동 필요)
+	Boss		UMETA( DisplayName = "Boss" ),		// 보스 페이즈 진입
+	Completed	UMETA( DisplayName = "Completed" ),	// 스테이지 클리어
+	Fail		UMETA( DisplayName = "Fail" ),		// 실패 (타임오버/사망 등)
+};
+
+UENUM( BlueprintType )
+enum class EStageResult : uint8
+{
+	None	UMETA( DisplayName = "None" ),	// 아직 결과 없음(진행 중)
+	Clear	UMETA( DisplayName = "Clear" ),	// 스테이지 성공
+	Fail    UMETA( DisplayName = "Fail" ),	// 스테이지 실패
+};
+
+UENUM( BlueprintType )
+enum class ECharacterType : uint8
+{
+	None		UMETA( DisplayName = "None" ),
+	JaxMercer	UMETA( DisplayName = "JaxMercer" ),
+	AvaRaines	UMETA( DisplayName = "AvaRaines" ),
+};
+
+UENUM( BlueprintType )
+enum class EStageType : uint8
+{
+	None		UMETA( DisplayName = "None" ),
+	MainMenu	UMETA( DisplayName = "MainMenuLevel" ),
+	Lobby		UMETA( DisplayName = "LobbyLevel" ),
+	Stage1		UMETA( DisplayName = "Stage1" ),
+	Stage2		UMETA( DisplayName = "Stage2" ),
+	Stage3		UMETA( DisplayName = "Stage3" ),
+	Ending		UMETA( DisplayName = "Ending" ),
+};
+
+UENUM( BlueprintType )
+enum class EBGMType : uint8
+{
+	Stop			UMETA ( DisplayName = "Stop" ),
+	GameClear		UMETA( DisplayName = "GameClear" ),
+	BossPhase2		UMETA( DisplayName = "BossPhase2" )
+};
+
+USTRUCT(BlueprintType)
+struct FWeaponSaveData
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "WeaponData" )
+	TSoftClassPtr<ASTWeaponBase> WeaponClass; // 현재 웨폰 정보 
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "" )
+	int32 CurrentAmmo; 
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	int32 MaxAmmo;
+
+
+	FWeaponSaveData()
+	{
+		WeaponClass = nullptr;
+		CurrentAmmo = 0;
+		MaxAmmo = 0;
+	}
+};
+
+USTRUCT( BlueprintType )
+struct FPlayerStateInfo		// TODO: 향후 PlayerState가 커지면, 레벨 이동간 유지해야할 정보만 따로 뺄 수도 있음
+{
+	GENERATED_BODY()
+
+	FPlayerStateInfo()
+		: SelectedCharacter(ECharacterType::None)
+		, CurrentHP(100.f)
+		, MaxHP(100.f)
+		, MoveSpeed(500.f)
+		, SprintMultiplier(1.5f)
+		, CrouchMultiplier(0.5f)
+		, ZoomMultiplier(0.8f)
+		, KillCount(0)
+		, Score(0)
+		, HighScore(0)
+		, TotalDamageReceived(0.0f)
+		, TotalDamageInflicted(0.0f)
+		, TotalUsedAmmo(0)
+	{}
+
+	UPROPERTY() ECharacterType SelectedCharacter;
+	UPROPERTY() float CurrentHP;
+	UPROPERTY() float MaxHP;
+	UPROPERTY() float MoveSpeed;
+	UPROPERTY() float SprintMultiplier;
+	UPROPERTY() float CrouchMultiplier;
+	UPROPERTY() float ZoomMultiplier;
+	UPROPERTY() FWeaponSaveData PlayerWeaponData;
+	UPROPERTY() int32 KillCount;
+	UPROPERTY() int32 Score;
+	UPROPERTY() int32 HighScore;
+	UPROPERTY() float TotalDamageReceived;	// 받은 피해량
+	UPROPERTY() float TotalDamageInflicted;	// 가한 피해량
+	UPROPERTY() int32 TotalUsedAmmo;
+};
+
+USTRUCT( BlueprintType )
+struct FGameStateInfo
+{
+	GENERATED_BODY()
+
+	FGameStateInfo()
+		: StagePhase(EStagePhase::Start)
+		, StageResult(EStageResult::None)
+		, RemainingEnemies(0)
+		, RemainingTime(0.0f)
+		, BossPhase(1)
+		, StageGoalText(FText::GetEmpty())
+		// , StageProgressList() // TArray는 초기화 안해도 기본배열
+	{};
+
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	EStagePhase StagePhase;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	EStageResult StageResult;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	int32 RemainingEnemies;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	int32 RemainingTime;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	int32 BossPhase;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	FText StageGoalText;
+	UPROPERTY( VisibleAnywhere, BlueprintReadOnly, Category = "GameState" )
+	TArray<FText> StageProgressList;
+};
+
+USTRUCT( BlueprintType ) 
+struct FSaveData
+{
+	GENERATED_BODY()
+
+	FSaveData()
+	{
+		HighScore = 0;
+	};
+
+	UPROPERTY(VisibleAnywhere, Category="Save")	// 매크로 안쓰면 직렬화 안됨, .sav에 값이 안들어감!
+	int32 HighScore;
+	// 볼륨, 마우스 감도 등 기타 설정 추가 가능
+};

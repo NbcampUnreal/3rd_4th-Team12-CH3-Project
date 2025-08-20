@@ -6,6 +6,7 @@
 #include "Animation/AnimInstance.h"
 #include "STPlayerAnimInstance.generated.h"
 
+enum class EWeaponType : uint8;
 class ASTPlayerCharacter;
 class UCharacterMovementComponent;
 /**
@@ -19,13 +20,14 @@ class ST_API USTPlayerAnimInstance : public UAnimInstance
 public:
 	USTPlayerAnimInstance();
 
+	void SetWeaponType(EWeaponType NewType);
+
 protected:
 
 	virtual void NativeInitializeAnimation() override;
 	virtual void NativeUpdateAnimation(float DeltaSeconds) override;
 	
 	void UpdateMovementProperties();
-	void UpdateStatusProperties();
 	void CalculateAimOffset(float DeltaSeconds);
 	
 #pragma region Character References
@@ -61,6 +63,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
 	uint8 bIsCrouching : 1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Movement")
+	uint8 bIsDead : 1;
 #pragma endregion
 
 #pragma region Aim Properties
@@ -76,10 +81,12 @@ protected:
 	uint8 bIsZooming : 1;
 #pragma endregion
 
-#pragma region Status Properties
+#pragma region Weapons Properties
 protected:
-	// Character Status
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Status")
-	uint8 bIsDead : 1;
-#pragma endregion
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Weapon")
+	EWeaponType WeaponType;
+
+	void UpdateWeaponProperties();
+	
+#pragma endregion 
 };

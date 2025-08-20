@@ -20,7 +20,10 @@ enum class EWeaponType: uint8
 {
 	Rifle   UMETA(DisplayName = "Rifle"),
 	Sniper  UMETA(DisplayName = "Sniper"),
-	Shotgun UMETA(DisplayName = "Shotgun")
+	Shotgun UMETA(DisplayName = "Shotgun"),
+	Pistol UMETA(DisplayName = "Pistol"),
+	Launcher UMETA(DisplayName = "Launcher")
+
 };
 
 USTRUCT(BlueprintType)
@@ -34,29 +37,33 @@ struct FSTWeaponData
 	EFireMode FireMode = EFireMode::Automatic;
 	//무기 타입 지정
 	UPROPERTY(EditAnywhere,  Category ="Weapon Type")
-	EWeaponType WeaponType;
+	EWeaponType WeaponType =EWeaponType::Pistol;
 
 	//데미지
 	UPROPERTY(EditAnywhere,  Category ="Weapon Stats")
-	float Damage;
+	float Damage =1.0;
 	UPROPERTY(EditAnywhere,  Category ="Weapon Stats")
-	float FireRate;
+	float FireRate=600.0;
 	UPROPERTY(EditAnywhere,  Category ="Weapon Stats")
-	int32 MagazineSize;
+	int32 MagazineSize=30;
 	UPROPERTY(EditAnywhere,  Category ="Weapon Stats")
-	float ReloadTime;
+	float ReloadTime=2.3;
 
 
 	//총알이 퍼지는 각도 설정
 	UPROPERTY(EditAnywhere, Category = "Weapon Stats|Shotgun")
-	float SpreadAngle;
+	float SpreadAngle=2.0;
 	// --- 샷건 전용 스탯 ---
 
 
 	// 벅샷의 개수
 	UPROPERTY(EditAnywhere, Category = "Weapon Stats|Shotgun")
-	int32 PelletsPerShot;
+	int32 PelletsPerShot=1;
 	//무기의 사거리
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float TraceDistance = 10000.f;
+
+	//무기의 반동
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float CameraShakeScale=0.1;
 };
