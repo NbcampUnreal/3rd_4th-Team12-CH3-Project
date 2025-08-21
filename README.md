@@ -48,7 +48,10 @@ Uneral Engine 5를 활용하여 개발한 **사이버펑크 슈팅 게임**입�
 * **Ending cinematic**(이미지 클릭) <br>
   [![Ending Cinematic](https://img.youtube.com/vi/Rgv1000JS2A/0.jpg)](https://youtu.be/Rgv1000JS2A)
 
-* [Presentation](https://www.canva.com/design/DAGwZt0LrCc/GL8y4SU1SyphVAYU6WoJKA/view?utm_content=DAGwZt0LrCc&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hf214a0aa36)
+* **Presentation Video**(이미지 클릭) <br>
+[![Presentation Video](https://img.youtube.com/vi/utTe070kYgI/0.jpg)](https://youtu.be/utTe070kYgI)
+
+* [발표 PPT](https://www.canva.com/design/DAGwZt0LrCc/GL8y4SU1SyphVAYU6WoJKA/view?utm_content=DAGwZt0LrCc&utm_campaign=designshare&utm_medium=link2&utm_source=uniquelinks&utlId=hf214a0aa36)
 
 ---
 
